@@ -135,126 +135,123 @@ function ProductsContent() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <main className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      <main className="pt-32 pb-24">
+        <div className="max-w-7xl mx-auto px-6 md:px-10">
           
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div>
-                <h1 className="text-5xl font-black text-neutral-900 mb-4 tracking-tighter">
-                  Explore <span className="text-rose-400">Collections</span>
-                </h1>
-                <p className="text-neutral-500 text-lg font-medium">
-                  Premium maternity and kids wear for every moment
-                </p>
-            </div>
-            
-            <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100">
-                <button 
-                  onClick={() => handleCategoryChange(null)}
+          {/* 🔹 Header section */}
+          <div className="mt-10 mb-12">
+            <h1 className="text-5xl md:text-6xl font-serif font-bold text-charcoal tracking-tight">
+              Explore Our <span className="text-blush italic">Collections</span>
+            </h1>
+            <p className="text-neutral-500 mt-6 max-w-lg text-lg font-sans leading-relaxed">
+              Premium maternity and kids wear crafted for your most precious moments.
+            </p>
+          </div>
+
+          {/* 🔹 Filters + Search + Sort Row (Consolidated for Alignment) */}
+          <div className="space-y-8 mb-16">
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => handleCategoryChange(null)}
+                className={cn(
+                  "px-8 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 transform active:scale-95",
+                  !selectedCategory
+                    ? "bg-blush text-white shadow-xl shadow-blush/20 scale-105"
+                    : "bg-white border border-[#F3E8E5] text-charcoal/60 hover:bg-blush/5 hover:border-blush/30 hover:text-blush"
+                )}
+              >
+                All Items
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryChange(cat.slug)}
                   className={cn(
-                    "px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
-                    !selectedCategory ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-400 hover:text-neutral-600"
+                    "px-8 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 transform active:scale-95",
+                    selectedCategory === cat.slug
+                      ? "bg-blush text-white shadow-xl shadow-blush/20 scale-105"
+                      : "bg-white border border-[#F3E8E5] text-charcoal/60 hover:bg-blush/5 hover:border-blush/30 hover:text-blush"
                   )}
                 >
-                  All
+                  {cat.name}
                 </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => handleCategoryChange(cat.slug)}
-                    className={cn(
-                      "px-6 py-2.5 rounded-xl text-sm font-bold transition-all capitalize",
-                      selectedCategory === cat.slug ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-400 hover:text-neutral-600"
-                    )}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-            </div>
-          </div>
-
-          {/* CONTROLS */}
-          <div className="flex flex-col lg:flex-row gap-4 mb-10 items-center justify-between">
-            <div className="relative w-full lg:max-w-md group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 group-focus-within:text-rose-400 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search by name or style..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-neutral-50 border-none px-12 py-4 rounded-2xl focus:ring-2 focus:ring-rose-200 transition-all font-medium text-neutral-700 placeholder:text-neutral-400"
-              />
-              {searchTerm && (
-                <button 
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSearch("");
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-200 rounded-full transition-colors"
-                >
-                  <X className="h-4 w-4 text-neutral-400" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4 w-full lg:w-auto">
-                <div className="relative flex-1 lg:flex-none">
-                    <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
-                    <select
-                        value={sort}
-                        onChange={(e) => setSort(e.target.value)}
-                        className="w-full lg:w-56 bg-white border border-neutral-200 pl-11 pr-4 py-4 rounded-2xl appearance-none focus:ring-2 focus:ring-rose-200 font-bold text-sm text-neutral-700 cursor-pointer shadow-sm"
-                    >
-                        <option value="latest">Sort by: Latest</option>
-                        <option value="price_low">Price: Low to High</option>
-                        <option value="price_high">Price: High to Low</option>
-                    </select>
-                </div>
-                
-                <div className="h-14 w-14 bg-white border border-neutral-200 rounded-2xl flex items-center justify-center text-neutral-400 hover:text-rose-500 cursor-pointer shadow-sm transition-colors">
-                    <SlidersHorizontal className="h-5 w-5" />
-                </div>
-            </div>
-          </div>
-
-          {/* GRID */}
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="space-y-4">
-                  <Skeleton className="aspect-[4/5] w-full rounded-3xl" />
-                  <Skeleton className="h-6 w-3/4 rounded-lg" />
-                  <Skeleton className="h-4 w-1/4 rounded-lg" />
-                </div>
               ))}
             </div>
-          ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-32 bg-neutral-50 rounded-[40px] border border-dashed border-neutral-200">
-              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <Tag className="h-10 w-10 text-neutral-200" />
+
+            <div className="flex flex-col md:flex-row justify-between gap-6">
+              <div className="relative w-full md:w-3/5 lg:w-1/2 group">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 group-focus-within:text-blush transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search our premium collection..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-16 pr-8 py-4.5 rounded-[20px] border border-[#F3E8E5] bg-white text-charcoal placeholder:text-neutral-400 focus:outline-none focus:border-blush/50 focus:ring-4 focus:ring-blush/10 transition-all font-sans"
+                />
               </div>
-              <h3 className="text-2xl font-bold text-neutral-800 mb-2">No products found</h3>
-              <p className="text-neutral-500 mb-8 max-w-xs mx-auto">We couldn't find anything matching your current filters. Try adjusting them!</p>
-              {(search || selectedCategory) && (
-                <button 
-                  onClick={() => {
-                    setSearch("");
-                    handleCategoryChange(null);
-                  }}
-                  className="bg-neutral-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-500 transition-all shadow-lg active:scale-95"
-                >
-                  Clear All Filters
-                </button>
-              )}
+
+              <div className="relative w-full md:w-72">
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="w-full px-8 py-4.5 rounded-[20px] border border-[#F3E8E5] bg-white text-charcoal font-bold text-xs uppercase tracking-widest appearance-none focus:outline-none focus:border-blush/50 focus:ring-4 focus:ring-blush/10 transition-all cursor-pointer"
+                  >
+                    <option value="latest">Sort: Latest Arrivals</option>
+                    <option value="price_low">Price: Low to High</option>
+                    <option value="price_high">Price: High to Low</option>
+                  </select>
+                  <ArrowUpDown className="absolute right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* 🧱 3. PRODUCT GRID */}
+          <div className="mt-10">
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="space-y-6">
+                    <Skeleton className="aspect-[4/5] w-full rounded-[32px] bg-cream/50" />
+                    <div className="space-y-3">
+                        <Skeleton className="h-5 w-3/4 rounded-lg" />
+                        <Skeleton className="h-4 w-1/4 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ) : (
+              /* 💎 5. EMPTY STATE */
+              <div className="text-center py-40 bg-cream/20 rounded-[60px] border border-dashed border-blush/20">
+                <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-xl shadow-blush/5 border border-[#F3E8E5]">
+                  <Tag className="h-10 w-10 text-blush opacity-20" />
+                </div>
+                <h2 className="text-4xl font-serif font-bold text-charcoal mb-4">
+                  No products <span className="text-blush italic">Found</span>
+                </h2>
+                <p className="text-neutral-500 max-w-xs mx-auto text-lg leading-relaxed mb-12">
+                  We couldn't find anything matching your search. Try different filters!
+                </p>
+                {(search || selectedCategory) && (
+                  <button 
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSearch("");
+                      handleCategoryChange(null);
+                    }}
+                    className="bg-charcoal text-white px-12 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-blush transition-all shadow-2xl shadow-charcoal/20 transform hover:-translate-y-1"
+                  >
+                    Reset All Filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

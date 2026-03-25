@@ -19,7 +19,28 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'sans-serif'],
+        serif: ['var(--font-cormorant)', 'serif'],
+      },
       colors: {
+        blush: {
+          DEFAULT: '#F8AFA6',
+          light: '#FDECEB',
+          dark: '#F472B6', // For hover
+        },
+        cream: {
+          DEFAULT: '#FFF7ED',
+          dark: '#FFEDD5',
+        },
+        charcoal: {
+          DEFAULT: '#2E2E2E',
+          light: '#525252',
+        },
+        gold: {
+          DEFAULT: '#D4AF37',
+          light: '#F0C559',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

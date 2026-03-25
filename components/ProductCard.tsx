@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
@@ -21,76 +20,80 @@ export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
 
+  const displayImage = product.image_url || product.image || '/placeholder.jpg';
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.info("Please login to add items to cart");
+      router.push("/login");
+      return;
+    }
+    
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: displayImage,
+      quantity: 1,
+      stock: product.stock
+    });
+  };
+
   return (
-    <div className="group relative bg-white rounded-2xl overflow-hidden border border-neutral-100 shadow-sm hover:shadow-xl hover:shadow-rose-100/50 transition-all duration-500 flex flex-col h-full">
-      <Link href={`/products/${product.id}`} className="flex-1">
-        <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100">
-          {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
-          
-          {/* STOCK BADGE */}
-          {product.stock <= 0 && (
-            <div className="absolute top-4 left-4 z-20 bg-neutral-900/90 backdrop-blur-md text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-xl">
-              Out of Stock
-            </div>
+    <div className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md transition duration-300 flex flex-col h-full">
+      {/* Image Section */}
+      <Link href={`/products/${product.id}`} className="relative overflow-hidden aspect-[4/5] block">
+        {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
+        
+        <img
+          src={displayImage}
+          alt={product.name}
+          onLoad={() => setImgLoading(false)}
+          className={cn(
+            "w-full h-full object-cover group-hover:scale-105 transition duration-500",
+            imgLoading ? "opacity-0" : "opacity-100",
+            product.stock <= 0 && "grayscale opacity-50"
           )}
+        />
 
-          <img
-            src={product.image_url || product.image || '/placeholder.jpg'}
-            alt={product.name}
-            onLoad={() => setImgLoading(false)}
-            className={cn(
-               "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110",
-               imgLoading ? "opacity-0" : "opacity-100",
-               product.stock <= 0 && "grayscale opacity-50"
-            )}
-          />
-        </div>
-
-        <div className="p-5">
-          <h3 className="font-semibold text-neutral-800 mb-1 line-clamp-1 group-hover:text-rose-500 transition-colors">
-            {product.name}
-          </h3>
-          <p className={cn("font-bold text-lg", product.stock <= 0 ? "text-neutral-400 line-through decoration-rose-500/30" : "text-rose-500")}>
-            ₹{product.price}
-          </p>
-        </div>
+        {product.stock <= 0 && (
+          <span className="absolute top-3 left-3 bg-black text-white text-[10px] uppercase font-bold px-2 py-1 rounded tracking-widest z-20">
+            Out of Stock
+          </span>
+        )}
       </Link>
 
-      <div className="p-5 pt-0 mt-auto">
-        <button
-          disabled={product.stock <= 0}
-          onClick={(e) => {
-            e.preventDefault();
-            if (!user) {
-              toast.info("Please login to add items to cart");
-              router.push("/login");
-              return;
-            }
-            addToCart({
-              id: product.id,
-              name: product.name,
-              price: product.price,
-              image: product.image_url || product.image || '/placeholder.jpg',
-              quantity: 1,
-              stock: product.stock
-            });
-          }}
-          className={cn(
-            "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all active:scale-[0.98]",
-            product.stock <= 0 
-              ? "bg-neutral-100 text-neutral-400 cursor-not-allowed border border-neutral-200"
-              : "bg-neutral-900 text-white hover:bg-rose-500 shadow-lg shadow-neutral-200"
-          )}
-        >
-          {product.stock <= 0 ? (
-            "Unavailable"
-          ) : (
-            <>
-                <ShoppingCart className="h-4 w-4" />
-                Add to Cart
-            </>
-          )}
-        </button>
+      {/* Info Section */}
+      <div className="p-5 flex flex-col flex-1">
+        <Link href={`/products/${product.id}`} className="block group/title">
+          <h3 className="font-serif font-bold text-charcoal text-xl line-clamp-1 group-hover/title:text-blush transition-colors leading-tight">
+            {product.name}
+          </h3>
+        </Link>
+
+        <p className="text-[10px] text-gray-400 mt-2 uppercase tracking-[0.2em] font-bold">
+          {product.category_slug || "Collection"}
+        </p>
+
+        <div className="flex items-center justify-between mt-auto pt-4">
+          <span className="font-bold text-blush text-xl tracking-tight">
+            ₹{product.price}
+          </span>
+
+          <button 
+            onClick={handleAddToCart}
+            disabled={product.stock <= 0}
+            className={cn(
+              "text-[11px] px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10",
+              product.stock <= 0 
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-blush text-white hover:bg-[#f48c82]"
+            )}
+          >
+            {product.stock <= 0 ? "Empty" : "Add"}
+          </button>
+        </div>
       </div>
     </div>
   );

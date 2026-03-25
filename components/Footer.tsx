@@ -2,27 +2,34 @@ import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-br from-neutral-50 to-rose-50/30 border-t border-neutral-200/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
-              Miks & Chiks
-            </h3>
-            <p className="text-neutral-600 text-sm leading-relaxed">
-              Your trusted destination for comfortable and stylish maternity and kids wear.
+    <footer className="bg-gradient-to-br from-white to-cream border-t border-blush/10 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blush/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+      
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-20 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          <div className="space-y-6">
+            <div className="h-20 w-auto">
+                <img 
+                  src="/logo.png" 
+                  alt="Miks & Chiks" 
+                  className="h-full w-auto object-contain"
+                />
+            </div>
+            <p className="text-neutral-500 text-sm leading-relaxed font-medium">
+              Your trusted destination for premium maternity and kids wear, crafted with love for your most precious moments.
             </p>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-neutral-800 mb-4">
+            <h4 className="text-xs font-black text-charcoal uppercase tracking-[0.2em] mb-8">
               Quick Links
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-4">
               <li>
                 <a
                   href="/"
-                  className="text-neutral-600 hover:text-rose-400 transition-colors text-sm"
+                  className="text-neutral-400 hover:text-blush transition-all text-sm font-bold uppercase tracking-widest"
                 >
                   Home
                 </a>
@@ -30,7 +37,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/products"
-                  className="text-neutral-600 hover:text-rose-400 transition-colors text-sm"
+                  className="text-neutral-400 hover:text-blush transition-all text-sm font-bold uppercase tracking-widest"
                 >
                   Products
                 </a>
@@ -38,7 +45,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/about"
-                  className="text-neutral-600 hover:text-rose-400 transition-colors text-sm"
+                  className="text-neutral-400 hover:text-blush transition-all text-sm font-bold uppercase tracking-widest"
                 >
                   About Us
                 </a>
@@ -46,7 +53,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/contact"
-                  className="text-neutral-600 hover:text-rose-400 transition-colors text-sm"
+                  className="text-neutral-400 hover:text-blush transition-all text-sm font-bold uppercase tracking-widest"
                 >
                   Contact
                 </a>
@@ -55,19 +62,19 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-neutral-800 mb-4">
+            <h4 className="text-xs font-black text-charcoal uppercase tracking-[0.2em] mb-8">
               Contact Info
             </h4>
-            <ul className="space-y-3">
-              <li className="flex items-start space-x-2">
-                <Phone className="h-4 w-4 text-rose-400 mt-0.5 flex-shrink-0" />
-                <span className="text-neutral-600 text-sm">
+            <ul className="space-y-4">
+              <li className="flex items-start space-x-3 group">
+                <Phone className="h-5 w-5 text-blush mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-neutral-500 text-sm font-medium">
                   +91 9XXXXXXXXX
                 </span>
               </li>
-              <li className="flex items-start space-x-2">
-                <Mail className="h-4 w-4 text-rose-400 mt-0.5 flex-shrink-0" />
-                <span className="text-neutral-600 text-sm">
+              <li className="flex items-start space-x-3 group">
+                <Mail className="h-5 w-5 text-blush mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-neutral-500 text-sm font-medium">
                   support@miksandchiks.com
                 </span>
               </li>
@@ -75,21 +82,21 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-neutral-800 mb-4">
+            <h4 className="text-xs font-black text-charcoal uppercase tracking-[0.2em] mb-8">
               Visit Us
             </h4>
-            <ul className="space-y-3">
-              <li className="flex items-start space-x-2">
-                <MapPin className="h-4 w-4 text-rose-400 mt-0.5 flex-shrink-0" />
-                <span className="text-neutral-600 text-sm">
+            <ul className="space-y-4">
+              <li className="flex items-start space-x-3 group">
+                <MapPin className="h-5 w-5 text-blush mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-neutral-500 text-sm font-medium">
                   Near Lulu Mall, Edappally<br />
                   Kochi, Kerala – 682024<br />
                   India
                 </span>
               </li>
-              <li className="flex items-start space-x-2">
-                <Clock className="h-4 w-4 text-rose-400 mt-0.5 flex-shrink-0" />
-                <span className="text-neutral-600 text-sm">
+              <li className="flex items-start space-x-3 group">
+                <Clock className="h-5 w-5 text-blush mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="text-neutral-500 text-sm font-medium">
                   Mon - Sat: 10 AM - 7 PM
                 </span>
               </li>
@@ -97,10 +104,15 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-neutral-200/50 text-center">
-          <p className="text-neutral-500 text-sm">
+        <div className="mt-20 pt-10 border-t border-neutral-100 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-neutral-400 text-xs font-bold uppercase tracking-widest">
             © {new Date().getFullYear()} Miks & Chiks. All rights reserved.
           </p>
+          <div className="flex items-center gap-8">
+            <a href="/privacy-policy" className="text-[10px] font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Privacy Policy</a>
+            <a href="/terms" className="text-[10px] font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Terms of Service</a>
+            <a href="/refund-policy" className="text-[10px] font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Refund Policy</a>
+          </div>
         </div>
       </div>
     </footer>

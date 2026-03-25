@@ -22,14 +22,15 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
+  selectedSize?: string;
   stock?: number;
 };
 
 type CartContextType = {
   cart: CartItem[];
   addToCart: (item: CartItem) => Promise<void>;
-  removeFromCart: (id: string) => Promise<void>;
-  updateQuantity: (id: string, qty: number) => Promise<void>;
+  removeFromCart: (id: string, selectedSize?: string) => Promise<void>;
+  updateQuantity: (id: string, qty: number, selectedSize?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   loading: boolean;
 };
@@ -99,7 +100,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const cartRef = collection(db, "users", user.uid, "cart");
-      const q = query(cartRef, where("id", "==", item.id));
+      const q = query(
+        cartRef, 
+        where("id", "==", item.id),
+        where("selectedSize", "==", item.selectedSize || null)
+      );
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
@@ -128,10 +133,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const removeFromCart = async (id: string) => {
+  const removeFromCart = async (id: string, selectedSize?: string) => {
     if (!user) return;
     const cartRef = collection(db, "users", user.uid, "cart");
-    const q = query(cartRef, where("id", "==", id));
+    const q = query(
+        cartRef, 
+        where("id", "==", id),
+        where("selectedSize", "==", selectedSize || null)
+    );
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
@@ -143,10 +152,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     await fetchCart();
   };
 
-  const updateQuantity = async (id: string, qty: number) => {
+  const updateQuantity = async (id: string, qty: number, selectedSize?: string) => {
     if (!user) return;
 
-    // Fetch latest stock for validation
+    // Fetch latest stock for validation (global stock for now)
     const productSnap = await getDoc(doc(db, "products", id));
     if (productSnap.exists()) {
         const currentStock = productSnap.data().stock || 0;
@@ -157,7 +166,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const cartRef = collection(db, "users", user.uid, "cart");
-    const q = query(cartRef, where("id", "==", id));
+    const q = query(
+        cartRef, 
+        where("id", "==", id),
+        where("selectedSize", "==", selectedSize || null)
+    );
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {

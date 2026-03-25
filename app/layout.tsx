@@ -1,28 +1,37 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Cormorant_Garamond } from 'next/font/google';
 import { CartProvider } from '@/context/cart-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-cormorant',
+});
 
 export const metadata: Metadata = {
-  title: 'Miks & Chiks - Maternity & Kids Wear in Kochi',
-  description: 'Shop comfortable and stylish maternity wear and kids wear at Miks & Chiks, Kochi. Quality clothing for mothers and children at affordable prices.',
-  keywords: ['maternity wear', 'kids wear', 'Kochi', 'children clothing', 'maternity fashion', 'baby clothes'],
+  title: 'Miks & Chiks | Soft Premium Maternity & Kids Wear',
+  description: 'Experience the finest maternity and kids wear at Miks & Chiks. Premium quality, ultimate comfort, and effortless style for mothers and little ones in Kochi.',
+  keywords: ['maternity wear', 'kids wear', 'Kochi', 'children clothing', 'maternity fashion', 'baby clothes', 'premium maternity', 'soft baby wear'],
   metadataBase: new URL('https://miksandchiks.com'),
   openGraph: {
-    title: 'Miks & Chiks - Maternity & Kids Wear',
-    description: 'Shop comfortable and stylish maternity wear and kids wear in Kochi',
+    title: 'Miks & Chiks | Soft Premium Maternity & Kids Wear',
+    description: 'Experience the finest maternity and kids wear in Kochi. Crafted for precious moments.',
     url: 'https://miksandchiks.com',
     siteName: 'Miks & Chiks',
     images: [
       {
-        url: '/mother-baby.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Miks & Chiks Maternity & Kids Wear',
+        url: '/logo.png',
+        width: 800,
+        height: 600,
+        alt: 'Miks & Chiks Logo',
       },
     ],
     locale: 'en_IN',
@@ -30,9 +39,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Miks & Chiks - Maternity & Kids Wear',
-    description: 'Shop comfortable and stylish maternity wear and kids wear in Kochi',
-    images: ['/pregnant-lady.jpg'],
+    title: 'Miks & Chiks | Premium Maternity & Kids Wear',
+    description: 'Experience the finest maternity and kids wear in Kochi.',
+    images: ['/logo.png'],
   },
 };
 
@@ -43,7 +52,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${cormorant.variable} font-sans`}>
         <AuthProvider>
           <CartProvider>
             {children}

@@ -26,34 +26,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
       
       <main className="flex-1 flex items-center justify-center p-4 pt-32 pb-16">
         <div className="max-w-md w-full">
           {/* BRANDING CARD */}
-          <div className="bg-white p-10 rounded-[40px] shadow-2xl shadow-rose-100/30 border border-neutral-100 text-center relative overflow-hidden">
+          <div className="bg-white p-12 rounded-[50px] shadow-2xl shadow-blush/10 border border-[#F3E8E5] text-center relative overflow-hidden group/card transform hover:-translate-y-2 transition-all duration-700">
             {/* DECORATIVE BACKGROUND */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-rose-400" />
+            <div className="absolute top-0 left-0 w-full h-3 bg-blush opacity-60" />
             
-            <div className="mb-10 inline-flex items-center justify-center w-20 h-20 bg-rose-50 rounded-3xl text-rose-400 border border-rose-100 shadow-inner">
-               <ShoppingBag className="w-10 h-10" />
+            <div className="mb-12 inline-flex items-center justify-center w-24 h-24 bg-cream rounded-[32px] text-blush border border-blush/10 shadow-sm transform group-hover/card:rotate-6 transition-transform duration-500">
+               <ShoppingBag className="w-12 h-12" />
             </div>
 
-            <h1 className="text-4xl font-black text-neutral-900 mb-3 tracking-tight italic">
-              Welcome Back
+            <h1 className="text-5xl font-serif font-bold text-charcoal mb-4 tracking-tight">
+              Welcome <span className="text-blush italic">Back</span>
             </h1>
-            <p className="text-neutral-500 font-medium mb-10 text-lg">
+            <p className="text-neutral-500 font-sans mb-12 text-lg">
               Sign in to your premium fashion experience
             </p>
 
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="group w-full flex items-center justify-center gap-4 bg-neutral-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-rose-500 transition-all shadow-xl shadow-neutral-200 active:scale-95 disabled:opacity-50"
+              className="group w-full flex items-center justify-center gap-4 bg-blush text-white py-6 rounded-3xl font-bold text-xl hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/30 active:scale-95 disabled:opacity-50 transform hover:scale-[1.02]"
             >
               {loading ? (
-                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-solid border-white border-r-transparent" />
+                 <div className="h-7 w-7 animate-spin rounded-full border-3 border-solid border-white border-r-transparent" />
               ) : (
                 <>
                   <svg className="w-6 h-6" viewBox="0 0 24 24">
@@ -75,15 +75,15 @@ export default function LoginPage() {
                     />
                   </svg>
                   <span>Continue with Google</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                 </>
               )}
             </button>
 
-            <div className="mt-10 pt-8 border-t border-neutral-50">
-               <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest leading-relaxed">
+            <div className="mt-12 pt-10 border-t border-[#F3E8E5]">
+               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] leading-relaxed">
                   Fast, Secure & Passwordless.<br/>
-                  By continuing, you agree to our terms.
+                  By continuing, you agree to our <span className="text-blush hover:underline cursor-pointer">Terms & Conditions</span>.
                </p>
             </div>
           </div>
