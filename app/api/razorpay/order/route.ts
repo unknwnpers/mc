@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpayClient } from "@/lib/razorpay";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -22,22 +22,32 @@ export async function POST(req: Request) {
       calculatedTotal += price * item.quantity;
     }
 
-    // 2. Create Razorpay Order
-    const options = {
-      amount: calculatedTotal * 100, // Amount in paise
-      currency: "INR",
-      receipt: `receipt_${Date.now()}`,
-    };
+    // 2. Create Razorpay Order or Bypass
+    const razorpay = getRazorpayClient();
+    let orderId = "";
+    let isMock = false;
 
-    const order = await razorpay.orders.create(options);
+    if (razorpay) {
+        const options = {
+            amount: calculatedTotal * 100, // Amount in paise
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+        };
+        const order = await razorpay.orders.create(options);
+        orderId = order.id;
+    } else {
+        // BYPASS MODE - Generate Mock ID
+        orderId = `mock_ord_${Math.random().toString(36).substring(2, 11)}`;
+        isMock = true;
+    }
 
     // 3. Create Pending Order in Firestore
     const orderData = {
       userId,
       items: cart,
       total: calculatedTotal,
-      status: "pending_payment",
-      razorpayOrderId: order.id,
+      status: isMock ? "processing" : "pending_payment", // "processing" means paid/ready to fulfill
+      razorpayOrderId: orderId,
       shippingAddress: profile.address,
       phoneNumber: profile.phone,
       customerName: profile.name,
@@ -48,10 +58,11 @@ export async function POST(req: Request) {
     const docRef = await addDoc(collection(db, "orders"), orderData);
 
     return NextResponse.json({
-      orderId: order.id,
-      amount: options.amount,
-      currency: options.currency,
-      firestoreOrderId: docRef.id
+      orderId: orderId,
+      amount: calculatedTotal * 100,
+      currency: "INR",
+      firestoreOrderId: docRef.id,
+      isMock
     });
 
   } catch (error: any) {

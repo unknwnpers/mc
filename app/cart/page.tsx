@@ -211,7 +211,15 @@ export default function CartPage() {
                                         const data = await res.json();
                                         if (!res.ok) throw new Error(data.error || "Order creation failed");
 
-                                        // 2. Open Razorpay Checkout Modal
+                                        // 2. Handle Bypass/Mock Mode
+                                        if (data.isMock) {
+                                            toast.success("Test Mode: Order placed successfully!");
+                                            router.push("/orders");
+                                            clearCart();
+                                            return;
+                                        }
+
+                                        // 3. Open Razorpay Checkout Modal (Live Mode)
                                         const options = {
                                             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                                             amount: data.amount,

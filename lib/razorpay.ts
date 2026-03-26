@@ -1,10 +1,18 @@
 import Razorpay from "razorpay";
 
-if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  throw new Error("RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are missing from environment variables");
-}
+export function getRazorpayClient() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const shouldBypass = process.env.BYPASS_RAZORPAY === "true";
 
-export const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+  if (!keyId || !keySecret || shouldBypass) {
+    // If keys are missing or bypass is explicitly set, we return null to allow simulated checkout
+    console.warn("Razorpay keys missing or BYPASS_RAZORPAY is true. Checkout will proceed in BYPASS/TEST mode.");
+    return null;
+  }
+
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
+}
