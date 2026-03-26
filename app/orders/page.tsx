@@ -216,18 +216,18 @@ export default function OrdersPage() {
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-blush/20" />
                                                                 <p className="font-mono text-neutral-500 text-xs">#{order.id.slice(0, 8)}</p>
                                                             </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <p className="text-4xl font-serif font-bold text-charcoal tracking-tight">₹{order.total}</p>
-                                                            <p className="text-[11px] text-neutral-400 font-medium tracking-wide">
-                                                                {orderDate.toLocaleString("en-IN", {
-                                                                    day: "numeric",
-                                                                    month: "short",
-                                                                    year: "numeric",
-                                                                    hour: "2-digit",
-                                                                    minute: "2-digit",
-                                                                })}
-                                                            </p>
-                                                        </div>
+                                                            <div className="flex flex-col gap-1">
+                                                                <p className="text-4xl font-serif font-bold text-charcoal tracking-tight">₹{order.total}</p>
+                                                                <p className="text-[11px] text-neutral-400 font-medium tracking-wide">
+                                                                    {orderDate.toLocaleString("en-IN", {
+                                                                        day: "numeric",
+                                                                        month: "short",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    })}
+                                                                </p>
+                                                            </div>
                                                         </div>
 
                                                         <div className="flex flex-wrap items-center gap-4">
