@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { db } from '@/lib/firebase';
-import type { Product, Category } from '@/lib/firebase';
+import type { Product, Category } from '@/lib/types';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 async function getFeaturedProducts() {
@@ -118,7 +118,7 @@ export default async function Home() {
               </p>
             </div>
             <Link href="/products" className="group flex items-center gap-3 text-xs font-black uppercase tracking-widest text-blush hover:text-charcoal transition-colors">
-                View Collections <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform" />
+              View Collections <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform" />
             </Link>
           </div>
 
@@ -168,7 +168,7 @@ export default async function Home() {
                 Discover the pieces our community is currently obsessed with.
               </p>
             </div>
-            
+
             <Link
               href="/products"
               className="inline-flex items-center space-x-3 bg-blush text-white px-10 py-4 rounded-2xl hover:bg-[#f48c82] transition-all duration-500 font-bold text-xs uppercase tracking-widest shadow-xl shadow-blush/20 active:scale-95"
