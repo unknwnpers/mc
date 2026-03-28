@@ -86,20 +86,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// 🔥 HARD FAIL if config missing
-if (
-  !firebaseConfig.apiKey ||
-  !firebaseConfig.authDomain ||
-  !firebaseConfig.projectId ||
-  !firebaseConfig.appId
-) {
-  throw new Error("🔥 Firebase ENV variables are missing");
+// 🔥 SAFE INIT for Build Phase
+// We only initialize if apiKey is present to prevent crashes during 'next build'
+const isConfigValid = !!firebaseConfig.apiKey;
+
+if (!isConfigValid) {
+  console.warn("⚠️ Firebase credentials missing. Standard queries will fail at runtime.");
 }
 
-// ✅ SAFE INIT (no nulls EVER)
-const app = getApps().length === 0
-  ? initializeApp(firebaseConfig)
-  : getApp();
+const app = isConfigValid 
+  ? (getApps().length === 0 ? initializeApp(firebaseConfig) : getApp())
+  : null;
 
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+export const db = app ? getFirestore(app) : null as any;
+export const auth = app ? getAuth(app) : null as any;
