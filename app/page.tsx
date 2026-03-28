@@ -8,6 +8,7 @@ import type { Product, Category } from '@/lib/firebase';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 async function getFeaturedProducts() {
+  if (!db) return [];
   try {
     const q = query(
       collection(db, 'products'),
@@ -23,6 +24,7 @@ async function getFeaturedProducts() {
 }
 
 async function getCategories() {
+  if (!db) return [];
   try {
     const q = query(
       collection(db, 'categories'),

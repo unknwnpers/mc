@@ -55,13 +55,25 @@ const firebaseConfig = {
 console.log('Firebase Project:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
 
 // Prevent re-initialization (Next.js hot reload safe)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+let app;
+let db: any = null;
+let auth: any = null;
 
-// Firestore
-export const db = getFirestore(app);
+const isConfigValid = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-// Auth
-export const auth = getAuth(app);
+if (isConfigValid) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+  }
+} else {
+  console.warn("Firebase configuration is missing. Operating in limited/build mode.");
+}
+
+export { db, auth };
 
 // ✅ CLEAN Product type (matches Firestore)
 export interface Product {
