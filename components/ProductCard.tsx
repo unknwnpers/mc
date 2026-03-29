@@ -19,6 +19,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
+  
+  const SIZE_REQUIRED_CATEGORIES = ["baby", "kids", "maternity", "feeding"];
 
   const displayImage = product.image_url || product.image || '/placeholder.jpg';
 
@@ -26,7 +28,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     if (!user) {
       toast.info("Please login to add items to cart");
-      router.push("/login");
+      router.push(`/login?redirect=/products/${product.id}`);
+      return;
+    }
+
+    // Check if size is required
+    if (SIZE_REQUIRED_CATEGORIES.includes(product.category_slug || "")) {
+      toast.info("Please select a size first");
+      router.push(`/products/${product.id}`);
       return;
     }
     

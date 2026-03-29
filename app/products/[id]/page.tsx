@@ -269,7 +269,7 @@ export default function ProductDetailsPage() {
                         if (product) {
                             if (!user) {
                                 toast.info("Please login to add items to cart");
-                                router.push("/login");
+                                router.push(`/login?redirect=/products/${id}`);
                                 return;
                             }
 
@@ -285,14 +285,20 @@ export default function ProductDetailsPage() {
                                 price: product.price,
                                 image: product.image_url || product.image || '/placeholder.jpg',
                                 quantity: 1,
-                                selectedSize: selectedSize || undefined
+                                selectedSize: selectedSize as string
                             });
                         }
                     }}
-                    className="flex-1 bg-blush text-white px-8 py-5 rounded-2xl hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/20 font-bold text-lg active:scale-95 flex items-center justify-center gap-4 group"
+                    disabled={!selectedSize}
+                    className={cn(
+                        "flex-1 px-8 py-5 rounded-2xl transition-all shadow-2xl font-bold text-lg active:scale-95 flex items-center justify-center gap-4 group",
+                        !selectedSize 
+                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
+                            : "bg-blush text-white hover:bg-[#f48c82] shadow-blush/20"
+                    )}
                 >
-                    <ShoppingCart className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                    Add to Cart
+                    <ShoppingCart className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+                    {!selectedSize ? "Select Size to Add" : "Add to Cart"}
                 </button>
                 <button 
                   onClick={toggleFavorite}

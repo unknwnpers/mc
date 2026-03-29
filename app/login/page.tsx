@@ -1,23 +1,26 @@
 "use client";
 
 import { loginWithGoogle } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Link from "next/link";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
       await loginWithGoogle();
       toast.success("Welcome to MIKS&CHIKS!");
-      router.push("/");
+      router.push(redirectPath);
     } catch (err: any) {
       toast.error(err.message || "Google login failed");
     } finally {
@@ -81,10 +84,10 @@ export default function LoginPage() {
             </button>
 
             <div className="mt-12 pt-10 border-t border-[#F3E8E5]">
-               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] leading-relaxed">
-                  Fast, Secure & Passwordless.<br/>
-                  By continuing, you agree to our <span className="text-blush hover:underline cursor-pointer">Terms & Conditions</span>.
-               </p>
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] leading-relaxed">
+                   Fast, Secure & Passwordless.<br/>
+                   By continuing, you agree to our <Link href="/terms" className="text-blush hover:underline cursor-pointer">Terms & Conditions</Link>.
+                </p>
             </div>
           </div>
         </div>
@@ -92,5 +95,17 @@ export default function LoginPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white font-serif italic text-2xl text-blush">
+            Loading your experience...
+        </div>
+    }>
+        <LoginContent />
+    </Suspense>
   );
 }

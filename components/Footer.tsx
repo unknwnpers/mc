@@ -69,7 +69,7 @@ export default function Footer() {
               <li className="flex items-start space-x-3 group">
                 <Phone className="h-5 w-5 text-blush mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="text-neutral-500 text-sm font-medium">
-                  +91 9XXXXXXXXX
+                  +91 97463 56346
                 </span>
               </li>
               <li className="flex items-start space-x-3 group">
@@ -97,7 +97,7 @@ export default function Footer() {
               <li className="flex items-start space-x-3 group">
                 <Clock className="h-5 w-5 text-blush mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="text-neutral-500 text-sm font-medium">
-                  Mon - Sat: 10 AM - 7 PM
+                  Mon - Sat: 10:00 AM - 7:00 PM
                 </span>
               </li>
             </ul>

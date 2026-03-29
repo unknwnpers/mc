@@ -29,5 +29,29 @@ export interface UserProfile {
     email: string | null;
     address?: string;
     phone?: string;
+    city?: string;
+    pincode?: string;
     updated_at: any;
+}
+
+export interface Order {
+    id: string;
+    userId: string;
+    items: any[];
+    total: number;
+    status: string;
+    recipient: {
+        name: string;
+        phone: string;
+    };
+    shipping: {
+        address: string;
+        city: string;
+        pincode: string;
+    };
+    reservationIds: string[];
+    razorpayOrderId: string;
+    razorpayPaymentId?: string;
+    createdAt: any;
+    updatedAt: any;
 }

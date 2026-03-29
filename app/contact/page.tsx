@@ -113,7 +113,7 @@ export default function ContactPage() {
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-2">Boutique Hours</p>
                       <p className="text-charcoal font-medium font-sans text-lg">
                         Monday – Saturday<br />
-                        10:00 AM – 7:30 PM
+                        10:00 AM – 7:00 PM
                       </p>
                     </div>
                   </div>

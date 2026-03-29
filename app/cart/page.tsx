@@ -189,13 +189,13 @@ export default function CartPage() {
                                 onClick={async () => {
                                     if (!user) {
                                         toast.info("Please login to checkout");
-                                        router.push("/login");
+                                        router.push("/login?redirect=/cart");
                                         return;
                                     }
 
                                     if (!profile?.address || !profile?.phone) {
                                         toast.warning("Please complete your delivery profile first");
-                                        router.push("/profile");
+                                        router.push("/profile?redirect=/cart");
                                         return;
                                     }
 
@@ -209,7 +209,13 @@ export default function CartPage() {
                                         });
 
                                         const data = await res.json();
-                                        if (!res.ok) throw new Error(data.error || "Order creation failed");
+                                        if (!res.ok) {
+                                            if (data.type === "INVENTORY_ERROR") {
+                                                toast.error(data.error || "Some items are no longer available.");
+                                                return;
+                                            }
+                                            throw new Error(data.error || "Order creation failed");
+                                        }
 
                                         // 2. Handle Bypass/Mock Mode
                                         if (data.isMock) {

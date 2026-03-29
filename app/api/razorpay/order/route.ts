@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { reserveStock } from "@/lib/inventory";
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,18 @@ export async function POST(req: Request) {
       calculatedTotal += price * item.quantity;
     }
 
-    // 2. Create Razorpay Order or Bypass
+    // 2. Atomic Stock Reservation
+    let reservationIds: string[] = [];
+    try {
+      reservationIds = await reserveStock(cart, userId);
+    } catch (error: any) {
+      return NextResponse.json({ 
+        error: error.message || "Stock reservation failed",
+        type: "INVENTORY_ERROR"
+      }, { status: 409 }); // Conflict
+    }
+
+    // 3. Create Razorpay Order or Bypass
     const razorpay = getRazorpayClient();
     let orderId = "";
     let isMock = false;
@@ -46,11 +58,18 @@ export async function POST(req: Request) {
       userId,
       items: cart,
       total: calculatedTotal,
-      status: isMock ? "processing" : "pending_payment", // "processing" means paid/ready to fulfill
+      status: isMock ? "processing" : "pending_payment",
       razorpayOrderId: orderId,
-      shippingAddress: profile.address,
-      phoneNumber: profile.phone,
-      customerName: profile.name,
+      recipient: {
+        name: profile.name,
+        phone: profile.phone,
+      },
+      shipping: {
+        address: profile.address,
+        city: profile.city || "",
+        pincode: profile.pincode || "",
+      },
+      reservationIds,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -62,6 +81,7 @@ export async function POST(req: Request) {
       amount: calculatedTotal * 100,
       currency: "INR",
       firestoreOrderId: docRef.id,
+      reservationIds,
       isMock
     });
 

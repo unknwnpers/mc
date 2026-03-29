@@ -226,7 +226,9 @@ export default function OrderDetailPage() {
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Name</p>
-                                            <p className="font-serif font-bold text-lg text-charcoal">{order.userName}</p>
+                                            <p className="font-serif font-bold text-lg text-charcoal">
+                                                {order.recipient?.name || order.customerName || order.userName || "N/A"}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-5">
@@ -235,7 +237,9 @@ export default function OrderDetailPage() {
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Phone</p>
-                                            <p className="font-serif font-bold text-lg text-charcoal">{order.phone}</p>
+                                            <p className="font-serif font-bold text-lg text-charcoal">
+                                                {order.recipient?.phone || order.phoneNumber || order.phone || "N/A"}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -252,7 +256,11 @@ export default function OrderDetailPage() {
                                     </div>
                                     <div className="pt-1">
                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Delivery Address</p>
-                                        <p className="font-sans font-medium text-charcoal/80 leading-relaxed text-sm">{order.address}</p>
+                                        <p className="font-sans font-medium text-charcoal/80 leading-relaxed text-sm">
+                                            {order.shipping?.address || order.shippingAddress || order.address}
+                                            {order.shipping?.city && `, ${order.shipping.city}`}
+                                            {order.shipping?.pincode && ` - ${order.shipping.pincode}`}
+                                        </p>
                                     </div>
                                 </div>
                              </div>

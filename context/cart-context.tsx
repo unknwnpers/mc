@@ -46,92 +46,98 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
+    const [cart, setCart] = useState<CartItem[]>([]);
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchCart();
-    } else {
-      setCart([]);
-    }
-  }, [user]);
+    useEffect(() => {
+        if (user) {
+            fetchCart();
+        } else {
+            setCart([]);
+        }
+    }, [user]);
 
-  const fetchCart = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const snapshot = await getDocs(
-        collection(db, "users", user.uid, "cart")
-      );
+    const fetchCart = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const snapshot = await getDocs(
+                collection(db, "users", user.uid, "cart")
+            );
 
-      setCart(
-        snapshot.docs.map((docSnap) => ({
-          ...docSnap.data(),
-        })) as CartItem[]
-      );
-    } catch (err) {
-      console.error("Error fetching cart:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+            setCart(
+                snapshot.docs.map((docSnap) => ({
+                    ...docSnap.data(),
+                })) as CartItem[]
+            );
+        } catch (err) {
+            console.error("Error fetching cart:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const addToCart = async (item: CartItem) => {
-    if (!user) {
-      toast.info("Please login first to add items to your cart");
-      return;
-    }
-    
-    try {
-      // 1. Fetch latest stock
-      const productSnap = await getDoc(doc(db, "products", item.id));
-      if (!productSnap.exists()) {
-          toast.error("Product no longer available");
-          return;
-      }
-      const productData = productSnap.data();
-      const currentStock = productData.stock || 0;
-
-      if (currentStock <= 0) {
-          toast.error("Out of stock");
-          return;
-      }
-
-      const cartRef = collection(db, "users", user.uid, "cart");
-      const q = query(
-        cartRef, 
-        where("id", "==", item.id),
-        where("selectedSize", "==", item.selectedSize || null)
-      );
-      const snapshot = await getDocs(q);
-
-      if (!snapshot.empty) {
-        const docSnap = snapshot.docs[0];
-        const newQty = docSnap.data().quantity + 1;
-
-        if (newQty > currentStock) {
-            toast.error(`Only ${currentStock} items in stock`);
+    const addToCart = async (item: CartItem) => {
+        if (!user) {
+            toast.info("Please login first to add items to your cart");
             return;
         }
 
-        await updateDoc(
-          doc(db, "users", user.uid, "cart", docSnap.id),
-          {
-            quantity: newQty,
-          }
-        );
-      } else {
-        await addDoc(cartRef, { ...item, stock: currentStock });
-      }
+        try {
+            // 1. Strict Size Validation
+            if (!item.selectedSize) {
+                toast.error("Please select a size first");
+                return;
+            }
 
-      toast.success(`${item.name} added to cart!`);
-      await fetchCart();
-    } catch (err) {
-      toast.error("Failed to add to cart");
-    }
-  };
+            // 2. Fetch latest stock
+            const productSnap = await getDoc(doc(db, "products", item.id));
+            if (!productSnap.exists()) {
+                toast.error("Product no longer available");
+                return;
+            }
+            const productData = productSnap.data();
+            const currentStock = productData.stock || 0;
+
+            if (currentStock <= 0) {
+                toast.error("Out of stock");
+                return;
+            }
+
+            const cartRef = collection(db, "users", user.uid, "cart");
+            const q = query(
+                cartRef,
+                where("id", "==", item.id),
+                where("selectedSize", "==", item.selectedSize)
+            );
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                const docSnap = snapshot.docs[0];
+                const newQty = docSnap.data().quantity + 1;
+
+                if (newQty > currentStock) {
+                    toast.error(`Only ${currentStock} items in stock`);
+                    return;
+                }
+
+                await updateDoc(
+                    doc(db, "users", user.uid, "cart", docSnap.id),
+                    {
+                        quantity: newQty,
+                    }
+                );
+            } else {
+                await addDoc(cartRef, { ...item, stock: currentStock });
+            }
+
+            toast.success(`${item.name} (Size: ${item.selectedSize}) added to cart!`);
+            await fetchCart();
+        } catch (err) {
+            toast.error("Failed to add to cart");
+        }
+    };
 
   const removeFromCart = async (id: string, selectedSize?: string) => {
     if (!user) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile, Product } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
@@ -10,12 +10,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { User, Mail, MapPin, Phone, Save, ArrowLeft, Loader2, Heart, Trash2, ExternalLink, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { user, profile, updateProfile, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect");
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -80,8 +82,11 @@ export default function ProfilePage() {
 
     setIsSaving(true);
     try {
-      await updateProfile({ name, address, phone });
+      await updateProfile({ name: name.trim(), address: address.trim(), phone: phone.trim() });
       toast.success("Profile updated successfully");
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
     } catch (err) {
       toast.error("Failed to update profile. Please check your connection.");
     } finally {
@@ -104,175 +109,163 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <main className="pt-32 pb-24">
-        <div className="max-w-7xl mx-auto px-6 md:px-10">
-          <div className="max-w-2xl mx-auto">
-            {/* BREADCRUMB */}
-            <Link 
-              href="/cart" 
-              className="inline-flex items-center gap-2 text-neutral-400 hover:text-blush transition-colors mb-8 font-bold group text-[11px] uppercase tracking-widest"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Cart
-            </Link>
-
-            <div className="bg-white rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-blush/5 overflow-hidden">
-              {/* HEADER */}
-              <div className="bg-cream/50 p-10 border-b border-[#F3E8E5] relative">
-                  <div className="absolute top-0 right-0 p-10 opacity-5">
-                    <User className="w-40 h-40 text-blush" />
-                  </div>
-                  
-                  <div className="relative flex items-center gap-8">
-                    <div className="h-20 w-20 bg-white rounded-[32px] flex items-center justify-center shadow-lg border border-[#F3E8E5]">
-                        <User className="w-10 h-10 text-blush" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-serif font-bold text-charcoal tracking-tight">Your Profile</h1>
-                        <p className="text-neutral-500 font-sans mt-1">Manage your shipping and contact details</p>
-                    </div>
-                  </div>
+      <main className="max-w-7xl mx-auto px-6 md:px-10 py-32">
+        <div className="flex flex-col lg:flex-row gap-16">
+          {/* LEFT: PROFILE INFO */}
+          <div className="lg:w-1/3">
+            <div className="bg-white p-10 rounded-[48px] border border-[#F3E8E5] shadow-2xl shadow-blush/5 sticky top-32">
+              <div className="flex items-center gap-6 mb-12">
+                <div className="h-20 w-20 bg-cream rounded-3xl flex items-center justify-center text-blush shadow-inner border border-blush/5">
+                  <User className="w-10 h-10" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-serif font-bold text-charcoal">My <span className="text-blush italic">Profile</span></h1>
+                  <p className="text-neutral-400 font-medium text-xs mt-1">Manage your account & delivery</p>
+                </div>
               </div>
 
-              {/* FORM */}
-              <div className="p-10 space-y-10">
-                  <div className="space-y-6">
-                    <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400 mb-6">Account Basics</h2>
-                    
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">Display Name</label>
-                      <div className="relative group">
-                        <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blush transition-colors" />
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="Enter your name"
-                          className="w-full bg-cream/10 border border-[#F3E8E5] px-14 py-4 rounded-2xl focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans text-charcoal"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">Email Address</label>
-                      <div className="relative opacity-60">
-                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="email"
-                          value={user.email || ""}
-                          disabled
-                          className="w-full bg-neutral-50 border border-neutral-100 px-14 py-4 rounded-2xl font-sans text-neutral-500 cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
+                  <div className="relative group">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                    <input 
+                      type="text" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-14 pr-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                      placeholder="Enter your name"
+                    />
                   </div>
+                </div>
 
-                  <div className="h-px bg-[#F3E8E5]" />
-
-                  <div className="space-y-6">
-                    <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400 mb-6">Shipping & Contact</h2>
-                    
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">Contact Number</label>
-                      <div className="relative group">
-                        <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blush transition-colors" />
-                        <input
-                          type="text"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          placeholder="10-digit mobile number"
-                          className="w-full bg-cream/10 border border-[#F3E8E5] px-14 py-4 rounded-2xl focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans text-charcoal"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">Shipping Address</label>
-                      <div className="relative group">
-                        <MapPin className="absolute left-5 top-6 w-4 h-4 text-gray-400 group-focus-within:text-blush transition-colors" />
-                        <textarea
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          placeholder="House No, Building, Area, Street, Landmark..."
-                          className="w-full bg-cream/10 border border-[#F3E8E5] pl-14 pr-6 py-5 rounded-2xl focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans min-h-[140px] text-charcoal leading-relaxed"
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Email</label>
+                  <div className="relative opacity-50">
+                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-300" />
+                    <input 
+                      type="email" 
+                      value={user.email || ""}
+                      disabled
+                      className="w-full pl-14 pr-6 py-5 bg-neutral-50 border-none rounded-3xl font-medium text-charcoal"
+                    />
                   </div>
+                </div>
 
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="w-full bg-blush text-white py-5 rounded-3xl font-bold text-lg hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-70 transform hover:-translate-y-1"
-                  >
-                    {isSaving ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Save className="w-6 h-6" />
-                    )}
-                    {isSaving ? "Saving Changes..." : "Save Profile Details"}
-                  </button>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Delivery Address</label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-5 top-5 w-5 h-5 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                    <textarea 
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="w-full pl-14 pr-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300 min-h-[140px] resize-none"
+                      placeholder="Detailed shipping address"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Phone Number</label>
+                  <div className="relative group">
+                    <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                    <input 
+                      type="tel" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full pl-14 pr-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                      placeholder="10-digit number"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full bg-blush text-white py-6 rounded-3xl font-bold text-lg hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 mt-4 group"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
               </div>
             </div>
+          </div>
 
-            {/* SAVED ITEMS SECTION */}
-            <div className="mt-16 mb-8">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="h-10 w-10 bg-cream rounded-2xl flex items-center justify-center text-blush border border-blush/10">
-                    <Heart className="w-5 h-5 fill-current" />
-                </div>
-                <h2 className="text-3xl font-serif font-bold text-charcoal tracking-tight">Saved <span className="text-blush italic">Items</span></h2>
+          {/* RIGHT: SAVED ITEMS / FAVORITES */}
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-10 px-4">
+               <div>
+                  <h2 className="text-3xl font-serif font-bold text-charcoal tracking-tight">Saved <span className="text-blush italic">Items</span></h2>
+                  <p className="text-neutral-400 font-medium text-xs mt-1">Products you loved the most</p>
+               </div>
+               <div className="h-10 w-10 rounded-full bg-cream flex items-center justify-center text-blush font-bold text-xs ring-4 ring-white">
+                  {favorites.length}
+               </div>
+            </div>
+
+            {favLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                 {[1,2,3,4].map(i => <Skeleton key={i} className="aspect-[4/5] rounded-[48px]" />)}
               </div>
+            ) : favorites.length === 0 ? (
+               <div className="bg-cream/20 border-2 border-dashed border-[#F3E8E5] rounded-[48px] p-20 text-center">
+                  <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
+                    <Heart className="w-10 h-10 text-neutral-200" />
+                  </div>
+                  <h3 className="text-xl font-bold text-charcoal mb-4">No Favorites Yet</h3>
+                  <p className="text-neutral-400 max-w-xs mx-auto mb-10 leading-relaxed font-sans">Start hearting products you love to build your personal wishlist here.</p>
+                  <Link href="/products" className="inline-flex items-center gap-3 bg-white text-charcoal border border-neutral-100 px-8 py-4 rounded-2xl font-bold hover:border-blush hover:text-blush transition-all shadow-sm active:scale-95">
+                    Explore Collection
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </Link>
+               </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {favorites.map((fav) => (
+                  <div key={fav.id} className="group bg-white rounded-[48px] overflow-hidden border border-[#F3E8E5] hover:shadow-2xl hover:shadow-blush/5 transition-all duration-700 flex flex-col h-full relative">
+                    <Link href={`/products/${fav.productId || fav.id}`} className="relative aspect-[4/5] block overflow-hidden">
+                       <img 
+                        src={fav.image} 
+                        alt={fav.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    </Link>
+                    
+                    <button 
+                      onClick={() => removeFavorite(fav.productId || fav.id)}
+                      className="absolute top-6 right-6 p-4 bg-white/90 backdrop-blur-md rounded-2xl text-rose-400 hover:text-white hover:bg-rose-400 transition-all shadow-xl shadow-rose-900/10 hover:scale-110 active:scale-90 z-20"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
 
-              {favLoading ? (
-                <div className="grid grid-cols-2 gap-6">
-                  {[1,2].map(i => <Skeleton key={i} className="h-64 w-full rounded-[32px]" />)}
-                </div>
-              ) : favorites.length === 0 ? (
-                <div className="bg-cream/20 rounded-[40px] p-12 text-center border border-dashed border-blush/20">
-                  <ShoppingBag className="w-12 h-12 text-blush/20 mx-auto mb-6" />
-                  <p className="text-neutral-500 font-sans font-medium">Your wishlist is waiting to be filled.</p>
-                  <Link href="/products" className="inline-block mt-6 text-xs font-bold text-blush uppercase tracking-widest hover:underline">Explore Products</Link>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-6">
-                  {favorites.map((item) => (
-                    <div key={item.productId} className="group relative bg-white rounded-[32px] border border-[#F3E8E5] overflow-hidden shadow-sm hover:shadow-xl hover:shadow-blush/5 transition-all duration-500">
-                      <div className="aspect-[4/5] relative overflow-hidden">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <button 
-                          onClick={() => removeFavorite(item.productId)}
-                          className="absolute top-4 right-4 p-3 bg-white/90 backdrop-blur-md rounded-xl text-neutral-400 hover:text-red-500 transition-colors shadow-lg active:scale-90"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    <div className="p-8 flex flex-col flex-1">
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                        <Link href={`/products/${fav.productId || fav.id}`} className="hover:text-blush transition-colors flex-1">
+                          <h3 className="text-xl font-bold text-charcoal line-clamp-1">{fav.name}</h3>
+                        </Link>
+                        <span className="text-xl font-serif font-bold text-blush">₹{fav.price}</span>
                       </div>
                       
-                      <div className="p-5">
-                        <h3 className="font-serif font-bold text-lg text-charcoal mb-1 truncate">{item.name}</h3>
-                        <div className="flex items-center justify-between">
-                            <p className="text-blush font-bold text-lg">₹{item.price}</p>
-                            <Link 
-                              href={`/products/${item.productId}`}
-                              className="p-2 text-neutral-300 hover:text-blush transition-colors"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Link>
-                        </div>
-                      </div>
+                      <Link 
+                        href={`/products/${fav.productId || fav.id}`}
+                        className="mt-auto w-full py-5 border border-charcoal/5 rounded-3xl flex items-center justify-center gap-3 font-bold text-xs uppercase tracking-widest text-charcoal hover:bg-neutral-50 transition-all group/btn"
+                      >
+                        <ShoppingBag className="w-4 h-4 group-hover/btn:-translate-y-0.5 transition-transform" />
+                        View Product
+                        <ExternalLink className="w-4 h-4 text-neutral-300" />
+                      </Link>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <p className="text-center mt-12 text-neutral-400 text-[10px] uppercase tracking-widest font-bold">
-              Your data is encrypted and used only for fulfilling your orders.
-            </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -280,4 +273,16 @@ export default function ProfilePage() {
       <Footer />
     </div>
   );
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-white font-serif italic text-2xl text-blush">
+                Loading your profile...
+            </div>
+        }>
+            <ProfileContent />
+        </Suspense>
+    );
 }
