@@ -5,15 +5,53 @@ import {
   updateDoc, 
   serverTimestamp,
   collection,
-  addDoc
+  addDoc,
+  query,
+  where,
+  getDocs,
+  limit
 } from "firebase/firestore";
+import { auditLog } from "./logger";
 
 /**
  * Reservatonal Stock Control
  * Prevents overselling by locking stock during checkout.
  */
 
+
+/**
+ * Lazy Cleanup: Release expired active reservations
+ */
+export const cleanupExpiredReservations = async () => {
+  try {
+    const expiredQuery = query(
+      collection(db, "reservations"),
+      where("status", "==", "active"),
+      where("expiresAt", "<", Date.now()),
+      limit(20) // Process in small batches
+    );
+    
+    const snapshot = await getDocs(expiredQuery);
+    if (snapshot.empty) return;
+
+    const ids = snapshot.docs.map(doc => doc.id);
+    await releaseReservations(ids);
+    
+    await auditLog("INFO", {
+      event: "STALE_RESERVATIONS_CLEANUP",
+      details: { count: ids.length }
+    });
+  } catch (err) {
+    console.error("Cleanup error:", err);
+  }
+};
+
 export const reserveStock = async (items: any[], userId: string) => {
+  // Trigger lazy cleanup occasionally
+  if (Math.random() < 0.2) { // 20% chance on every reserve
+     cleanupExpiredReservations();
+  }
+
   return await runTransaction(db, async (transaction) => {
     const reservations: string[] = [];
 

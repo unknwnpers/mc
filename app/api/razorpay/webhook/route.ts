@@ -11,6 +11,7 @@ import {
   serverTimestamp 
 } from "firebase/firestore";
 import { confirmReservations, releaseReservations } from "@/lib/inventory";
+import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
@@ -25,12 +26,21 @@ export async function POST(req: Request) {
       .digest("hex");
 
     if (signature !== expectedSignature) {
+      await auditLog("SECURITY", {
+        event: "INVALID_WEBHOOK_SIGNATURE",
+        details: { signature, expectedSignature }
+      });
       console.error("Invalid Webhook Signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
     const payload = JSON.parse(rawBody);
     const event = payload.event;
+
+    await auditLog("INFO", {
+      event: "WEBHOOK_RECEIVED",
+      details: { event, orderId: payload.payload?.order?.entity?.id || payload.payload?.payment?.entity?.order_id }
+    });
 
     // 2. Handle order.paid
     if (event === "order.paid") {
@@ -51,6 +61,12 @@ export async function POST(req: Request) {
       const orderData = orderDoc.data();
 
       if (orderData.status === "paid") {
+        await auditLog("INFO", {
+          event: "WEBHOOK_IDEMPOTENCY_HIT",
+          orderId: firestoreOrderId,
+          paymentId: razorpayPaymentId,
+          details: "Order already marked as paid, skipping webhook logic"
+        });
         return NextResponse.json({ message: "Order already processed" });
       }
 
@@ -65,6 +81,11 @@ export async function POST(req: Request) {
         updatedAt: serverTimestamp(),
       });
 
+      await auditLog("INFO", {
+        event: "WEBHOOK_ORDER_PAID",
+        orderId: firestoreOrderId,
+        paymentId: razorpayPaymentId
+      });
       console.log("Order paid and processed:", firestoreOrderId);
       return NextResponse.json({ status: "ok" });
     }
@@ -87,6 +108,11 @@ export async function POST(req: Request) {
             await updateDoc(doc(db, "orders", orderDoc.id), {
                 status: "failed",
                 updatedAt: serverTimestamp(),
+            });
+            await auditLog("WARN", {
+                event: "WEBHOOK_PAYMENT_FAILED",
+                orderId: orderDoc.id,
+                details: "Payment failed, reservations released"
             });
             console.log("Payment failed, reservations released:", orderDoc.id);
         }

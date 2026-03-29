@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { reserveStock } from "@/lib/inventory";
+import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +11,39 @@ export async function POST(req: Request) {
 
     if (!cart || !userId || !profile) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // 0. Stateful Rate Limiting (Bot Protection)
+    // Avoid "Pending Order Spam" - limit to 3 pending orders in 15 mins
+    try {
+        const staleTime = new Date(Date.now() - 15 * 60 * 1000);
+        const spamQuery = query(
+            collection(db, "orders"),
+            where("userId", "==", userId),
+            where("status", "==", "pending_payment"),
+            where("createdAt", ">", staleTime)
+        );
+        const spamSnapshot = await getDocs(spamQuery);
+        
+        if (spamSnapshot.size >= 3) {
+            await auditLog("WARN", {
+                event: "RATE_LIMIT_EXEEDED",
+                userId,
+                details: "Too many pending orders in a short time"
+            });
+            return NextResponse.json({ 
+                error: "Too many pending orders. Please complete your current order first.",
+                type: "RATE_LIMIT_ERROR"
+            }, { status: 429 });
+        }
+    } catch (qErr: any) {
+        // FAIL-OPEN: If query fails (likely missing index), log it but let the customer buy!
+        console.error("Rate-limit query failed (Check Firestore Indexes):", qErr.message);
+        await auditLog("WARN", {
+            event: "RATE_LIMIT_QUERY_FAILED",
+            error: qErr.message,
+            details: "Checkout allowed to proceed (Fail-Open mode)"
+        });
     }
 
     // 1. Server-side Amount Validation (Prevent Manipulation)
