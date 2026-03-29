@@ -10,7 +10,6 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import Script from "next/script";
 import { User, MapPin, Phone, Info, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -25,6 +24,18 @@ export default function CartPage() {
         (sum, item) => sum + item.price * item.quantity,
         0
     );
+
+    useEffect(() => {
+        // One-time script loading for optimized performance
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.body.appendChild(script);
+        
+        return () => {
+            // Cleanup NOT recommended here because checkout should persist
+        };
+    }, []);
 
     if (loading) {
         return (
@@ -234,10 +245,28 @@ export default function CartPage() {
                                             description: "Premium Maternity & Kids Wear",
                                             order_id: data.orderId,
                                             handler: async function (response: any) {
-                                                toast.success("Payment successful! Processing order...");
-                                                // Redirect to orders - webhook will handle stock/status updates
-                                                router.push("/orders");
-                                                clearCart();
+                                                setIsCheckingOut(true);
+                                                try {
+                                                    const verifyRes = await fetch("/api/razorpay/verify", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify(response),
+                                                    });
+
+                                                    const verifyData = await verifyRes.json();
+                                                    if (verifyData.success) {
+                                                        toast.success("Payment verified! Your order is confirmed.");
+                                                        clearCart();
+                                                        router.push(`/orders/${verifyData.firestoreOrderId}`);
+                                                    } else {
+                                                        throw new Error(verifyData.error || "Payment verification failed");
+                                                    }
+                                                } catch (vErr: any) {
+                                                    console.error("Verification Error:", vErr);
+                                                    toast.error(vErr.message || "Failed to verify payment");
+                                                } finally {
+                                                    setIsCheckingOut(false);
+                                                }
                                             },
                                             prefill: {
                                                 name: profile.name,
@@ -249,11 +278,29 @@ export default function CartPage() {
                                             },
                                         };
 
-                                        const rzp = new (window as any).Razorpay(options);
-                                        rzp.on('payment.failed', function (response: any) {
-                                            toast.error("Payment failed. Please try again.");
-                                        });
-                                        rzp.open();
+                                            const rzp = new (window as any).Razorpay(options);
+                                            
+                                            // 4. Bulletproof Failure/Abandonment Recovery
+                                            rzp.on('payment.failed', async function (response: any) {
+                                                console.error("Payment failure:", response.error);
+                                                setIsCheckingOut(true);
+                                                try {
+                                                    // Immediately release stock if payment fails
+                                                    await fetch("/api/razorpay/cancel", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ 
+                                                            reservationIds: data.reservationIds,
+                                                            razorpayOrderId: data.orderId 
+                                                        }),
+                                                    });
+                                                    toast.error("Payment failed. Inventory has been released.");
+                                                } finally {
+                                                    setIsCheckingOut(false);
+                                                }
+                                            });
+                                            
+                                            rzp.open();
 
                                     } catch (err: any) {
                                         console.error("Checkout Error:", err);
@@ -284,7 +331,7 @@ export default function CartPage() {
             </div>
 
             <Footer />
-            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
         </div>
     );
 }

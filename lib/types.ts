@@ -52,6 +52,7 @@ export interface Order {
     reservationIds: string[];
     razorpayOrderId: string;
     razorpayPaymentId?: string;
+    razorpaySignature?: string;
     createdAt: any;
     updatedAt: any;
 }
