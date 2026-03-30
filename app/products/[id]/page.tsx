@@ -67,7 +67,9 @@ export default function ProductDetailsPage() {
           ...docSnap.data(),
         } as Product;
         setProduct(data);
-        fetchRelated(data.category_slug, docSnap.id);
+        if (data.category_slug) {
+          fetchRelated(data.category_slug, docSnap.id);
+        }
       } else {
         console.log('Product not found');
       }
@@ -96,7 +98,7 @@ export default function ProductDetailsPage() {
                 productId: id,
                 name: product!.name,
                 price: product!.price,
-                image: product!.image_url || product!.image || '/placeholder.jpg',
+                image: product!.image_url || (product as any).image || '/placeholder.jpg',
                 createdAt: new Date(),
             });
             setIsFav(true);
@@ -187,7 +189,7 @@ export default function ProductDetailsPage() {
           <div className="relative aspect-square rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10">
             {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
             <img
-              src={product.image_url || product.image || '/placeholder.jpg'}
+              src={product.image_url || (product as any).image || '/placeholder.jpg'}
               alt={product.name}
               onLoad={() => setImgLoading(false)}
               className={cn(
@@ -231,7 +233,7 @@ export default function ProductDetailsPage() {
 
             {/* SIZE SELECTION */}
             {(() => {
-                const sizes = SIZE_MAP[product.category_slug] || [];
+                const sizes = product.category_slug ? SIZE_MAP[product.category_slug] || [] : [];
                 if (sizes.length === 0) return null;
 
                 return (
@@ -273,8 +275,9 @@ export default function ProductDetailsPage() {
                                 return;
                             }
 
-                            const sizes = SIZE_MAP[product.category_slug] || [];
-                            if (sizes.length > 0 && !selectedSize) {
+                            const sizes = product.category_slug ? SIZE_MAP[product.category_slug] || [] : [];
+                            const requiresSize = sizes.length > 0;
+                            if (requiresSize && !selectedSize) {
                                 toast.error("Please select a size first");
                                 return;
                             }
@@ -283,22 +286,22 @@ export default function ProductDetailsPage() {
                                 id: product.id,
                                 name: product.name,
                                 price: product.price,
-                                image: product.image_url || product.image || '/placeholder.jpg',
+                                image: product.image_url || (product as any).image || '/placeholder.jpg',
                                 quantity: 1,
                                 selectedSize: selectedSize as string
                             });
                         }
                     }}
-                    disabled={!selectedSize}
+                    disabled={product.category_slug ? (SIZE_MAP[product.category_slug] || []).length > 0 && !selectedSize : false}
                     className={cn(
                         "flex-1 px-8 py-5 rounded-2xl transition-all shadow-2xl font-bold text-lg active:scale-95 flex items-center justify-center gap-4 group",
-                        !selectedSize 
+                        (product.category_slug && (SIZE_MAP[product.category_slug] || []).length > 0 && !selectedSize) 
                             ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
                             : "bg-blush text-white hover:bg-[#f48c82] shadow-blush/20"
                     )}
                 >
                     <ShoppingCart className="w-6 h-6 transition-transform group-hover:translate-x-1" />
-                    {!selectedSize ? "Select Size to Add" : "Add to Cart"}
+                    {(product.category_slug && (SIZE_MAP[product.category_slug] || []).length > 0 && !selectedSize) ? "Select Size to Add" : "Add to Cart"}
                 </button>
                 <button 
                   onClick={toggleFavorite}

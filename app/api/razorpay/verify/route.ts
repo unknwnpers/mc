@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc,
-  serverTimestamp 
-} from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { confirmReservations } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
@@ -29,8 +21,9 @@ export async function POST(req: Request) {
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
 
     // 2. Strict Idempotency (Deduplication)
-    const paymentCheckQuery = query(collection(db, "orders"), where("razorpayPaymentId", "==", razorpay_payment_id));
-    const paymentCheckSnapshot = await getDocs(paymentCheckQuery);
+    const paymentCheckSnapshot = await adminDb.collection("orders")
+        .where("razorpayPaymentId", "==", razorpay_payment_id)
+        .get();
     
     if (!paymentCheckSnapshot.empty) {
         await auditLog("INFO", {
@@ -58,8 +51,9 @@ export async function POST(req: Request) {
     }
 
     // 4. Find and Update Order in Firestore
-    const q = query(collection(db, "orders"), where("razorpayOrderId", "==", razorpay_order_id));
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb.collection("orders")
+        .where("razorpayOrderId", "==", razorpay_order_id)
+        .get();
 
     if (snapshot.empty) {
       return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
@@ -74,11 +68,11 @@ export async function POST(req: Request) {
             await confirmReservations(orderData.reservationIds);
         }
 
-        await updateDoc(doc(db, "orders", orderDoc.id), {
+        await adminDb.collection("orders").doc(orderDoc.id).update({
             status: "paid",
             razorpayPaymentId: razorpay_payment_id,
             razorpaySignature: razorpay_signature,
-            updatedAt: serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
         });
 
         await auditLog("INFO", {
@@ -95,7 +89,7 @@ export async function POST(req: Request) {
     await auditLog("ERROR", {
         event: "PAYMENT_VERIFICATION_FAILED",
         error: error.message,
-        details: { razorpay_order_id: (req as any).razorpay_order_id } // Safe fallback
+        details: {} // Removed direct access to req for safety
     });
     console.error("Payment Verification Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

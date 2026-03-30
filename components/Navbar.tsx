@@ -41,7 +41,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex flex-col leading-[1.1] pt-0.5">
-            <span className="font-serif text-2xl text-charcoal tracking-wide">
+            <span className="font-serif text-2xl text-gold tracking-wide">
               Miks & <span className="text-gold italic">Chiks</span>
             </span>
             <span className="text-[9px] tracking-[0.35em] text-neutral-400 uppercase font-bold mt-1">

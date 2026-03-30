@@ -1,5 +1,5 @@
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 /**
  * Production-Grade Audit Logger
@@ -31,10 +31,10 @@ export const auditLog = async (level: LogLevel, payload: LogPayload) => {
   // 2. Persistent Audit Log (Firestore)
   // We use a separate 'audit_logs' collection for permanent records
   try {
-    await addDoc(collection(db, "audit_logs"), {
+    await adminDb.collection("audit_logs").add({
       ...payload,
       level,
-      timestamp: serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
     });
   } catch (err) {
     // If logging to Firestore fails, we still have the console log

@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc,
-  serverTimestamp 
-} from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { releaseReservations } from "@/lib/inventory";
 
 export async function POST(req: Request) {
@@ -24,8 +16,9 @@ export async function POST(req: Request) {
 
     // 2. Update Order Status to failed if it exists
     if (razorpayOrderId) {
-      const q = query(collection(db, "orders"), where("razorpayOrderId", "==", razorpayOrderId));
-      const snapshot = await getDocs(q);
+      const snapshot = await adminDb.collection("orders")
+        .where("razorpayOrderId", "==", razorpayOrderId)
+        .get();
       
       if (!snapshot.empty) {
         const orderDoc = snapshot.docs[0];
@@ -33,9 +26,9 @@ export async function POST(req: Request) {
         
         // Only update if not already paid/completed
         if (orderData.status === "pending_payment") {
-          await updateDoc(doc(db, "orders", orderDoc.id), {
+          await adminDb.collection("orders").doc(orderDoc.id).update({
             status: "failed",
-            updatedAt: serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
           });
         }
       }

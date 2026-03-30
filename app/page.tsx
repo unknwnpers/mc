@@ -64,19 +64,27 @@ export default async function Home() {
                 </span>
               </div>
 
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-serif font-bold text-charcoal leading-[1.1] tracking-tight">
-                Soft Wear for
-                <span className="block italic text-blush"> Precious Moments</span>
-              </h1>
+              <div className="space-y-2">
+                <h1 className="font-serif text-[48px] md:text-[68px] leading-[1.1] text-[#2B2B2B] font-medium tracking-[-0.5px]">
+                  Softness That
+                </h1>
+                <h1 className="font-serif italic text-[44px] md:text-[64px] leading-[1.1] text-[#E6A79C] font-normal">
+                  Stays With You
+                </h1>
+                <h2 className="font-serif italic text-[24px] md:text-[30px] text-[#7A7A7A] mt-4">
+                  Through Every Tiny Moment
+                </h2>
+              </div>
 
-              <p className="text-xl text-neutral-500 leading-relaxed max-w-xl font-sans">
-                Crafted with care for moms and little ones, blending ultimate comfort with effortless premium style
+              <p className="text-lg md:text-xl text-neutral-500 leading-relaxed max-w-[550px] font-sans">
+                Not just clothing — a gentle embrace for mothers and their little ones. 
+                Thoughtfully designed pieces that feel as comforting as your touch.
               </p>
 
               <div className="flex flex-wrap gap-5">
                 <Link
                   href="/products"
-                  className="group inline-flex items-center space-x-3 bg-blush text-white px-10 py-5 rounded-2xl hover:bg-[#f48c82] transition-all duration-500 font-bold shadow-2xl shadow-blush/30 active:scale-95"
+                  className="group inline-flex items-center space-x-3 bg-[#E58F7C] text-white px-10 py-5 rounded-2xl hover:bg-[#d47f6d] transition-all duration-500 font-bold shadow-2xl shadow-[#E58F7C]/30 active:scale-95"
                 >
                   <span className="uppercase tracking-widest text-xs">Shop Collection</span>
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -86,7 +94,7 @@ export default async function Home() {
                   href="/about"
                   className="inline-flex items-center space-x-3 bg-white text-charcoal px-10 py-5 rounded-2xl hover:bg-cream transition-all duration-300 font-bold border border-blush/10 shadow-sm active:scale-95"
                 >
-                  <span className="uppercase tracking-widest text-xs text-neutral-400">Learn More</span>
+                  <span className="uppercase tracking-widest text-xs text-neutral-400">Explore Story</span>
                 </Link>
               </div>
             </div>

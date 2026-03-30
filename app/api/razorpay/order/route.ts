@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { reserveStock } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
@@ -17,13 +17,11 @@ export async function POST(req: Request) {
     // Avoid "Pending Order Spam" - limit to 3 pending orders in 15 mins
     try {
         const staleTime = new Date(Date.now() - 15 * 60 * 1000);
-        const spamQuery = query(
-            collection(db, "orders"),
-            where("userId", "==", userId),
-            where("status", "==", "pending_payment"),
-            where("createdAt", ">", staleTime)
-        );
-        const spamSnapshot = await getDocs(spamQuery);
+        const spamSnapshot = await adminDb.collection("orders")
+            .where("userId", "==", userId)
+            .where("status", "==", "pending_payment")
+            .where("createdAt", ">", staleTime)
+            .get();
         
         if (spamSnapshot.size >= 3) {
             await auditLog("WARN", {
@@ -49,11 +47,11 @@ export async function POST(req: Request) {
     // 1. Server-side Amount Validation (Prevent Manipulation)
     let calculatedTotal = 0;
     for (const item of cart) {
-      const productDoc = await getDoc(doc(db, "products", item.id));
-      if (!productDoc.exists()) {
+      const productDoc = await adminDb.collection("products").doc(item.id).get();
+      if (!productDoc.exists) {
         return NextResponse.json({ error: `Product ${item.name} not found` }, { status: 404 });
       }
-      const price = productDoc.data().price;
+      const price = productDoc.data()?.price || 0;
       calculatedTotal += price * item.quantity;
     }
 
@@ -104,11 +102,11 @@ export async function POST(req: Request) {
         pincode: profile.pincode || "",
       },
       reservationIds,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
-    const docRef = await addDoc(collection(db, "orders"), orderData);
+    const docRef = await adminDb.collection("orders").add(orderData);
 
     return NextResponse.json({
       orderId: orderId,

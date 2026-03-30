@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  doc, 
-  updateDoc,
-  serverTimestamp 
-} from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { confirmReservations, releaseReservations } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
@@ -48,8 +40,9 @@ export async function POST(req: Request) {
       const razorpayPaymentId = payload.payload.payment.entity.id;
 
       // 3. Find Order in Firestore
-      const q = query(collection(db, "orders"), where("razorpayOrderId", "==", razorpayOrderId));
-      const snapshot = await getDocs(q);
+      const snapshot = await adminDb.collection("orders")
+        .where("razorpayOrderId", "==", razorpayOrderId)
+        .get();
 
       if (snapshot.empty) {
         console.error("Order not found in Firestore:", razorpayOrderId);
@@ -75,10 +68,10 @@ export async function POST(req: Request) {
         await confirmReservations(orderData.reservationIds);
       }
 
-      await updateDoc(doc(db, "orders", firestoreOrderId), {
+      await adminDb.collection("orders").doc(firestoreOrderId).update({
         status: "paid",
         razorpayPaymentId,
-        updatedAt: serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       await auditLog("INFO", {
@@ -94,8 +87,9 @@ export async function POST(req: Request) {
     if (event === "payment.failed") {
         const razorpayOrderId = payload.payload.payment.entity.order_id;
         
-        const q = query(collection(db, "orders"), where("razorpayOrderId", "==", razorpayOrderId));
-        const snapshot = await getDocs(q);
+        const snapshot = await adminDb.collection("orders")
+          .where("razorpayOrderId", "==", razorpayOrderId)
+          .get();
 
         if (!snapshot.empty) {
             const orderDoc = snapshot.docs[0];
@@ -105,9 +99,9 @@ export async function POST(req: Request) {
                 await releaseReservations(orderData.reservationIds);
             }
 
-            await updateDoc(doc(db, "orders", orderDoc.id), {
+            await adminDb.collection("orders").doc(orderDoc.id).update({
                 status: "failed",
-                updatedAt: serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
             });
             await auditLog("WARN", {
                 event: "WEBHOOK_PAYMENT_FAILED",

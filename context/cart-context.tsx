@@ -85,13 +85,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         try {
-            // 1. Strict Size Validation
-            if (!item.selectedSize) {
-                toast.error("Please select a size first");
-                return;
-            }
-
-            // 2. Fetch latest stock
+            // 1. Fetch latest product info & stock
             const productSnap = await getDoc(doc(db, "products", item.id));
             if (!productSnap.exists()) {
                 toast.error("Product no longer available");
@@ -99,6 +93,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             }
             const productData = productSnap.data();
             const currentStock = productData.stock || 0;
+
+            const SIZE_REQUIRED_CATEGORIES = ["baby", "kids", "maternity", "feeding"];
+            const requiresSize = productData.category_slug ? SIZE_REQUIRED_CATEGORIES.includes(productData.category_slug) : false;
+
+            // 2. Strict Size Validation
+            if (requiresSize && !item.selectedSize) {
+                toast.error("Please select a size first");
+                return;
+            }
 
             if (currentStock <= 0) {
                 toast.error("Out of stock");

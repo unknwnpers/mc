@@ -1,16 +1,5 @@
-import { db } from "@/lib/firebase";
-import { 
-  runTransaction, 
-  doc, 
-  updateDoc, 
-  serverTimestamp,
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  limit
-} from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { auditLog } from "./logger";
 
 /**
@@ -18,20 +7,17 @@ import { auditLog } from "./logger";
  * Prevents overselling by locking stock during checkout.
  */
 
-
 /**
  * Lazy Cleanup: Release expired active reservations
  */
 export const cleanupExpiredReservations = async () => {
   try {
-    const expiredQuery = query(
-      collection(db, "reservations"),
-      where("status", "==", "active"),
-      where("expiresAt", "<", Date.now()),
-      limit(20) // Process in small batches
-    );
+    const expiredQuery = adminDb.collection("reservations")
+      .where("status", "==", "active")
+      .where("expiresAt", "<", Date.now())
+      .limit(20);
     
-    const snapshot = await getDocs(expiredQuery);
+    const snapshot = await expiredQuery.get();
     if (snapshot.empty) return;
 
     const ids = snapshot.docs.map(doc => doc.id);
@@ -52,18 +38,18 @@ export const reserveStock = async (items: any[], userId: string) => {
      cleanupExpiredReservations();
   }
 
-  return await runTransaction(db, async (transaction) => {
+  return await adminDb.runTransaction(async (transaction) => {
     const reservations: string[] = [];
 
     for (const item of items) {
-      const productRef = doc(db, "products", item.id);
+      const productRef = adminDb.collection("products").doc(item.id);
       const productSnap = await transaction.get(productRef);
 
-      if (!productSnap.exists()) {
+      if (!productSnap.exists) {
         throw new Error(`Product ${item.name} not found`);
       }
 
-      const currentStock = productSnap.data().stock || 0;
+      const currentStock = productSnap.data()?.stock || 0;
 
       if (currentStock < item.quantity) {
         throw new Error(`Inufficient stock for ${item.name}`);
@@ -72,12 +58,12 @@ export const reserveStock = async (items: any[], userId: string) => {
       // 1. Temporarily reduce stock
       transaction.update(productRef, {
         stock: currentStock - item.quantity,
-        updatedAt: serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       });
 
       // 2. Create reservation record
       const resId = `res_${Math.random().toString(36).slice(2, 11)}`;
-      const resRef = doc(db, "reservations", resId);
+      const resRef = adminDb.collection("reservations").doc(resId);
       
       transaction.set(resRef, {
         productId: item.id,
@@ -86,7 +72,7 @@ export const reserveStock = async (items: any[], userId: string) => {
         userId,
         status: "active",
         expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes
-        createdAt: serverTimestamp()
+        createdAt: FieldValue.serverTimestamp()
       });
 
       reservations.push(resId);
@@ -98,39 +84,39 @@ export const reserveStock = async (items: any[], userId: string) => {
 
 export const confirmReservations = async (reservationIds: string[]) => {
   for (const id of reservationIds) {
-    const resRef = doc(db, "reservations", id);
-    await updateDoc(resRef, {
+    const resRef = adminDb.collection("reservations").doc(id);
+    await resRef.update({
       status: "completed",
-      updatedAt: serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp()
     });
   }
 };
 
 export const releaseReservations = async (reservationIds: string[]) => {
-  return await runTransaction(db, async (transaction) => {
+  return await adminDb.runTransaction(async (transaction) => {
     for (const id of reservationIds) {
-      const resRef = doc(db, "reservations", id);
+      const resRef = adminDb.collection("reservations").doc(id);
       const resSnap = await transaction.get(resRef);
 
-      if (!resSnap.exists()) continue;
+      if (!resSnap.exists) continue;
       const data = resSnap.data();
 
-      if (data.status !== "active") continue;
+      if (!data || data.status !== "active") continue;
 
-      const productRef = doc(db, "products", data.productId);
+      const productRef = adminDb.collection("products").doc(data.productId);
       const productSnap = await transaction.get(productRef);
 
-      if (productSnap.exists()) {
-        const currentStock = productSnap.data().stock || 0;
+      if (productSnap.exists) {
+        const currentStock = productSnap.data()?.stock || 0;
         transaction.update(productRef, {
           stock: currentStock + data.quantity,
-          updatedAt: serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp()
         });
       }
 
       transaction.update(resRef, {
         status: "released",
-        updatedAt: serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       });
     }
   });

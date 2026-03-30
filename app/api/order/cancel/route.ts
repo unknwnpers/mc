@@ -1,85 +1,74 @@
+import { adminDb } from "@/lib/firebase-admin";
+import { verifyUser } from "@/lib/server-auth";
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
-import { getRazorpayClient } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
   try {
-    const { orderId, reason, userId } = await req.json();
+    const user = await verifyUser(req);
+    const body = await req.json();
+    const { orderId } = body;
 
-    if (!orderId || !userId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!orderId) {
+      return NextResponse.json({ success: false, error: "Missing orderId" }, { status: 400 });
     }
 
-    const result = await runTransaction(db, async (transaction) => {
-      const orderRef = doc(db, "orders", orderId);
-      const orderSnap = await transaction.get(orderRef);
+    const orderRef = adminDb.collection("orders").doc(orderId);
 
-      if (!orderSnap.exists()) {
+    await adminDb.runTransaction(async (tx) => {
+      const orderSnap = await tx.get(orderRef);
+      const order = orderSnap.data();
+
+      if (!orderSnap.exists || !order) {
         throw new Error("Order not found");
       }
 
-      const orderData = orderSnap.data();
-
-      // 1. Security & State Validation
-      if (orderData.userId !== userId) {
-        throw new Error("Unauthorized");
+      if (user.role !== 'admin' && user.role !== 'superadmin' && order.userId !== user.uid) {
+         throw new Error("Unauthorized to access this order");
       }
 
-      const cancellableStates = ["pending_payment", "paid", "processing"];
-      if (!cancellableStates.includes(orderData.status)) {
-        throw new Error(`Order in state '${orderData.status}' cannot be cancelled`);
+      if (["shipped", "delivered", "cancelled"].includes(order.status)) {
+        throw new Error(`Cannot cancel order in ${order.status} state`);
       }
 
-      // 2. Restore Stock
-      for (const item of orderData.items) {
-        const productRef = doc(db, "products", item.id);
-        const productSnap = await transaction.get(productRef);
-        
-        if (productSnap.exists()) {
-          const currentStock = productSnap.data().stock || 0;
-          transaction.update(productRef, {
-            stock: currentStock + item.quantity,
-            updatedAt: serverTimestamp()
+      // 1. PERFORM ALL READS FIRST
+      const productSnaps = [];
+      if (order.items && Array.isArray(order.items)) {
+        for (const item of order.items) {
+          const productRef = adminDb.collection("products").doc(item.productId);
+          const productSnap = await tx.get(productRef);
+          productSnaps.push({ snap: productSnap, item, ref: productRef });
+        }
+      }
+
+      // 2. CHECK CONSTRAINTS AND PERFORM ALL WRITES
+      // restore stock
+      for (const { snap, item, ref } of productSnaps) {
+        const product = snap.data();
+        if (product) {
+          tx.update(ref, {
+            stock: product.stock + item.quantity,
+            updated_at: new Date()
           });
         }
+
+        tx.set(adminDb.collection("inventory_logs").doc(), {
+          productId: item.productId,
+          change: item.quantity,
+          reason: "order_cancelled",
+          orderId,
+          created_at: new Date(),
+        });
       }
 
-      // 3. Update Order Status
-      transaction.update(orderRef, {
+      tx.update(orderRef, {
         status: "cancelled",
-        cancelReason: reason || "User requested cancellation",
-        cancelledAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updated_at: new Date(),
       });
-
-      return { 
-        paymentId: orderData.razorpayPaymentId,
-        amount: orderData.total 
-      };
     });
 
-    // 4. Handle Razorpay Refund (if paid)
-    if (result.paymentId) {
-        const razorpay = getRazorpayClient();
-        if (razorpay) {
-            try {
-                await razorpay.payments.refund(result.paymentId, {
-                    amount: result.amount * 100, // in paise
-                    notes: { reason: reason || "User requested cancellation" }
-                });
-            } catch (refundError) {
-                console.error("Razorpay Refund Error:", refundError);
-                // We still returned success because the order is cancelled in our DB.
-                // Admin might need to manually check refund if automatic fails.
-            }
-        }
-    }
-
-    return NextResponse.json({ message: "Order cancelled successfully" });
-
+    return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Cancel Order Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Order cancellation failed:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
