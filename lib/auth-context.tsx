@@ -76,8 +76,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             uid: u.uid,
             name: u.displayName,
             email: u.email,
+            role: "customer",
             address: "",
             phone: "",
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
           await setDoc(profileRef, newProfile);
