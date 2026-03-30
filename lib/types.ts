@@ -9,6 +9,7 @@ export interface Product {
     sizes: string[];
     is_active: boolean;
     image_url?: string;
+    image?: string; // added to resolve TS error in ProductCard
     category_id?: string;
     category_slug?: string;
     description?: string;
