@@ -22,7 +22,8 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
-  selectedSize?: string;
+  sku: string;           // variant SKU — canonical key
+  selectedSize: string;  // display label shown in cart UI (= sku for size-only)
   stock?: number;
 };
 
@@ -92,13 +93,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
             const productData = productSnap.data();
-            const currentStock = productData.stock || 0;
+            const variants    = (productData.variants || []) as any[];
+            const variant     = variants.find((v: any) => v.sku === item.sku);
+            const currentStock = variant?.stock ?? 0;
 
-            const SIZE_REQUIRED_CATEGORIES = ["baby", "kids", "maternity", "feeding"];
-            const requiresSize = productData.category_slug ? SIZE_REQUIRED_CATEGORIES.includes(productData.category_slug) : false;
-
-            // 2. Strict Size Validation
-            if (requiresSize && !item.selectedSize) {
+            // Require a valid SKU
+            if (!item.sku) {
                 toast.error("Please select a size first");
                 return;
             }
@@ -111,8 +111,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             const cartRef = collection(db, "users", user.uid, "cart");
             const q = query(
                 cartRef,
-                where("id", "==", item.id),
-                where("selectedSize", "==", item.selectedSize)
+                where("id",  "==", item.id),
+                where("sku", "==", item.sku)
             );
             const snapshot = await getDocs(q);
 
@@ -164,10 +164,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const updateQuantity = async (id: string, qty: number, selectedSize?: string) => {
     if (!user) return;
 
-    // Fetch latest stock for validation (global stock for now)
     const productSnap = await getDoc(doc(db, "products", id));
     if (productSnap.exists()) {
-        const currentStock = productSnap.data().stock || 0;
+        const productData  = productSnap.data();
+        const variants     = (productData.variants || []) as any[];
+        const variant      = variants.find((v: any) => v.sku === selectedSize);
+        const currentStock = variant?.stock ?? 0;
         if (qty > currentStock) {
             toast.error(`Only ${currentStock} items in stock`);
             return;
@@ -176,9 +178,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     const cartRef = collection(db, "users", user.uid, "cart");
     const q = query(
-        cartRef, 
-        where("id", "==", id),
-        where("selectedSize", "==", selectedSize || null)
+        cartRef,
+        where("id",  "==", id),
+        where("sku", "==", selectedSize || "")
     );
     const snapshot = await getDocs(q);
 

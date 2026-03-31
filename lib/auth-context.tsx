@@ -58,25 +58,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (profileSnap.exists()) {
           const data = profileSnap.data() as UserProfile;
-          // Ensure address/phone exist
-          if (data.address === undefined || data.phone === undefined) {
-             const updated = {
-                ...data,
-                address: data.address || "",
-                phone: data.phone || ""
-             };
-             await setDoc(profileRef, updated, { merge: true });
-             setProfile(updated);
+          const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
+
+          // Auto-upgrade existing admin email accounts that weren't promoted yet
+          const needsRoleUpgrade = u.email === ADMIN_EMAIL && data.role !== "superadmin" && data.role !== "admin";
+          const needsFieldFill   = data.address === undefined || data.phone === undefined;
+
+          if (needsRoleUpgrade || needsFieldFill) {
+            const updated: UserProfile = {
+              ...data,
+              address: data.address || "",
+              phone:   data.phone   || "",
+              role:    needsRoleUpgrade ? "superadmin" : data.role,
+              updated_at: new Date().toISOString(),
+            };
+            await setDoc(profileRef, updated, { merge: true });
+            setProfile(updated);
           } else {
-             setProfile(data);
+            setProfile(data);
           }
         } else {
-          // Create minimal profile
+          // Auto-promote known admin email to superadmin
+          const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
+          const role = u.email === ADMIN_EMAIL ? "superadmin" : "customer";
+
           const newProfile: UserProfile = {
             uid: u.uid,
             name: u.displayName,
             email: u.email,
-            role: "customer",
+            role,
             address: "",
             phone: "",
             created_at: new Date().toISOString(),

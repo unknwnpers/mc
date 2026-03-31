@@ -1,121 +1,123 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { confirmReservations, releaseReservations } from "@/lib/inventory";
+import { releaseReservation } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
-    const rawBody = await req.text();
-    const signature = req.headers.get("x-razorpay-signature") || "";
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || "";
+    const rawBody  = await req.text();
+    const signature = req.headers.get("x-razorpay-signature");
 
-    // 1. Verify Signature
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(rawBody)
-      .digest("hex");
+    if (!signature) {
+      return NextResponse.json({ error: "Missing webhook signature" }, { status: 400 });
+    }
 
-    if (signature !== expectedSignature) {
-      await auditLog("SECURITY", {
-        event: "INVALID_WEBHOOK_SIGNATURE",
-        details: { signature, expectedSignature }
-      });
-      console.error("Invalid Webhook Signature");
+    // ── 1. HMAC signature verification ─────────────────────────────────────
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) throw new Error("RAZORPAY_WEBHOOK_SECRET is not configured");
+
+    const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+    if (expected !== signature) {
+      await auditLog("SECURITY", { event: "WEBHOOK_INVALID_SIGNATURE", details: "Rejected unauthorized webhook" });
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    const payload = JSON.parse(rawBody);
-    const event = payload.event;
+    // ── 2. Parse event ──────────────────────────────────────────────────────
+    const payload   = JSON.parse(rawBody);
+    const event     = payload.event as string;
 
-    await auditLog("INFO", {
-      event: "WEBHOOK_RECEIVED",
-      details: { event, orderId: payload.payload?.order?.entity?.id || payload.payload?.payment?.entity?.order_id }
-    });
+    let orderId:   string | undefined;
+    let paymentId: string | undefined;
 
-    // 2. Handle order.paid
-    if (event === "order.paid") {
-      const razorpayOrderId = payload.payload.order.entity.id;
-      const razorpayPaymentId = payload.payload.payment.entity.id;
+    if (payload.payload?.payment?.entity) {
+      paymentId = payload.payload.payment.entity.id;
+      orderId   = payload.payload.payment.entity.order_id;
+    } else if (payload.payload?.order?.entity) {
+      orderId = payload.payload.order.entity.id;
+    }
 
-      // 3. Find Order in Firestore
-      const snapshot = await adminDb.collection("orders")
-        .where("razorpayOrderId", "==", razorpayOrderId)
-        .get();
+    if (!orderId) {
+      return NextResponse.json({ success: true, message: "No order ID — ignored" });
+    }
 
-      if (snapshot.empty) {
-        console.error("Order not found in Firestore:", razorpayOrderId);
-        return NextResponse.json({ error: "Order not found" }, { status: 404 });
-      }
+    const orderRef = adminDb.collection("orders").doc(orderId);
 
-      const orderDoc = snapshot.docs[0];
-      const firestoreOrderId = orderDoc.id;
-      const orderData = orderDoc.data();
+    // ── 3. payment.captured / payment.authorized / order.paid ───────────────
+    if (["payment.captured", "payment.authorized", "order.paid"].includes(event)) {
+      await adminDb.runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        if (!snap.exists) return;
 
-      if (orderData.status === "paid") {
-        await auditLog("INFO", {
-          event: "WEBHOOK_IDEMPOTENCY_HIT",
-          orderId: firestoreOrderId,
-          paymentId: razorpayPaymentId,
-          details: "Order already marked as paid, skipping webhook logic"
+        const order = snap.data()!;
+
+        // Idempotency — already processed
+        if (order.status === "paid") return;
+
+        // Mark order paid
+        tx.update(orderRef, {
+          status: "paid",
+          ...(paymentId && { razorpayPaymentId: paymentId }),
+          updatedAt: FieldValue.serverTimestamp(),
         });
-        return NextResponse.json({ message: "Order already processed" });
-      }
 
-      // 4. Confirm Reservation & Update Order
-      if (orderData.reservationIds && orderData.reservationIds.length > 0) {
-        await confirmReservations(orderData.reservationIds);
-      }
-
-      await adminDb.collection("orders").doc(firestoreOrderId).update({
-        status: "paid",
-        razorpayPaymentId,
-        updatedAt: FieldValue.serverTimestamp(),
+        // Confirm reservation inside the same transaction — atomic
+        if (order.reservationId) {
+          const resRef = adminDb.collection("reservations").doc(order.reservationId);
+          tx.update(resRef, {
+            status:    "paid",
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
       });
 
       await auditLog("INFO", {
-        event: "WEBHOOK_ORDER_PAID",
-        orderId: firestoreOrderId,
-        paymentId: razorpayPaymentId
+        event:   `WEBHOOK_${event.toUpperCase()}`,
+        orderId,
+        details: { paymentId: paymentId || "unknown" },
       });
-      console.log("Order paid and processed:", firestoreOrderId);
-      return NextResponse.json({ status: "ok" });
     }
 
-    // 5. Handle payment.failed
-    if (event === "payment.failed") {
-        const razorpayOrderId = payload.payload.payment.entity.order_id;
-        
-        const snapshot = await adminDb.collection("orders")
-          .where("razorpayOrderId", "==", razorpayOrderId)
-          .get();
+    // ── 4. payment.failed ───────────────────────────────────────────────────
+    else if (event === "payment.failed") {
+      let reservationId: string | undefined;
 
-        if (!snapshot.empty) {
-            const orderDoc = snapshot.docs[0];
-            const orderData = orderDoc.data();
-            
-            if (orderData.reservationIds && orderData.reservationIds.length > 0) {
-                await releaseReservations(orderData.reservationIds);
-            }
+      // Mark order failed — read reservationId in same transaction
+      await adminDb.runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        if (!snap.exists) return;
 
-            await adminDb.collection("orders").doc(orderDoc.id).update({
-                status: "failed",
-                updatedAt: FieldValue.serverTimestamp(),
-            });
-            await auditLog("WARN", {
-                event: "WEBHOOK_PAYMENT_FAILED",
-                orderId: orderDoc.id,
-                details: "Payment failed, reservations released"
-            });
-            console.log("Payment failed, reservations released:", orderDoc.id);
-        }
+        const order = snap.data()!;
+        if (order.status === "paid") return; // already paid — ignore failure
+
+        reservationId = order.reservationId;
+
+        tx.update(orderRef, {
+          status:    "failed",
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      });
+
+      // Release stock — runs its own transaction; must be OUTSIDE above tx
+      // because Firestore doesn't allow nested transactions
+      if (reservationId) {
+        await releaseReservation(reservationId);
+      }
+
+      await auditLog("WARN", {
+        event:   "WEBHOOK_PAYMENT_FAILED",
+        orderId,
+        details: { paymentId: paymentId || "unknown" },
+      });
     }
 
-    return NextResponse.json({ status: "ok" });
+    return NextResponse.json({ success: true });
 
-  } catch (error: any) {
-    console.error("Webhook Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: any) {
+    console.error("Webhook Error:", err);
+    await auditLog("ERROR", { event: "WEBHOOK_UNHANDLED_ERROR", error: err.message });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

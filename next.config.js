@@ -1,12 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: { unoptimized: true },
+  eslint:  { ignoreDuringBuilds: true }, // ESLint is a style concern, not correctness
+  images:  { unoptimized: true },
 };
 
 module.exports = nextConfig;

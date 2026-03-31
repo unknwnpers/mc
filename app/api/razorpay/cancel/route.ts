@@ -1,40 +1,44 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { releaseReservations } from "@/lib/inventory";
+import { releaseReservation } from "@/lib/inventory";
+import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
-    const { reservationIds, razorpayOrderId } = await req.json();
+    const { reservationId, razorpayOrderId } = await req.json();
 
-    if (!reservationIds || reservationIds.length === 0) {
-      return NextResponse.json({ error: "No reservations to release" }, { status: 400 });
+    if (!reservationId) {
+      return NextResponse.json({ error: "No reservation to release" }, { status: 400 });
     }
 
-    // 1. Release Stock Reservations
-    await releaseReservations(reservationIds);
+    // 1. Transactionally Release Stock Reservation
+    await releaseReservation(reservationId);
 
-    // 2. Update Order Status to failed if it exists
+    // 2. Exact Map Update Order Status
     if (razorpayOrderId) {
-      const snapshot = await adminDb.collection("orders")
-        .where("razorpayOrderId", "==", razorpayOrderId)
-        .get();
+      const orderRef = adminDb.collection("orders").doc(razorpayOrderId);
       
-      if (!snapshot.empty) {
-        const orderDoc = snapshot.docs[0];
-        const orderData = orderDoc.data();
-        
-        // Only update if not already paid/completed
-        if (orderData.status === "pending_payment") {
-          await adminDb.collection("orders").doc(orderDoc.id).update({
-            status: "failed",
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-        }
-      }
+      await adminDb.runTransaction(async (tx) => {
+          const snap = await tx.get(orderRef);
+          if (!snap.exists) return;
+          
+          if (snap.data()?.status === "pending_payment") {
+             tx.update(orderRef, {
+                 status: "failed",
+                 updatedAt: FieldValue.serverTimestamp()
+             });
+          }
+      });
+      
+      await auditLog("INFO", {
+          event: "ORDER_FAILED_AND_RELEASED",
+          orderId: razorpayOrderId,
+          details: "User cancelled or payment failed from frontend"
+      });
     }
 
-    return NextResponse.json({ success: true, message: "Reservations released" });
+    return NextResponse.json({ success: true, message: "Reservation released safely" });
 
   } catch (error: any) {
     console.error("Manual Release Error:", error);

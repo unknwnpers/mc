@@ -1,123 +1,127 @@
+/**
+ * Inventory Service — Canonical Schema (variants: Variant[])
+ *
+ * Variant SKU lookup: variants.find(v => v.sku === sku)
+ * Stock update: read array → modify index → write entire array (transactional)
+ */
+
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { auditLog } from "./logger";
+import type { ProductVariant } from "@/lib/types";
 
-/**
- * Reservatonal Stock Control
- * Prevents overselling by locking stock during checkout.
- */
+export interface CartItem {
+  id: string;           // productId
+  name: string;
+  sku: string;          // variant SKU — canonical identifier
+  selectedSize: string; // display alias (= sku for size-only products)
+  quantity: number;
+}
 
-/**
- * Lazy Cleanup: Release expired active reservations
- */
-export const cleanupExpiredReservations = async () => {
-  try {
-    const expiredQuery = adminDb.collection("reservations")
-      .where("status", "==", "active")
-      .where("expiresAt", "<", Date.now())
-      .limit(20);
-    
-    const snapshot = await expiredQuery.get();
-    if (snapshot.empty) return;
+// ── Reserve ───────────────────────────────────────────────────────────────────
+export async function reserveStock(items: CartItem[], userId: string): Promise<string> {
+  const reservationRef = adminDb.collection("reservations").doc();
 
-    const ids = snapshot.docs.map(doc => doc.id);
-    await releaseReservations(ids);
-    
-    await auditLog("INFO", {
-      event: "STALE_RESERVATIONS_CLEANUP",
-      details: { count: ids.length }
-    });
-  } catch (err) {
-    console.error("Cleanup error:", err);
-  }
-};
-
-export const reserveStock = async (items: any[], userId: string) => {
-  // Trigger lazy cleanup occasionally
-  if (Math.random() < 0.2) { // 20% chance on every reserve
-     cleanupExpiredReservations();
-  }
-
-  return await adminDb.runTransaction(async (transaction) => {
-    const reservations: string[] = [];
-
+  await adminDb.runTransaction(async (tx) => {
     for (const item of items) {
-      const productRef = adminDb.collection("products").doc(item.id);
-      const productSnap = await transaction.get(productRef);
+      if (!item.id || !item.sku || item.quantity <= 0) {
+        throw new Error(`Invalid cart item: ${JSON.stringify(item)}`);
+      }
+
+      const productRef  = adminDb.collection("products").doc(item.id);
+      const productSnap = await tx.get(productRef);
 
       if (!productSnap.exists) {
-        throw new Error(`Product ${item.name} not found`);
+        throw new Error(`Product not found: ${item.id}`);
       }
 
-      const currentStock = productSnap.data()?.stock || 0;
+      const data     = productSnap.data()!;
+      const variants = (data.variants || []) as ProductVariant[];
+      const idx      = variants.findIndex(v => v.sku === item.sku);
 
-      if (currentStock < item.quantity) {
-        throw new Error(`Inufficient stock for ${item.name}`);
+      if (idx === -1) {
+        throw new Error(`SKU "${item.sku}" not found for product "${data.name || item.id}"`);
       }
 
-      // 1. Temporarily reduce stock
-      transaction.update(productRef, {
-        stock: currentStock - item.quantity,
-        updatedAt: FieldValue.serverTimestamp()
-      });
+      const variant = variants[idx];
 
-      // 2. Create reservation record
-      const resId = `res_${Math.random().toString(36).slice(2, 11)}`;
-      const resRef = adminDb.collection("reservations").doc(resId);
-      
-      transaction.set(resRef, {
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        userId,
-        status: "active",
-        expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes
-        createdAt: FieldValue.serverTimestamp()
-      });
+      if (variant.stock < item.quantity) {
+        throw new Error(
+          `Insufficient stock for "${data.name || item.id}" (${item.sku}). ` +
+          `Requested: ${item.quantity}, Available: ${variant.stock}`
+        );
+      }
 
-      reservations.push(resId);
+      // Update the array immutably
+      const updatedVariants = variants.map((v, i) =>
+        i === idx ? { ...v, stock: v.stock - item.quantity } : v
+      );
+
+      tx.update(productRef, {
+        variants:  updatedVariants,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     }
 
-    return reservations;
-  });
-};
-
-export const confirmReservations = async (reservationIds: string[]) => {
-  for (const id of reservationIds) {
-    const resRef = adminDb.collection("reservations").doc(id);
-    await resRef.update({
-      status: "completed",
-      updatedAt: FieldValue.serverTimestamp()
+    // Reservation record — written in the SAME transaction
+    tx.set(reservationRef, {
+      userId,
+      items: items.map(i => ({
+        productId:   i.id,
+        productName: i.name,
+        sku:         i.sku,
+        selectedSize: i.selectedSize,
+        quantity:    i.quantity,
+      })),
+      status:    "reserved",
+      expiresAt: Date.now() + 15 * 60 * 1000,
+      createdAt: FieldValue.serverTimestamp(),
     });
-  }
-};
+  });
 
-export const releaseReservations = async (reservationIds: string[]) => {
-  return await adminDb.runTransaction(async (transaction) => {
-    for (const id of reservationIds) {
-      const resRef = adminDb.collection("reservations").doc(id);
-      const resSnap = await transaction.get(resRef);
+  return reservationRef.id;
+}
 
-      if (!resSnap.exists) continue;
-      const data = resSnap.data();
+// ── Confirm ───────────────────────────────────────────────────────────────────
+export async function confirmReservation(reservationId: string): Promise<void> {
+  await adminDb.collection("reservations").doc(reservationId).update({
+    status:    "paid",
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
 
-      if (!data || data.status !== "active") continue;
+// ── Release ───────────────────────────────────────────────────────────────────
+export async function releaseReservation(reservationId: string): Promise<void> {
+  await adminDb.runTransaction(async (tx) => {
+    const resRef  = adminDb.collection("reservations").doc(reservationId);
+    const resSnap = await tx.get(resRef);
 
-      const productRef = adminDb.collection("products").doc(data.productId);
-      const productSnap = await transaction.get(productRef);
+    if (!resSnap.exists) return;
+    const res = resSnap.data()!;
+    if (res.status !== "reserved") return;
 
-      if (productSnap.exists) {
-        const currentStock = productSnap.data()?.stock || 0;
-        transaction.update(productRef, {
-          stock: currentStock + data.quantity,
-          updatedAt: FieldValue.serverTimestamp()
-        });
-      }
+    for (const item of res.items) {
+      const productRef  = adminDb.collection("products").doc(item.productId);
+      const productSnap = await tx.get(productRef);
+      if (!productSnap.exists) continue;
 
-      transaction.update(resRef, {
-        status: "released",
-        updatedAt: FieldValue.serverTimestamp()
+      const data     = productSnap.data()!;
+      const variants = (data.variants || []) as ProductVariant[];
+      const idx      = variants.findIndex(v => v.sku === item.sku);
+      if (idx === -1) continue;
+
+      const updatedVariants = variants.map((v, i) =>
+        i === idx ? { ...v, stock: v.stock + item.quantity } : v
+      );
+
+      tx.update(productRef, {
+        variants:  updatedVariants,
+        updatedAt: FieldValue.serverTimestamp(),
       });
     }
+
+    tx.update(resRef, {
+      status:    "released",
+      updatedAt: FieldValue.serverTimestamp(),
+    });
   });
-};
+}

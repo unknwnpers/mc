@@ -1,70 +1,40 @@
-import { adminDb } from "@/lib/firebase-admin";
-import { verifyUser } from "@/lib/server-auth";
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export async function GET(req: Request) {
   try {
-    const user = await verifyUser(req);
-    
-    // Auth check
-    if (user.role !== "admin" && user.role !== "superadmin") {
-      return NextResponse.json({ success: false, error: "Unauthorized access" }, { status: 403 });
-    }
+    await verifyAdmin(req);
 
-    // 1. Fetch Orders for metrics
-    // Since Firebase doesn't support complex aggregations over multiple conditional fields easily without
-    // cloud functions or sum() aggregations (which in nextjs admin sdk requires .count() / .sum()), 
-    // we'll fetch recent valid orders or assume a moderate volume for now.
-    
-    // For production scaling, we should use Firebase Aggregation Queries, 
-    // but the Firebase Admin SDK Node.js supports count() and sum() on queries.
-    
-    // Total Revenue (assuming paid, shipped, or delivered statuses)
-    const validOrderStatuses = ["paid", "processing", "shipped", "delivered"];
-    const ordersSnapshot = await adminDb.collection("orders").where("status", "in", validOrderStatuses).get();
-    
+    const [ordersSnap, productsSnap, usersSnap, pendingSnap, recentSnap] = await Promise.all([
+      adminDb.collection("orders").where("status", "in", ["paid", "processing", "shipped", "delivered"]).get(),
+      adminDb.collection("products").where("isActive", "==", true).count().get(),
+      adminDb.collection("users").where("role", "==", "customer").count().get(),
+      adminDb.collection("orders").where("status", "==", "pending_payment").count().get(),
+      adminDb.collection("orders").orderBy("createdAt", "desc").limit(8).get(),
+    ]);
+
     let totalRevenue = 0;
-    let totalOrdersCount = ordersSnapshot.size;
-    
-    ordersSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.totalAmount && typeof data.totalAmount === 'number') {
-           totalRevenue += data.totalAmount;
-        }
+    ordersSnap.docs.forEach(doc => {
+      const d = doc.data();
+      totalRevenue += (d.total || d.totalAmount || 0);
     });
 
-    // 2. Count Active Products
-    const productsQuery = await adminDb.collection("products").where("is_active", "==", true).count().get();
-    const activeProductsCount = productsQuery.data().count;
-
-    // 3. Count Customers
-    const customersQuery = await adminDb.collection("users").where("role", "==", "customer").count().get();
-    const customersCount = customersQuery.data().count;
-
-    // 4. Get 5 Recent Orders
-    const recentOrdersSnap = await adminDb.collection("orders")
-                                    .orderBy("created_at", "desc")
-                                    .limit(5)
-                                    .get();
-    
-    const recentOrders = recentOrdersSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    }));
+    const recentOrders = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json({
-        success: true,
-        data: {
-            totalRevenue,
-            totalOrders: totalOrdersCount,
-            activeProducts: activeProductsCount,
-            totalCustomers: customersCount,
-            recentOrders
-        }
+      success: true,
+      data: {
+        totalRevenue,
+        totalOrders:    ordersSnap.size,
+        activeProducts: productsSnap.data().count,
+        totalCustomers: usersSnap.data().count,
+        pendingOrders:  pendingSnap.data().count,
+        recentOrders,
+      }
     });
-
-  } catch (error: any) {
-    console.error("Failed to fetch analytics:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }
 }

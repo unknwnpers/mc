@@ -1,97 +1,99 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { confirmReservations } from "@/lib/inventory";
+import { confirmReservation } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
 
+    // ── 1. Input validation ─────────────────────────────────────────────────
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return NextResponse.json({ error: "Missing verification fields" }, { status: 400 });
     }
 
-    // 1. Initial Setup
+    // ── 2. Cryptographic signature verification ─────────────────────────────
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (!secret) {
-        throw new Error("Razorpay secret not configured");
-    }
-    const sign = razorpay_order_id + "|" + razorpay_payment_id;
+    if (!secret) throw new Error("Razorpay secret not configured");
 
-    // 2. Strict Idempotency (Deduplication)
-    const paymentCheckSnapshot = await adminDb.collection("orders")
-        .where("razorpayPaymentId", "==", razorpay_payment_id)
-        .get();
-    
-    if (!paymentCheckSnapshot.empty) {
-        await auditLog("INFO", {
-            event: "IDEMPOTENT_RETRY_DETECTED",
-            paymentId: razorpay_payment_id,
-            orderId: razorpay_order_id,
-            details: "Verification called for already processed payment"
-        });
-        return NextResponse.json({ success: true, firestoreOrderId: paymentCheckSnapshot.docs[0].id });
-    }
-
-    // 3. Verify Signature
     const expectedSignature = crypto
       .createHmac("sha256", secret)
-      .update(sign)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
       await auditLog("SECURITY", {
-          event: "INVALID_SIGNATURE_ATTEMPT",
-          orderId: razorpay_order_id,
-          details: { razorpay_payment_id, razorpay_signature }
+        event:   "INVALID_PAYMENT_SIGNATURE",
+        orderId: razorpay_order_id,
+        details: { razorpay_payment_id },
       });
       return NextResponse.json({ success: false, error: "Invalid payment signature" }, { status: 400 });
     }
 
-    // 4. Find and Update Order in Firestore
-    const snapshot = await adminDb.collection("orders")
-        .where("razorpayOrderId", "==", razorpay_order_id)
-        .get();
+    // ── 3. Idempotent order confirmation (full transaction) ─────────────────
+    // IMPORTANT: confirmReservation is called INSIDE the transaction so both
+    // the order status update and the reservation confirmation are atomic.
+    const orderRef = adminDb.collection("orders").doc(razorpay_order_id);
 
-    if (snapshot.empty) {
-      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
-    }
+    let alreadyPaid = false;
 
-    const orderDoc = snapshot.docs[0];
-    const orderData = orderDoc.data();
+    await adminDb.runTransaction(async (tx) => {
+      const orderSnap = await tx.get(orderRef);
 
-    // 5. Confirm Reservations & Set Paid status
-    if (orderData.status !== "paid") {
-        if (orderData.reservationIds && orderData.reservationIds.length > 0) {
-            await confirmReservations(orderData.reservationIds);
-        }
+      if (!orderSnap.exists) {
+        throw new Error(`Order not found: ${razorpay_order_id}`);
+      }
 
-        await adminDb.collection("orders").doc(orderDoc.id).update({
-            status: "paid",
-            razorpayPaymentId: razorpay_payment_id,
-            razorpaySignature: razorpay_signature,
-            updatedAt: FieldValue.serverTimestamp(),
+      const order = orderSnap.data()!;
+
+      // Idempotency guard — do nothing if already processed
+      if (order.status === "paid") {
+        alreadyPaid = true;
+        return;
+      }
+
+      // Mark order paid
+      tx.update(orderRef, {
+        status:             "paid",
+        razorpayPaymentId:  razorpay_payment_id,
+        razorpaySignature:  razorpay_signature,
+        updatedAt:          FieldValue.serverTimestamp(),
+      });
+
+      // Confirm reservation in the SAME transaction
+      // This prevents cleanup cron from restoring stock between the order update
+      // and a separate confirmReservation call.
+      if (order.reservationId) {
+        const resRef = adminDb.collection("reservations").doc(order.reservationId);
+        tx.update(resRef, {
+          status:    "paid",
+          updatedAt: FieldValue.serverTimestamp(),
         });
-
-        await auditLog("INFO", {
-            event: "PAYMENT_VERIFIED",
-            paymentId: razorpay_payment_id,
-            orderId: razorpay_order_id,
-            details: "Signature valid, order marked as paid"
-        });
-    }
-
-    return NextResponse.json({ success: true, firestoreOrderId: orderDoc.id });
-
-  } catch (error: any) {
-    await auditLog("ERROR", {
-        event: "PAYMENT_VERIFICATION_FAILED",
-        error: error.message,
-        details: {} // Removed direct access to req for safety
+      }
     });
-    console.error("Payment Verification Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+
+    if (alreadyPaid) {
+      await auditLog("INFO", {
+        event:   "PAYMENT_VERIFY_IDEMPOTENT",
+        orderId: razorpay_order_id,
+        details: { razorpay_payment_id },
+      });
+    } else {
+      await auditLog("INFO", {
+        event:   "PAYMENT_VERIFIED",
+        orderId: razorpay_order_id,
+        details: { razorpay_payment_id, signatureValid: true },
+      });
+    }
+
+    return NextResponse.json({ success: true, firestoreOrderId: razorpay_order_id });
+
+  } catch (err: any) {
+    console.error("Payment Verification Error:", err);
+    await auditLog("ERROR", { event: "PAYMENT_VERIFY_FAILED", error: err.message });
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

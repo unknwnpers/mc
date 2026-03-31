@@ -22,7 +22,14 @@ export default function ProductCard({ product }: ProductCardProps) {
   
   const SIZE_REQUIRED_CATEGORIES = ["baby", "kids", "maternity", "feeding"];
 
-  const displayImage = product.image_url || product.image || '/placeholder.jpg';
+  // Get image from images array (first image) or fallback
+  const displayImage = (product as any).images?.[0] || (product as any).image_url || (product as any).image || '/placeholder.jpg';
+
+  // Get price from first variant or fallback to product.price
+  const displayPrice = (product as any).variants?.[0]?.price ?? (product as any).price ?? 0;
+
+  // Get stock from first variant or total stock
+  const displayStock = (product as any).variants?.[0]?.stock ?? (product as any).stock ?? 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -39,13 +46,18 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
     
+    // Get SKU from first variant or use product ID
+    const sku = (product as any).variants?.[0]?.sku || product.id;
+    
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: displayPrice,
       image: displayImage,
       quantity: 1,
-      stock: product.stock
+      stock: displayStock,
+      sku: sku,
+      selectedSize: "Free Size"
     });
   };
 
@@ -62,11 +74,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           className={cn(
             "w-full h-full object-cover group-hover:scale-105 transition duration-500",
             imgLoading ? "opacity-0" : "opacity-100",
-            product.stock <= 0 && "grayscale opacity-50"
+            displayStock <= 0 && "grayscale opacity-50"
           )}
         />
 
-        {product.stock <= 0 && (
+        {displayStock <= 0 && (
           <span className="absolute top-3 left-3 bg-black text-white text-[10px] uppercase font-bold px-2 py-1 rounded tracking-widest z-20">
             Out of Stock
           </span>
@@ -87,20 +99,20 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="flex items-center justify-between mt-auto pt-4">
           <span className="font-bold text-blush text-xl tracking-tight">
-            ₹{product.price}
+            ₹{displayPrice}
           </span>
 
           <button 
             onClick={handleAddToCart}
-            disabled={product.stock <= 0}
+            disabled={displayStock <= 0}
             className={cn(
               "text-[11px] px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10",
-              product.stock <= 0 
+              displayStock <= 0 
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                 : "bg-blush text-white hover:bg-[#f48c82]"
             )}
           >
-            {product.stock <= 0 ? "Empty" : "Add"}
+            {displayStock <= 0 ? "Empty" : "Add"}
           </button>
         </div>
       </div>

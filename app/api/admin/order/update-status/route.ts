@@ -1,6 +1,8 @@
-import { adminDb } from "@/lib/firebase-admin";
-import { verifyUser } from "@/lib/server-auth";
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
+import { verifyUser } from "@/lib/server-auth";
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +16,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { orderId, status } = body;
 
-    const validStatuses = ["pending", "paid", "processing", "shipped", "delivered", "cancelled"];
+    const validStatuses = ["pending_payment", "paid", "created", "processing", "shipped", "delivered", "cancelled", "failed"];
 
     if (!orderId || !status || !validStatuses.includes(status)) {
       return NextResponse.json({ success: false, error: "Invalid request data" }, { status: 400 });
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
     // Perform atomic update
     await orderRef.update({
       status,
-      updated_at: new Date()
+      updatedAt: FieldValue.serverTimestamp()
     });
 
     // Log admin action

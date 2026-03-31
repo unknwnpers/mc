@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay";
 import { adminDb } from "@/lib/firebase-admin";
@@ -7,118 +8,125 @@ import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
-    const { cart, userId, profile } = await req.json();
+    const body = await req.json();
+    const { cart, userId, profile } = body;
 
-    if (!cart || !userId || !profile) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    // ── 1. Input validation ─────────────────────────────────────────────────
+    if (!Array.isArray(cart) || cart.length === 0) {
+      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    }
+    if (!userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (!profile?.address) {
+      return NextResponse.json({ error: "Shipping address required" }, { status: 400 });
     }
 
-    // 0. Stateful Rate Limiting (Bot Protection)
-    // Avoid "Pending Order Spam" - limit to 3 pending orders in 15 mins
-    try {
-        const staleTime = new Date(Date.now() - 15 * 60 * 1000);
-        const spamSnapshot = await adminDb.collection("orders")
-            .where("userId", "==", userId)
-            .where("status", "==", "pending_payment")
-            .where("createdAt", ">", staleTime)
-            .get();
-        
-        if (spamSnapshot.size >= 3) {
-            await auditLog("WARN", {
-                event: "RATE_LIMIT_EXEEDED",
-                userId,
-                details: "Too many pending orders in a short time"
-            });
-            return NextResponse.json({ 
-                error: "Too many pending orders. Please complete your current order first.",
-                type: "RATE_LIMIT_ERROR"
-            }, { status: 429 });
-        }
-    } catch (qErr: any) {
-        // FAIL-OPEN: If query fails (likely missing index), log it but let the customer buy!
-        console.error("Rate-limit query failed (Check Firestore Indexes):", qErr.message);
-        await auditLog("WARN", {
-            event: "RATE_LIMIT_QUERY_FAILED",
-            error: qErr.message,
-            details: "Checkout allowed to proceed (Fail-Open mode)"
-        });
-    }
-
-    // 1. Server-side Amount Validation (Prevent Manipulation)
-    let calculatedTotal = 0;
     for (const item of cart) {
-      const productDoc = await adminDb.collection("products").doc(item.id).get();
-      if (!productDoc.exists) {
-        return NextResponse.json({ error: `Product ${item.name} not found` }, { status: 404 });
+      if (!item.id || !item.sku || item.quantity <= 0) {
+        return NextResponse.json({
+          error: `Invalid cart item: id, sku, and quantity > 0 are required`
+        }, { status: 400 });
       }
-      const price = productDoc.data()?.price || 0;
-      calculatedTotal += price * item.quantity;
     }
 
-    // 2. Atomic Stock Reservation
-    let reservationIds: string[] = [];
+    // ── 2. Server-side price calculation (never trust the client) ───────────
+    let calculatedTotal = 0;
+    const validatedItems: any[] = [];
+
+    for (const item of cart) {
+      const productSnap = await adminDb.collection("products").doc(item.id).get();
+      if (!productSnap.exists) {
+        return NextResponse.json({ error: `Product not found: ${item.id}` }, { status: 404 });
+      }
+
+      const data = productSnap.data()!;
+      if (!data.isActive) {
+        return NextResponse.json({ error: `Product "${data.name}" is no longer available` }, { status: 409 });
+      }
+
+      const variants = (data.variants || []) as any[];
+      const variant  = variants.find((v: any) => v.sku === item.sku);
+      if (!variant) {
+        return NextResponse.json({
+          error: `SKU "${item.sku}" is not available for "${data.name}"`
+        }, { status: 409 });
+      }
+
+      calculatedTotal += variant.price * item.quantity;
+      validatedItems.push({ ...item, price: variant.price });
+    }
+
+    // ── 3. Atomic stock reservation (fails entire cart if any item OOS) ─────
+    let reservationId: string;
     try {
-      reservationIds = await reserveStock(cart, userId);
-    } catch (error: any) {
-      return NextResponse.json({ 
-        error: error.message || "Stock reservation failed",
-        type: "INVENTORY_ERROR"
-      }, { status: 409 }); // Conflict
+      reservationId = await reserveStock(cart, userId);
+    } catch (err: any) {
+      return NextResponse.json({
+        error: err.message || "Stock reservation failed",
+        type: "INVENTORY_ERROR",
+      }, { status: 409 });
     }
 
-    // 3. Create Razorpay Order or Bypass
+    // ── 4. Create Razorpay order ────────────────────────────────────────────
     const razorpay = getRazorpayClient();
-    let orderId = "";
+    let razorpayOrderId = "";
     let isMock = false;
 
     if (razorpay) {
-        const options = {
-            amount: calculatedTotal * 100, // Amount in paise
-            currency: "INR",
-            receipt: `receipt_${Date.now()}`,
-        };
-        const order = await razorpay.orders.create(options);
-        orderId = order.id;
+      const rpOrder = await razorpay.orders.create({
+        amount:   calculatedTotal * 100,
+        currency: "INR",
+        receipt:  `rcpt_${Date.now().toString().slice(-6)}_${userId.slice(-4)}`,
+      });
+      razorpayOrderId = rpOrder.id;
     } else {
-        // BYPASS MODE - Generate Mock ID
-        orderId = `mock_ord_${Math.random().toString(36).substring(2, 11)}`;
-        isMock = true;
+      razorpayOrderId = `mock_ord_${Math.random().toString(36).slice(2, 11)}`;
+      isMock = true;
     }
 
-    // 3. Create Pending Order in Firestore
-    const orderData = {
+    // ── 5. Persist order (keyed by Razorpay order ID for webhook correlation) ──
+    const orderDoc = {
       userId,
-      items: cart,
-      total: calculatedTotal,
-      status: isMock ? "processing" : "pending_payment",
-      razorpayOrderId: orderId,
+      items:           validatedItems,
+      total:           calculatedTotal,
+      status:          isMock ? "paid" : "pending_payment",
+      razorpayOrderId,
+      reservationId,
       recipient: {
-        name: profile.name,
-        phone: profile.phone,
+        name:  profile.name  || "",
+        phone: profile.phone || "",
       },
       shipping: {
-        address: profile.address,
-        city: profile.city || "",
+        address: profile.address || "",
+        city:    profile.city    || "",
         pincode: profile.pincode || "",
       },
-      reservationIds,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
 
-    const docRef = await adminDb.collection("orders").add(orderData);
+    await adminDb.collection("orders").doc(razorpayOrderId).set(orderDoc);
 
-    return NextResponse.json({
-      orderId: orderId,
-      amount: calculatedTotal * 100,
-      currency: "INR",
-      firestoreOrderId: docRef.id,
-      reservationIds,
-      isMock
+    await auditLog("INFO", {
+      event:   "ORDER_CREATED",
+      orderId: razorpayOrderId,
+      userId,
+      details: { total: calculatedTotal, items: cart.length, mock: isMock },
     });
 
-  } catch (error: any) {
-    console.error("Razorpay Order Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      orderId:         razorpayOrderId,
+      amount:          calculatedTotal * 100,
+      currency:        "INR",
+      firestoreOrderId: razorpayOrderId,
+      reservationId,
+      isMock,
+    });
+
+  } catch (err: any) {
+    console.error("ORDER CREATION ERROR:", err);
+    await auditLog("ERROR", { event: "ORDER_CREATION_FAILED", error: err.message });
+    return NextResponse.json({ error: err.message || "Order creation failed" }, { status: 500 });
   }
 }

@@ -1,105 +1,83 @@
-import { adminDb } from "@/lib/firebase-admin";
-import { verifyUser } from "@/lib/server-auth";
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
+import { verifyAdmin } from "@/lib/admin-auth";
 
-// 1. UPDATE COMPONENT
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+// ── GET /api/admin/products/[id] ─────────────────────────────────────────────
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await verifyUser(req);
-    
-    if (user.role !== "admin" && user.role !== "superadmin") {
-      return NextResponse.json({ success: false, error: "Unauthorized access" }, { status: 403 });
-    }
-
-    const productId = params.id;
-    if (!productId) {
-      return NextResponse.json({ success: false, error: "Missing product ID" }, { status: 400 });
-    }
-
-    const body = await req.json();
-    
-    const productRef = adminDb.collection("products").doc(productId);
-    const snap = await productRef.get();
-
-    if (!snap.exists) {
-      return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
-    }
-
-    // Prepare fields to update, omit undefined dynamically or explicitly set
-    const updateData: any = {
-      updated_at: new Date()
-    };
-
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.price !== undefined) updateData.price = Number(body.price);
-    if (body.stock !== undefined) updateData.stock = Number(body.stock);
-    if (body.sizes !== undefined) updateData.sizes = body.sizes;
-    if (body.is_active !== undefined) updateData.is_active = body.is_active;
-    if (body.image_url !== undefined) updateData.image_url = body.image_url;
-    if (body.category_id !== undefined) updateData.category_id = body.category_id;
-    if (body.category_slug !== undefined) updateData.category_slug = body.category_slug;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.is_featured !== undefined) updateData.is_featured = body.is_featured;
-
-    await productRef.update(updateData);
-
-    // Explicitly Log Admin Action
-    await adminDb.collection("admin_logs").add({
-      adminId: user.uid,
-      action: "update_product",
-      resource: "products",
-      resourceId: productId,
-      details: `Updated product fields: ${Object.keys(updateData).join(', ')}`,
-      created_at: new Date()
-    });
-
-    return NextResponse.json({ success: true, message: "Product updated successfully" });
-  } catch (error: any) {
-    console.error("Failed to update product:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    await verifyAdmin(req);
+    const snap = await adminDb.collection("products").doc(params.id).get();
+    if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
+    return NextResponse.json({ success: true, product: { id: snap.id, ...snap.data() } });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }
 }
 
-// 2. ARCHIVE PRODUCT (Archive is safer than DELETE)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+// ── PATCH /api/admin/products/[id] ───────────────────────────────────────────
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await verifyUser(req);
-    
-    if (user.role !== "admin" && user.role !== "superadmin") {
-      return NextResponse.json({ success: false, error: "Unauthorized access" }, { status: 403 });
+    const user = await verifyAdmin(req);
+    const body = await req.json();
+
+    const ref = adminDb.collection("products").doc(params.id);
+    const snap = await ref.get();
+    if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
+
+    // Validate variants if being updated
+    if (body.variants) {
+      for (const [size, data] of Object.entries(body.variants as Record<string, any>)) {
+        if (typeof data.price !== "number" || typeof data.stock !== "number") {
+          return NextResponse.json({ success: false, error: `Variant "${size}" must have numeric price and stock` }, { status: 400 });
+        }
+      }
     }
 
-    const productId = params.id;
-    if (!productId) {
-      return NextResponse.json({ success: false, error: "Missing product ID" }, { status: 400 });
+    const safeUpdate: Record<string, any> = { updatedAt: FieldValue.serverTimestamp() };
+    const allowed = ["name", "description", "images", "variants", "isActive", "is_featured", "category_id", "category_slug"];
+    for (const key of allowed) {
+      if (body[key] !== undefined) safeUpdate[key] = body[key];
     }
 
-    const productRef = adminDb.collection("products").doc(productId);
-    const snap = await productRef.get();
+    await ref.update(safeUpdate);
 
-    if (!snap.exists) {
-        return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
-    }
-
-    // Instead of deleting entirely, we archive it
-    await productRef.update({
-        is_active: false,
-        updated_at: new Date()
+    await adminDb.collection("admin_logs").add({
+      adminId: user.uid,
+      action: "update_product",
+      resourceId: params.id,
+      details: `Updated: ${Object.keys(safeUpdate).filter(k => k !== "updatedAt").join(", ")}`,
+      createdAt: FieldValue.serverTimestamp(),
     });
 
-    // Explicitly Log Admin Action
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
+  }
+}
+
+// ── DELETE /api/admin/products/[id] (soft archive) ───────────────────────────
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const user = await verifyAdmin(req);
+
+    const ref = adminDb.collection("products").doc(params.id);
+    const snap = await ref.get();
+    if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
+
+    await ref.update({ isActive: false, updatedAt: FieldValue.serverTimestamp() });
+
     await adminDb.collection("admin_logs").add({
       adminId: user.uid,
       action: "archive_product",
-      resource: "products",
-      resourceId: productId,
-      details: `Archived product`,
-      created_at: new Date()
+      resourceId: params.id,
+      details: "Soft-archived",
+      createdAt: FieldValue.serverTimestamp(),
     });
 
-    return NextResponse.json({ success: true, message: "Product archived successfully" });
-  } catch (error: any) {
-    console.error("Failed to archive product:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }
 }

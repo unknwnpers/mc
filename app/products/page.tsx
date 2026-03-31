@@ -55,20 +55,16 @@ function ProductsContent() {
     try {
       const constraints: any[] = [];
 
-      // 1. CATEGORY FILTER
+      // 1. ACTIVE PRODUCTS ONLY (CRITICAL FIX)
+      constraints.push(where("isActive", "==", true));
+
+      // 2. CATEGORY FILTER
       if (selectedCategory && selectedCategory !== 'all') {
         constraints.push(where("category_slug", "==", selectedCategory));
       }
 
-      // 2. SORTING
-      if (sort === "price_low") {
-        constraints.push(orderBy("price", "asc"));
-      } else if (sort === "price_high") {
-        constraints.push(orderBy("price", "desc"));
-      } else {
-        // Use created_at by default
-        constraints.push(orderBy("created_at", "desc"));
-      }
+      // 3. SORTING - Only createdAt in query, price sort done in-memory
+      constraints.push(orderBy("createdAt", "desc"));
 
       const q = query(collection(db, "products"), ...constraints);
       const snapshot = await getDocs(q);
@@ -78,7 +74,23 @@ function ProductsContent() {
         ...doc.data(),
       })) as Product[];
 
-      // 3. SEARCH (Client-side)
+      // 4. IN-MEMORY PRICE SORT (since price is in variants)
+      if (sort === "price_low") {
+        data.sort((a, b) => {
+          const priceA = a.variants?.[0]?.price || 0;
+          const priceB = b.variants?.[0]?.price || 0;
+          return priceA - priceB;
+        });
+      } else if (sort === "price_high") {
+        data.sort((a, b) => {
+          const priceA = a.variants?.[0]?.price || 0;
+          const priceB = b.variants?.[0]?.price || 0;
+          return priceB - priceA;
+        });
+      }
+      // else: already sorted by createdAt desc
+
+      // 5. SEARCH (Client-side)
       if (search) {
         const term = search.toLowerCase();
         data = data.filter(p => 
@@ -89,22 +101,35 @@ function ProductsContent() {
 
       setProducts(data);
     } catch (error) {
-      console.error('Filtering Query Error (check if index is required):', error);
+      console.error('Filtering Query Error:', error);
       
-      // Fallback: If query fails (likely missing index), fetch all and filter in memory for consistency
+      // Fallback: If query fails, fetch all and filter in memory
       try {
         const snapshot = await getDocs(collection(db, "products"));
         let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
         
-        // Manual filter
+        // Manual filter - ACTIVE + CATEGORY
+        data = data.filter(p => p.isActive !== false);
         if (selectedCategory && selectedCategory !== 'all') {
           data = data.filter(p => p.category_slug === selectedCategory);
         }
         
         // Manual sort
-        if (sort === "price_low") data.sort((a, b) => a.price - b.price);
-        else if (sort === "price_high") data.sort((a, b) => b.price - a.price);
-        else data.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+        if (sort === "price_low") {
+          data.sort((a, b) => {
+            const priceA = a.variants?.[0]?.price || 0;
+            const priceB = b.variants?.[0]?.price || 0;
+            return priceA - priceB;
+          });
+        } else if (sort === "price_high") {
+          data.sort((a, b) => {
+            const priceA = a.variants?.[0]?.price || 0;
+            const priceB = b.variants?.[0]?.price || 0;
+            return priceB - priceA;
+          });
+        } else {
+          data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        }
 
         // Manual search
         if (search) {

@@ -3,7 +3,7 @@
 import { useCart } from "@/context/cart-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { createOrder } from "@/lib/order";
+
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
@@ -289,12 +289,12 @@ export default function CartPage() {
                                                     await fetch("/api/razorpay/cancel", {
                                                         method: "POST",
                                                         headers: { "Content-Type": "application/json" },
-                                                        body: JSON.stringify({ 
-                                                            reservationIds: data.reservationIds,
-                                                            razorpayOrderId: data.orderId 
+                                                        body: JSON.stringify({
+                                                            reservationId:   data.reservationId,
+                                                            razorpayOrderId: data.orderId,
                                                         }),
                                                     });
-                                                    toast.error("Payment failed. Inventory has been released.");
+                                                    toast.error("Payment failed. Your cart is restored.");
                                                 } finally {
                                                     setIsCheckingOut(false);
                                                 }
