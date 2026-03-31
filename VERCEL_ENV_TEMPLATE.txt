@@ -1,0 +1,35 @@
+# ======================================
+# VERCEL ENVIRONMENT VARIABLES TEMPLATE
+# ======================================
+# Copy these to your Vercel Project Settings → Environment Variables
+# DO NOT commit actual values to Git!
+
+# ======================================
+# FIREBASE ADMIN (Required for Admin APIs)
+# ======================================
+# Option 1: Service Account JSON (Recommended)
+# Get this from Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"your-project-id","private_key_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com","client_id":"...","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/..."}
+
+# Option 2: Individual Fields (Alternative)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# ======================================
+# FIREBASE CLIENT (Required for Frontend)
+# ======================================
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
+
+# ======================================
+# RAZORPAY (Optional - Set BYPASS_RAZORPAY=true to disable)
+# ======================================
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=your_secret_key
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_...
+BYPASS_RAZORPAY=true
