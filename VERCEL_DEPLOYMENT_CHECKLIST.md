@@ -27,6 +27,9 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
+// Clean newline handling
+const formattedPrivateKey = privateKey.split(String.raw`\n`).join('\n');
+
 app = initializeApp({
   credential: cert({
     projectId,
@@ -36,7 +39,7 @@ app = initializeApp({
 });
 ```
 
-**Solution:** Direct env var mapping, no JSON parsing
+**Solution:** Direct env var mapping with proper newline conversion using `split(String.raw`\n`).join('\n')`
 
 ---
 
@@ -159,21 +162,26 @@ Visit: `https://www.miksandchiks.com/admin`
 
 ### If Private Key Format is Wrong
 
-Regenerate and format properly:
+**Problem:** Raw `\n` characters not converted to actual newlines
+
+**Solution:** The code now handles this automatically with:
+```typescript
+const formattedPrivateKey = privateKey.split(String.raw`\n`).join('\n');
+```
+
+But if you still have issues, regenerate and format properly:
 
 ```bash
 # 1. Download fresh key from Firebase Console
-# 2. Format it with this command:
-cat serviceAccountKey.json | jq -c '.private_key' > private_key.txt
-
-# 3. Copy content to Vercel env var
+# 2. Paste into Vercel as-is (with raw \n characters)
+# 3. Code will automatically convert them on runtime
 ```
 
-Or manually:
-1. Open `serviceAccountKey.json`
-2. Copy only the `private_key` field value
-3. Paste into Vercel as-is (with newlines)
-4. Save as `FIREBASE_PRIVATE_KEY`
+Or manually fix in Vercel:
+1. Open `FIREBASE_PRIVATE_KEY` env var
+2. Ensure it contains literal `\n` sequences (not actual line breaks)
+3. Example: `-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n`
+4. Save and redeploy
 
 ---
 

@@ -10,8 +10,9 @@ let app;
 
 if (!getApps().length) {
   if (projectId && clientEmail && privateKey) {
-    // Properly handle escaped newlines in Vercel env vars
-    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
+    // Handle escaped newlines in Vercel env vars
+    // Split raw \n and join with actual newlines
+    const formattedPrivateKey = privateKey.split(String.raw`\n`).join('\n');
     
     try {
       app = initializeApp({
