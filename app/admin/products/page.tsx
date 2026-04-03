@@ -52,11 +52,11 @@ const EMPTY_FORM: FormState = {
 };
 
 const CATEGORY_OPTIONS = [
-  { label: "Maternity Wear",   value: "maternity-wear" },
-  { label: "Kids Clothing",    value: "kids-clothing" },
-  { label: "Baby Essentials",  value: "baby-essentials" },
-  { label: "Feeding & Nursing",value: "feeding-nursing" },
-  { label: "Accessories",      value: "accessories" },
+  { label: "Maternity Wear", value: "maternity-wear" },
+  { label: "Kids Clothing", value: "kids-clothing" },
+  { label: "Baby Essentials", value: "baby-essentials" },
+  { label: "Feeding & Nursing", value: "feeding-nursing" },
+  { label: "Accessories", value: "accessories" },
 ];
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
@@ -73,12 +73,12 @@ export default function AdminProductsPage() {
   const { user, profile, loading } = useAuth();
   const isAdmin = profile?.role === "admin" || profile?.role === "superadmin";
 
-  const [products, setProducts]   = useState<Product[]>([]);
-  const [fetching, setFetching]   = useState(true);
-  const [showForm, setShowForm]   = useState(false);
-  const [editing, setEditing]     = useState<Product | null>(null);
-  const [saving, setSaving]       = useState(false);
-  const [form, setForm]           = useState<FormState>({ ...EMPTY_FORM });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [fetching, setFetching] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormState>({ ...EMPTY_FORM });
   const [stockEdit, setStockEdit] = useState<{ productId: string; sku: string; stock: number } | null>(null);
   const [savingStock, setSavingStock] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ productId: string; productName: string } | null>(null);
@@ -91,7 +91,7 @@ export default function AdminProductsPage() {
     if (!user || !isAdmin) return;
     setFetching(true);
     try {
-      const res  = await adminFetch("/api/admin/products?includeArchived=true");
+      const res = await adminFetch("/api/admin/products?includeArchived=true");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setProducts(data.products || []);
@@ -114,24 +114,24 @@ export default function AdminProductsPage() {
   function openEdit(p: Product) {
     setEditing(p);
     setForm({
-      name:          p.name,
-      description:   p.description || "",
-      imageInput:    "",
-      images:        p.images || [],
+      name: p.name,
+      description: p.description || "",
+      imageInput: "",
+      images: p.images || [],
       category_slug: p.category_slug || "",
-      is_featured:   p.is_featured || false,
-      isActive:      p.isActive !== false,
-      sizeInput:     "",
-      variants:      p.variants || [],
+      is_featured: p.is_featured || false,
+      isActive: p.isActive !== false,
+      sizeInput: "",
+      variants: p.variants || [],
     });
     setShowForm(true);
   }
-  function closeForm() { 
-    setShowForm(false); 
+  function closeForm() {
+    setShowForm(false);
     setEditing(null);
     // Cleanup all object URLs to prevent memory leaks
     imagePreviews.forEach(p => URL.revokeObjectURL(p.preview));
-    setImagePreviews([]); 
+    setImagePreviews([]);
   }
 
   // ── Image file handling ───────────────────────────────────────────────────
@@ -147,7 +147,7 @@ export default function AdminProductsPage() {
 
     setImagePreviews(prev => [...prev, ...newPreviews]);
     toast.info(`${files.length} image${files.length > 1 ? 's' : ''} selected for upload`);
-    
+
     // Reset file input so same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
@@ -215,19 +215,19 @@ export default function AdminProductsPage() {
     setSaving(true);
     try {
       const body = {
-        name:          form.name.trim(),
-        description:   form.description,
-        images:        finalImages,
+        name: form.name.trim(),
+        description: form.description,
+        images: finalImages,
         category_slug: form.category_slug,
-        is_featured:   form.is_featured,
-        isActive:      form.isActive,
-        options:       [{ name: "Size", values: form.variants.map(v => v.sku) }],
-        variants:      form.variants,
+        is_featured: form.is_featured,
+        isActive: form.isActive,
+        options: [{ name: "Size", values: form.variants.map(v => v.sku) }],
+        variants: form.variants,
       };
 
       const res = editing
         ? await adminFetch("/api/admin/products", { method: "PATCH", body: JSON.stringify({ id: editing.id, data: body }) })
-        : await adminFetch("/api/admin/products", { method: "POST",  body: JSON.stringify(body) });
+        : await adminFetch("/api/admin/products", { method: "POST", body: JSON.stringify(body) });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -242,7 +242,7 @@ export default function AdminProductsPage() {
   async function archiveProduct(id: string, name: string) {
     if (!confirm(`Archive "${name}"? It will be hidden from the store but can be restored.`)) return;
     try {
-      const res  = await adminFetch("/api/admin/products", { method: "DELETE", body: JSON.stringify({ id, action: "archive" }) });
+      const res = await adminFetch("/api/admin/products", { method: "DELETE", body: JSON.stringify({ id, action: "archive" }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast.success("Product archived");
@@ -252,7 +252,7 @@ export default function AdminProductsPage() {
 
   async function deleteProductPermanently() {
     if (!deleteConfirm) return;
-    
+
     // Extra confirmation step
     const confirmed = confirm(
       `⚠️ PERMANENTLY DELETE "${deleteConfirm.productName}"?
@@ -261,7 +261,7 @@ This action CANNOT be undone. The product will be removed from the database fore
 
 Type "DELETE" to confirm (press OK).`
     );
-    
+
     if (!confirmed) return;
 
     setDeleting(true);
@@ -286,7 +286,7 @@ Type "DELETE" to confirm (press OK).`
     if (!stockEdit) return;
     setSavingStock(true);
     try {
-      const res  = await adminFetch("/api/admin/inventory", {
+      const res = await adminFetch("/api/admin/inventory", {
         method: "POST",
         body: JSON.stringify({ productId: stockEdit.productId, sku: stockEdit.sku, stock: stockEdit.stock }),
       });
@@ -374,7 +374,7 @@ Type "DELETE" to confirm (press OK).`
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-white truncate">{p.name}</h3>
                     <div className="flex gap-1.5 shrink-0 ml-2">
-                      {!p.isActive  && <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold">Archived</span>}
+                      {!p.isActive && <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold">Archived</span>}
                       {p.is_featured && <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">Featured</span>}
                     </div>
                   </div>
@@ -545,7 +545,7 @@ Type "DELETE" to confirm (press OK).`
                 {/* ── Images ───────────────────────────────────────────── */}
                 <section>
                   <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4">Product Images</h3>
-                  
+
                   {/* URL Input */}
                   <div className="mb-4">
                     <label className="block text-xs font-semibold text-white/50 mb-2">Add via URL</label>
@@ -627,8 +627,8 @@ Type "DELETE" to confirm (press OK).`
                   <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4">Settings</h3>
                   <div className="space-y-3">
                     {[
-                      { label: "Active (visible in store)",    key: "isActive"    as const },
-                      { label: "Featured on homepage",         key: "is_featured" as const },
+                      { label: "Active (visible in store)", key: "isActive" as const },
+                      { label: "Featured on homepage", key: "is_featured" as const },
                     ].map(({ label, key }) => (
                       <button key={key} onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
                         className="w-full flex items-center justify-between bg-white/3 hover:bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 transition-all">

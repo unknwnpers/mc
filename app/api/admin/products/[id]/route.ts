@@ -26,11 +26,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const snap = await ref.get();
     if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
 
-    // Validate variants if being updated
+    // Validate variants if being updated (V2 Schema: Array)
     if (body.variants) {
-      for (const [size, data] of Object.entries(body.variants as Record<string, any>)) {
-        if (typeof data.price !== "number" || typeof data.stock !== "number") {
-          return NextResponse.json({ success: false, error: `Variant "${size}" must have numeric price and stock` }, { status: 400 });
+      if (!Array.isArray(body.variants)) {
+        return NextResponse.json({ success: false, error: "variants must be an array" }, { status: 400 });
+      }
+      for (const v of body.variants) {
+        if (!v.sku || typeof v.price !== "number" || typeof v.stock !== "number") {
+          return NextResponse.json({ success: false, error: "Each variant must have a sku and numeric price/stock" }, { status: 400 });
         }
       }
     }

@@ -1,151 +1,413 @@
 "use client";
-export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { auth } from "@/lib/firebase";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { Users, RefreshCw, ShieldCheck, ShieldOff } from "lucide-react";
+import { Users, Shield, Ban, CheckCircle, AlertTriangle, Loader2, Search } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
-interface UserRecord {
-  uid: string;
-  email: string | null;
-  name: string | null;
+interface User {
+  id: string;
+  email: string;
+  name: string;
   role: "customer" | "admin" | "superadmin";
-  created_at: any;
+  createdAt: Date | null;
+  blocked?: boolean;
 }
 
-const ROLE_STYLES: Record<string, string> = {
-  superadmin: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  admin:      "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  customer:   "bg-white/5 text-white/30 border-white/10",
-};
+export default function UsersManagementPage() {
+  const router = useRouter();
+  const { user, profile, loading } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [blocking, setBlocking] = useState(false);
 
-async function adminFetch(url: string, opts: RequestInit = {}) {
-  const token = await auth.currentUser?.getIdToken();
-  return fetch(url, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(opts.headers || {}) } });
-}
+  // Check admin access
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+      return;
+    }
 
-export default function UsersPage() {
-  const { profile }               = useAuth();
-  const isSuperAdmin              = profile?.role === "superadmin";
-  const [users,    setUsers]      = useState<UserRecord[]>([]);
-  const [fetching, setFetching]   = useState(true);
-  const [updating, setUpdating]   = useState<string | null>(null);
-  const [search,   setSearch]     = useState("");
+    if (user && profile?.role !== "admin" && profile?.role !== "superadmin") {
+      router.push("/admin");
+      toast.error("Admin access required");
+      return;
+    }
 
-  const fetchUsers = useCallback(async () => {
-    setFetching(true);
+    if (user) {
+      fetchUsers();
+    }
+  }, [user, loading, profile, router]);
+
+  async function fetchUsers() {
+    setLoadingData(true);
     try {
-      const res  = await adminFetch("/api/admin/users");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setUsers(data.users || []);
-    } catch (e: any) { toast.error(e.message); }
-    finally { setFetching(false); }
-  }, []);
+      const token = await user?.getIdToken();
+      if (!token) return;
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+      const res = await fetch("/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  async function changeRole(uid: string, role: string) {
-    setUpdating(uid);
-    try {
-      const res  = await adminFetch("/api/admin/users", { method: "PATCH", body: JSON.stringify({ uid, role }) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      toast.success(`Role updated → ${role}`);
-      setUsers(prev => prev.map(u => u.uid === uid ? { ...u, role: role as any } : u));
-    } catch (e: any) { toast.error(e.message); }
-    finally { setUpdating(null); }
+
+      if (res.ok) {
+        setUsers(data.users || []);
+      } else {
+        toast.error(data.error || "Failed to fetch users");
+      }
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoadingData(false);
+    }
   }
 
-  const filtered = users.filter(u =>
-    !search || u.email?.toLowerCase().includes(search.toLowerCase()) || u.name?.toLowerCase().includes(search.toLowerCase())
+  async function updateRole(userId: string, newRole: string) {
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid: userId, role: newRole }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success(`User role updated to ${newRole}`);
+        fetchUsers(); // Refresh list
+      } else {
+        toast.error(data.error || "Failed to update role");
+      }
+    } catch (error) {
+      console.error("Failed to update role:", error);
+      toast.error("Failed to update role");
+    }
+  }
+
+  async function blockUser() {
+    if (!selectedUser) return;
+
+    setBlocking(true);
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/users/block", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          userId: selectedUser.id, 
+          blocked: !selectedUser.blocked, // Toggle block status
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success(
+          selectedUser.blocked 
+            ? `User ${selectedUser.email} unblocked` 
+            : `User ${selectedUser.email} blocked`
+        );
+        setBlockDialogOpen(false);
+        setSelectedUser(null);
+        fetchUsers(); // Refresh list
+      } else {
+        toast.error(data.error || "Failed to update block status");
+      }
+    } catch (error) {
+      console.error("Failed to block/unblock user:", error);
+      toast.error("Failed to update block status");
+    } finally {
+      setBlocking(false);
+    }
+  }
+
+  function getRoleBadge(role: string) {
+    const styles: Record<string, string> = {
+      customer: "bg-gray-50 text-gray-700 border-gray-200",
+      admin: "bg-blue-50 text-blue-700 border-blue-200",
+      superadmin: "bg-purple-50 text-purple-700 border-purple-200",
+    };
+
+    return (
+      <Badge variant="outline" className={styles[role] || styles.customer}>
+        <Shield className="w-3 h-3 mr-1" />
+        {role.charAt(0).toUpperCase() + role.slice(1)}
+      </Badge>
+    );
+  }
+
+  function canManageUser(targetRole: string) {
+    // Superadmins can manage everyone except other superadmins
+    if (profile?.role === "superadmin") {
+      return targetRole !== "superadmin";
+    }
+    // Admins can only manage customers
+    if (profile?.role === "admin") {
+      return targetRole === "customer";
+    }
+    return false;
+  }
+
+  // Filter users by search term
+  const filteredUsers = users.filter((user) =>
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-10">
-        <div>
-          <h1 className="text-3xl font-black text-white">Users</h1>
-          <p className="text-white/30 text-sm mt-1">{users.length} registered customers</p>
+  if (loading || loadingData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-blue-600" />
+          <p className="text-gray-600">Loading users...</p>
         </div>
-        <button onClick={fetchUsers} disabled={fetching}
-          className="p-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] text-white/40 hover:text-white transition-all border border-white/[0.06]">
-          <RefreshCw className={cn("w-5 h-5", fetching && "animate-spin")} />
-        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <Users className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+        </div>
+        <p className="text-gray-600">
+          Manage user roles and permissions
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Total Users
+            </CardTitle>
+            <Users className="w-4 h-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{users.length}</div>
+            <p className="text-xs text-gray-500 mt-1">All registered users</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Customers
+            </CardTitle>
+            <CheckCircle className="w-4 h-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {users.filter((u) => u.role === "customer").length}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Regular users</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Admins
+            </CardTitle>
+            <Shield className="w-4 h-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {users.filter((u) => ["admin", "superadmin"].includes(u.role)).length}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Administrators</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search */}
-      <input value={search} onChange={e => setSearch(e.target.value)}
-        placeholder="Search by name or email…"
-        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-5 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/20 mb-6 transition-all" />
-
-      {/* Table */}
-      <div className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_1fr_120px_150px] px-6 py-3 border-b border-white/[0.04] text-[10px] font-black uppercase tracking-widest text-white/20">
-          <span>User</span>
-          <span>Email</span>
-          <span>Role</span>
-          {isSuperAdmin && <span>Change Role</span>}
-        </div>
-
-        {fetching ? (
-          <div className="p-6 space-y-3">
-            {[...Array(6)].map((_, i) => <div key={i} className="h-12 bg-white/[0.02] rounded-xl animate-pulse" />)}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>All Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search by email or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <Users className="w-8 h-8 mx-auto mb-3 text-white/10" />
-            <p className="text-white/20 font-semibold text-sm">No users found</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-white/[0.03]">
-            {filtered.map(u => (
-              <div key={u.uid} className="grid grid-cols-[1fr_1fr_120px_150px] items-center px-6 py-4 hover:bg-white/[0.02] transition-colors">
-                {/* Avatar + Name */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400/30 to-rose-600/30 flex items-center justify-center text-rose-300 text-xs font-black shrink-0">
-                    {(u.name || u.email || "?")[0].toUpperCase()}
-                  </div>
-                  <span className="text-white/70 text-sm font-bold truncate">{u.name || "—"}</span>
-                </div>
 
-                {/* Email */}
-                <span className="text-white/30 text-sm truncate font-mono">{u.email}</span>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.email}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{getRoleBadge(user.role)}</TableCell>
+                  <TableCell className="text-sm text-gray-500">
+                    {user.createdAt ? (
+                      new Intl.DateTimeFormat("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }).format(user.createdAt)
+                    ) : (
+                      <span className="text-gray-400">Not available</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {/* Role Selector - Only if can manage */}
+                      {canManageUser(user.role) ? (
+                        <Select
+                          defaultValue={user.role}
+                          onValueChange={(value) => updateRole(user.id, value)}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="customer">Customer</SelectItem>
+                            {profile?.role === "superadmin" && (
+                              <SelectItem value="admin">Admin</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          {user.role === "superadmin" ? "Protected" : "No Access"}
+                        </Badge>
+                      )}
 
-                {/* Role Badge */}
-                <span className={cn("text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border w-fit",
-                  ROLE_STYLES[u.role] || ROLE_STYLES.customer)}>
-                  {u.role}
-                </span>
+                      {/* Block/Unblock Button - Only superadmins can block */}
+                      {profile?.role === "superadmin" && user.role !== "superadmin" && (
+                        <Button
+                          variant={user.blocked ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setBlockDialogOpen(true);
+                          }}
+                          className={user.blocked ? "bg-orange-600 hover:bg-orange-700 text-white" : ""}
+                        >
+                          {user.blocked ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Unblock
+                            </>
+                          ) : (
+                            <>
+                              <Ban className="w-4 h-4 mr-1" />
+                              Block
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
-                {/* Role Changer (superadmin only) */}
-                {isSuperAdmin && (
-                  <Select
-                    defaultValue={u.role}
-                    disabled={updating === u.uid || u.uid === auth.currentUser?.uid}
-                    onValueChange={val => changeRole(u.uid, val)}
-                  >
-                    <SelectTrigger className="h-8 w-[130px] bg-white/[0.04] border-white/10 text-white/60 text-xs rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                      <SelectItem value="customer" className="text-xs">Customer</SelectItem>
-                      <SelectItem value="admin"    className="text-xs">Admin</SelectItem>
-                      <SelectItem value="superadmin" className="text-xs text-rose-400">Superadmin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              {searchTerm ? (
+                <p>No users found matching "{searchTerm}"</p>
+              ) : (
+                <p>No users found</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Block User Dialog */}
+      <AlertDialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              Block User
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will {selectedUser?.blocked ? "unblock" : "block"} {selectedUser?.email}. Are you sure?
+              {selectedUser?.blocked ? (
+                <p className="mt-2 text-sm text-green-600 font-semibold">
+                  User will be able to access the system again
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-red-600 font-semibold">
+                  User will not be able to access the system
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={blockUser}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={blocking}
+            >
+              {blocking 
+                ? (selectedUser?.blocked ? "Unblocking..." : "Blocking...") 
+                : (selectedUser?.blocked ? "Unblock User" : "Block User")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

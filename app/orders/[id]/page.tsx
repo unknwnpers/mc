@@ -230,8 +230,14 @@ export default function OrderDetailPage() {
                                     <div className="mt-12 pt-12 border-t border-[#F3E8E5] space-y-6">
                                         <div className="flex justify-between items-center text-charcoal/60 font-bold text-xs uppercase tracking-widest px-4">
                                             <span>Subtotal</span>
-                                            <span className="font-serif text-lg text-charcoal">₹{order.total}</span>
+                                            <span className="font-serif text-lg text-charcoal">₹{order.subtotal || order.total}</span>
                                         </div>
+                                        {order.discount > 0 && (
+                                            <div className="flex justify-between items-center text-green-600 font-bold text-xs uppercase tracking-widest px-4">
+                                                <span>Discount</span>
+                                                <span className="font-serif text-lg">-₹{order.discount}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between items-center text-charcoal/60 font-bold text-xs uppercase tracking-widest px-4">
                                             <span>Delivery</span>
                                             <span className="text-green-600 font-bold">FREE</span>

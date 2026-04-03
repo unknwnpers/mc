@@ -14,7 +14,9 @@ import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare } from 'lucide-react';
+import { ReviewForm } from '@/components/ReviewForm';
+import { ReviewsDisplay } from '@/components/ReviewsDisplay';
 
 
 
@@ -28,12 +30,17 @@ export default function ProductDetailsPage() {
   const [imgLoading, setImgLoading] = useState(true);
   const [isFav, setIsFav] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     fetchProduct();
+    fetchReviews();
   }, [id]);
 
   useEffect(() => {
@@ -71,6 +78,23 @@ export default function ProductDetailsPage() {
     setLoading(false);
   };
 
+  const fetchReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const response = await fetch(`/api/reviews/product?productId=${id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setReviews(data.reviews || []);
+        setAverageRating(data.averageRating || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch reviews:", error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   const toggleFavorite = async () => {
     if (!user) {
         toast.info("Please login to use favorites");
@@ -91,10 +115,10 @@ export default function ProductDetailsPage() {
             setIsFav(false);
             toast.info("Removed from favorites");
         } else {
-            // Get price from first variant or fallback
+            // Get price/image from variants array or fallback
             const variants = (product as any).variants as any[] | undefined;
-            const price = variants?.[0]?.price ?? (product as any).price ?? 0;
-            const image = (product as any).images?.[0] || (product as any).image_url || '/placeholder.jpg';
+            const price = variants?.[0]?.price ?? 0;
+            const image = (product as any).images?.[0] || '/placeholder.jpg';
 
             await setDoc(ref, {
                 productId: id,
@@ -175,8 +199,8 @@ export default function ProductDetailsPage() {
       name: product.name,
       sku: variant?.sku || "ONE-SIZE",
       selectedSize: selectedSize || "Free Size",
-      price: variant?.price ?? (product as any).price ?? 0,
-      image: (product as any).images?.[0] || (product as any).image_url || '/placeholder.jpg',
+      price: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
+      image: (product as any).images?.[0] || '/placeholder.jpg',
       quantity: 1,
     });
 
@@ -235,7 +259,7 @@ export default function ProductDetailsPage() {
           <div className="relative aspect-square rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10">
             {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
             <img
-              src={(product as any).images?.[0] || (product as any).image_url || '/placeholder.jpg'}
+              src={(product as any).images?.[0] || '/placeholder.jpg'}
               alt={product.name}
               onLoad={() => setImgLoading(false)}
               onError={(e) => {
@@ -264,8 +288,9 @@ export default function ProductDetailsPage() {
 
             <div className="flex items-center gap-5 mb-8">
               {(() => {
-                const v = (product as any).variants?.find((v: any) => v.sku === selectedSize);
-                const price = v?.price ?? (product as any).variants?.[0]?.price ?? (product as any).price ?? 0;
+                const variants = (product as any).variants as any[] | undefined;
+                const v = variants?.find((v: any) => v.sku === selectedSize);
+                const price = v?.price ?? variants?.[0]?.price ?? 0;
                 return (
                   <>
                     <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{price}</span>
@@ -364,11 +389,74 @@ export default function ProductDetailsPage() {
                 <Truck className="w-6 h-6 text-neutral-400" />
                 <p className="text-sm text-neutral-400">Free Shipping on Orders Over ₹1000</p>
               </div>
-              <div className="flex items-center gap-4">
-                <Star className="w-6 h-6 text-neutral-400" />
-                <p className="text-sm text-neutral-400">4.5/5 Customer Rating</p>
-              </div>
             </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="mt-16 border-t pt-12">
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-8 h-8 text-blush" />
+                <h2 className="text-3xl font-bold text-gray-900">Customer Reviews</h2>
+              </div>
+              {averageRating > 0 && (
+                <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-50 to-orange-50 px-6 py-3 rounded-xl">
+                  <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
+                  <span className="text-2xl font-bold text-gray-900">{averageRating.toFixed(1)}</span>
+                  <span className="text-sm text-gray-600">({reviews.length} reviews)</span>
+                </div>
+              )}
+            </div>
+
+            {/* Write Review Button */}
+            {user ? (
+              <button
+                onClick={() => setShowReviewForm(!showReviewForm)}
+                className="w-full mb-8 bg-gradient-to-r from-blush to-pink-400 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2"
+              >
+                <Star className="w-5 h-5" />
+                {showReviewForm ? 'Cancel' : 'Write a Review'}
+              </button>
+            ) : (
+              <div className="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-200">
+                <p className="text-blue-800 font-medium">
+                  Want to write a review?{' '}
+                  <button onClick={() => router.push(`/login?redirect=/products/${id}`)} className="underline font-bold hover:text-blue-600">
+                    Login now
+                  </button>
+                </p>
+              </div>
+            )}
+
+            {/* Review Form */}
+            {showReviewForm && user && (
+              <div className="mb-12">
+                <ReviewForm 
+                  productId={id} 
+                  onSuccess={() => {
+                    setShowReviewForm(false);
+                    fetchReviews();
+                  }} 
+                />
+              </div>
+            )}
+
+            {/* Reviews Display */}
+            {reviewsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="w-full h-40 rounded-xl" />
+                ))}
+              </div>
+            ) : (
+              <ReviewsDisplay 
+                reviews={reviews} 
+                averageRating={averageRating} 
+                productId={id}
+                canModerate={profile?.role === 'admin' || profile?.role === 'superadmin'}
+                onReviewDeleted={fetchReviews}
+              />
+            )}
           </div>
         </div>
 

@@ -9,7 +9,7 @@ import { auditLog } from "@/lib/logger";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { cart, userId, profile } = body;
+    const { cart, userId, profile, couponCode } = body;
 
     // ── 1. Input validation ─────────────────────────────────────────────────
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -57,6 +57,35 @@ export async function POST(req: Request) {
       validatedItems.push({ ...item, price: variant.price });
     }
 
+    // ── 2.5. Server-side discount validation ──────────────────────────────
+    let finalTotal = calculatedTotal;
+    let discountAmount = 0;
+
+    if (couponCode) {
+      const couponRef = adminDb.collection("coupons").doc(couponCode.toUpperCase());
+      const couponSnap = await couponRef.get();
+
+      if (couponSnap.exists) {
+        const coupon = couponSnap.data()!;
+        const isExpired = coupon.expiresAt && new Date(coupon.expiresAt) < new Date();
+        const isUsageLimitReached = coupon.usedCount >= coupon.usageLimit;
+        
+        if (coupon.active && !isExpired && !isUsageLimitReached && calculatedTotal >= (coupon.minOrder || 0)) {
+          if (coupon.type === "percentage") {
+            discountAmount = Math.round((calculatedTotal * coupon.value) / 100);
+            if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+              discountAmount = coupon.maxDiscount;
+            }
+          } else if (coupon.type === "fixed") {
+            discountAmount = coupon.value;
+          }
+          
+          discountAmount = Math.min(discountAmount, calculatedTotal);
+          finalTotal = calculatedTotal - discountAmount;
+        }
+      }
+    }
+
     // ── 3. Atomic stock reservation (fails entire cart if any item OOS) ─────
     let reservationId: string;
     try {
@@ -75,7 +104,7 @@ export async function POST(req: Request) {
 
     if (razorpay) {
       const rpOrder = await razorpay.orders.create({
-        amount:   calculatedTotal * 100,
+        amount:   finalTotal * 100,
         currency: "INR",
         receipt:  `rcpt_${Date.now().toString().slice(-6)}_${userId.slice(-4)}`,
       });
@@ -89,8 +118,11 @@ export async function POST(req: Request) {
     const orderDoc = {
       userId,
       items:           validatedItems,
-      total:           calculatedTotal,
+      subtotal:        calculatedTotal,
+      discount:        discountAmount,
+      total:           finalTotal,
       status:          isMock ? "paid" : "pending_payment",
+      couponCode:      couponCode || null,
       razorpayOrderId,
       reservationId,
       recipient: {
@@ -108,16 +140,39 @@ export async function POST(req: Request) {
 
     await adminDb.collection("orders").doc(razorpayOrderId).set(orderDoc);
 
+    // ── 6. Atomic completion for Mock Orders ────────────────────────────────
+    if (isMock && reservationId) {
+      await adminDb.collection("reservations").doc(reservationId).update({
+        status:    "paid",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      
+      // Also update coupon usage for mock orders
+      if (couponCode) {
+        const couponRef = adminDb.collection("coupons").doc(couponCode.toUpperCase());
+        await couponRef.update({
+          usedCount: FieldValue.increment(1)
+        });
+        
+        await adminDb.collection("coupon_usages").add({
+          userId,
+          couponCode: couponCode.toUpperCase(),
+          orderId: razorpayOrderId,
+          usedAt: FieldValue.serverTimestamp()
+        });
+      }
+    }
+
     await auditLog("INFO", {
       event:   "ORDER_CREATED",
       orderId: razorpayOrderId,
       userId,
-      details: { total: calculatedTotal, items: cart.length, mock: isMock },
+      details: { total: finalTotal, items: cart.length, mock: isMock },
     });
 
     return NextResponse.json({
       orderId:         razorpayOrderId,
-      amount:          calculatedTotal * 100,
+      amount:          finalTotal * 100,
       currency:        "INR",
       firestoreOrderId: razorpayOrderId,
       reservationId,

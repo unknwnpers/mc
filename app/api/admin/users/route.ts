@@ -12,7 +12,10 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get("limit") || "100", 10);
 
     const snap = await adminDb.collection("users").orderBy("created_at", "desc").limit(limit).get();
-    const users = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+    const users = snap.docs.map(doc => ({ 
+      id: doc.id,  // Map Firestore doc ID to frontend 'id' field
+      ...doc.data() 
+    }));
 
     return NextResponse.json({ success: true, users });
   } catch (err: any) {

@@ -30,8 +30,8 @@ export type CartItem = {
 type CartContextType = {
   cart: CartItem[];
   addToCart: (item: CartItem) => Promise<void>;
-  removeFromCart: (id: string, selectedSize?: string) => Promise<void>;
-  updateQuantity: (id: string, qty: number, selectedSize?: string) => Promise<void>;
+  removeFromCart: (id: string, sku: string) => Promise<void>;
+  updateQuantity: (id: string, qty: number, sku: string) => Promise<void>;
   clearCart: () => Promise<void>;
   loading: boolean;
 };
@@ -142,13 +142,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-  const removeFromCart = async (id: string, selectedSize?: string) => {
+  const removeFromCart = async (id: string, sku: string) => {
     if (!user) return;
     const cartRef = collection(db, "users", user.uid, "cart");
     const q = query(
         cartRef, 
         where("id", "==", id),
-        where("selectedSize", "==", selectedSize || null)
+        where("sku", "==", sku)
     );
     const snapshot = await getDocs(q);
 
@@ -161,14 +161,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     await fetchCart();
   };
 
-  const updateQuantity = async (id: string, qty: number, selectedSize?: string) => {
+  const updateQuantity = async (id: string, qty: number, sku: string) => {
     if (!user) return;
 
     const productSnap = await getDoc(doc(db, "products", id));
     if (productSnap.exists()) {
         const productData  = productSnap.data();
         const variants     = (productData.variants || []) as any[];
-        const variant      = variants.find((v: any) => v.sku === selectedSize);
+        const variant      = variants.find((v: any) => v.sku === sku);
         const currentStock = variant?.stock ?? 0;
         if (qty > currentStock) {
             toast.error(`Only ${currentStock} items in stock`);
@@ -180,7 +180,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const q = query(
         cartRef,
         where("id",  "==", id),
-        where("sku", "==", selectedSize || "")
+        where("sku", "==", sku)
     );
     const snapshot = await getDocs(q);
 

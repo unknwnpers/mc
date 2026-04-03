@@ -73,6 +73,22 @@ export async function POST(req: Request) {
           updatedAt: FieldValue.serverTimestamp(),
         });
       }
+
+      // Update coupon usage if applicable
+      if (order.couponCode) {
+        const couponRef = adminDb.collection("coupons").doc(order.couponCode.toUpperCase());
+        tx.update(couponRef, {
+          usedCount: FieldValue.increment(1)
+        });
+
+        const usageRef = adminDb.collection("coupon_usages").doc();
+        tx.set(usageRef, {
+          userId: order.userId,
+          couponCode: order.couponCode.toUpperCase(),
+          orderId: razorpay_order_id,
+          usedAt: FieldValue.serverTimestamp()
+        });
+      }
     });
 
     if (alreadyPaid) {

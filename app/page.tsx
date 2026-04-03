@@ -13,7 +13,7 @@ async function getFeaturedProducts() {
     const q = query(
       collection(db, 'products'),
       where('is_featured', '==', true),
-      orderBy('created_at', 'desc')
+      orderBy('createdAt', 'desc')
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];

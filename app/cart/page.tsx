@@ -3,6 +3,7 @@
 import { useCart } from "@/context/cart-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { ApplyCoupon } from "@/components/ApplyCoupon";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
@@ -19,11 +20,18 @@ export default function CartPage() {
     const { user, profile } = useAuth();
     const router = useRouter();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [discount, setDiscount] = useState(0);
+    const [finalAmount, setFinalAmount] = useState(0);
 
     const total = cart.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
     );
+
+    // Update final amount when total or discount changes
+    useEffect(() => {
+        setFinalAmount(total - discount);
+    }, [total, discount]);
 
     useEffect(() => {
         // One-time script loading for optimized performance
@@ -120,7 +128,7 @@ export default function CartPage() {
                                                         updateQuantity(
                                                             item.id,
                                                             Math.max(1, item.quantity - 1),
-                                                            item.selectedSize
+                                                            item.sku
                                                         )
                                                     }
                                                     className="p-2.5 hover:bg-white hover:text-blush rounded-xl transition-all shadow-sm active:scale-90"
@@ -134,7 +142,7 @@ export default function CartPage() {
 
                                                 <button
                                                     onClick={() =>
-                                                        updateQuantity(item.id, item.quantity + 1, item.selectedSize)
+                                                        updateQuantity(item.id, item.quantity + 1, item.sku)
                                                     }
                                                     className="p-2.5 hover:bg-white hover:text-blush rounded-xl transition-all shadow-sm active:scale-90"
                                                 >
@@ -149,7 +157,7 @@ export default function CartPage() {
                                             </p>
                                             <button
                                                 onClick={() => {
-                                                    removeFromCart(item.id, item.selectedSize);
+                                                    removeFromCart(item.id, item.sku);
                                                     toast.error(`${item.name} removed`);
                                                 }}
                                                 className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all shadow-sm active:scale-90"
@@ -168,7 +176,7 @@ export default function CartPage() {
                                 Order <span className="text-blush italic">Summary</span>
                             </h2>
 
-                            <div className="space-y-5 mb-10">
+                            <div className="space-y-5 mb-6">
                                 <div className="flex justify-between text-charcoal/60 font-medium">
                                     <span>Subtotal</span>
                                     <span>₹{total}</span>
@@ -177,11 +185,37 @@ export default function CartPage() {
                                     <span>Shipping</span>
                                     <span className="text-green-600 font-bold uppercase text-[10px] tracking-widest pt-1">Free</span>
                                 </div>
-                                <div className="h-px bg-[#F3E8E5] my-2" />
+                                
+                                {/* Coupon Applied Section */}
+                                {discount > 0 && (
+                                    <>
+                                        <div className="flex justify-between text-green-700 font-semibold">
+                                            <span>Coupon Discount</span>
+                                            <span>-₹{discount}</span>
+                                        </div>
+                                        <div className="h-px bg-green-200 my-2" />
+                                    </>
+                                )}
+                                
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-xl font-bold text-charcoal">Total</span>
-                                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{total}</span>
+                                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{finalAmount}</span>
                                 </div>
+                            </div>
+
+                            {/* Coupon Application Component */}
+                            <div className="mb-8">
+                                <ApplyCoupon
+                                    orderAmount={total}
+                                    onCouponApplied={(discountAmt, final, couponData) => {
+                                        setDiscount(discountAmt);
+                                        setFinalAmount(final);
+                                    }}
+                                    onCouponRemoved={() => {
+                                        setDiscount(0);
+                                        setFinalAmount(total);
+                                    }}
+                                />
                             </div>
 
                             {(!profile?.address || !profile?.phone) && user && (
@@ -212,11 +246,17 @@ export default function CartPage() {
 
                                     setIsCheckingOut(true);
                                     try {
-                                        // 1. Create Server-Validated Razorpay Order
+                                        // 1. Create Server-Validated Razorpay Order (with discount applied)
                                         const res = await fetch("/api/razorpay/order", {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ cart, userId: user.uid, profile }),
+                                            body: JSON.stringify({ 
+                                                cart, 
+                                                userId: user.uid, 
+                                                profile,
+                                                discount,
+                                                finalAmount,
+                                            }),
                                         });
 
                                         const data = await res.json();

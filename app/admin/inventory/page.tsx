@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Archive, RefreshCw, Minus, Plus, Check, AlertTriangle } from "lucide-react";
 
-type Variant = { price: number; stock: number };
-interface Product { id: string; name: string; variants: Record<string, Variant>; images: string[]; isActive: boolean; }
+type Variant = { sku: string; price: number; stock: number; options?: Record<string, string> };
+interface Product { id: string; name: string; variants: Variant[]; images: string[]; isActive: boolean; }
 
 async function adminFetch(url: string, opts: RequestInit = {}) {
   const token = await auth.currentUser?.getIdToken();
@@ -34,39 +34,39 @@ export default function InventoryPage() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  function getStock(productId: string, size: string, base: number) {
-    return edits[productId]?.[size] ?? base;
+  function getStock(productId: string, sku: string, base: number) {
+    return edits[productId]?.[sku] ?? base;
   }
 
-  function adjust(productId: string, size: string, base: number, delta: number) {
-    const current = getStock(productId, size, base);
+  function adjust(productId: string, sku: string, base: number, delta: number) {
+    const current = getStock(productId, sku, base);
     const next = Math.max(0, current + delta);
-    setEdits(prev => ({ ...prev, [productId]: { ...prev[productId], [size]: next } }));
+    setEdits(prev => ({ ...prev, [productId]: { ...prev[productId], [sku]: next } }));
   }
 
-  function setDirect(productId: string, size: string, val: string) {
+  function setDirect(productId: string, sku: string, val: string) {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 0) return;
-    setEdits(prev => ({ ...prev, [productId]: { ...prev[productId], [size]: num } }));
+    setEdits(prev => ({ ...prev, [productId]: { ...prev[productId], [sku]: num } }));
   }
 
-  async function saveStock(productId: string, size: string, stock: number) {
-    const key = `${productId}:${size}`;
+  async function saveStock(productId: string, sku: string, stock: number) {
+    const key = `${productId}:${sku}`;
     setSaving(key);
     try {
-      const res  = await adminFetch("/api/admin/inventory", { method: "POST", body: JSON.stringify({ productId, size, stock }) });
+      const res  = await adminFetch("/api/admin/inventory", { method: "POST", body: JSON.stringify({ productId, sku, stock }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success(`${size} stock updated → ${stock}`);
+      toast.success(`${sku} stock updated → ${stock}`);
       // Clear the local edit
-      setEdits(prev => { const n = { ...prev }; delete n[productId]?.[size]; return n; });
+      setEdits(prev => { const n = { ...prev }; delete n[productId]?.[sku]; return n; });
       fetchProducts();
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(null); }
   }
 
   const allLowStock = products.flatMap(p =>
-    Object.entries(p.variants || {}).filter(([, v]) => v.stock <= 3).map(([size]) => ({ name: p.name, size }))
+    (p.variants || []).filter(v => v.stock <= 3).map(v => ({ name: p.name, sku: v.sku }))
   );
 
   return (
@@ -89,7 +89,7 @@ export default function InventoryPage() {
           <div>
             <p className="text-amber-400 font-bold text-sm">Low Stock Warning</p>
             <p className="text-amber-400/70 text-xs mt-1">
-              {allLowStock.map(i => `${i.name} (${i.size})`).join(" · ")}
+              {allLowStock.map(i => `${i.name} (${i.sku})`).join(" · ")}
             </p>
           </div>
         </div>
@@ -124,36 +124,37 @@ export default function InventoryPage() {
               </div>
 
               {/* Variant Stock Controls */}
-              {Object.keys(p.variants || {}).length === 0 ? (
+              {!(p.variants && p.variants.length > 0) ? (
                 <p className="px-6 py-4 text-white/20 text-sm">No variants configured</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4">
-                  {Object.entries(p.variants).map(([size, v]) => {
-                    const currentStock = getStock(p.id, size, v.stock);
-                    const dirty        = edits[p.id]?.[size] !== undefined && edits[p.id][size] !== v.stock;
-                    const key          = `${p.id}:${size}`;
+                  {p.variants.map((v) => {
+                    const sku = v.sku;
+                    const currentStock = getStock(p.id, sku, v.stock);
+                    const dirty        = edits[p.id]?.[sku] !== undefined && edits[p.id][sku] !== v.stock;
+                    const key          = `${p.id}:${sku}`;
                     const stockColor   = currentStock === 0 ? "text-red-400" : currentStock <= 3 ? "text-amber-400" : "text-emerald-400";
 
                     return (
-                      <div key={size} className={cn(
+                      <div key={sku} className={cn(
                         "bg-white/[0.03] rounded-xl p-3 border transition-all",
                         dirty ? "border-white/20" : "border-white/[0.04]"
                       )}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-white font-black text-sm">{size}</span>
+                          <span className="text-white font-black text-sm">{sku}</span>
                           <span className="text-white/30 text-[10px]">₹{v.price}</span>
                         </div>
 
                         {/* Stock adjuster */}
                         <div className="flex items-center gap-1.5 mb-2">
-                          <button onClick={() => adjust(p.id, size, v.stock, -1)}
+                          <button onClick={() => adjust(p.id, sku, v.stock, -1)}
                             className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
                             <Minus className="w-3 h-3" />
                           </button>
                           <input type="number" min={0} value={currentStock}
-                            onChange={e => setDirect(p.id, size, e.target.value)}
+                            onChange={e => setDirect(p.id, sku, e.target.value)}
                             className="flex-1 bg-transparent text-center text-sm font-black text-white focus:outline-none w-0" />
-                          <button onClick={() => adjust(p.id, size, v.stock, 1)}
+                          <button onClick={() => adjust(p.id, sku, v.stock, 1)}
                             className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">
                             <Plus className="w-3 h-3" />
                           </button>
@@ -164,7 +165,7 @@ export default function InventoryPage() {
                             {currentStock === 0 ? "OOS" : `${currentStock} left`}
                           </span>
                           {dirty && (
-                            <button onClick={() => saveStock(p.id, size, currentStock)}
+                            <button onClick={() => saveStock(p.id, sku, currentStock)}
                               disabled={saving === key}
                               className="w-6 h-6 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all disabled:opacity-50">
                               <Check className="w-3 h-3" />

@@ -12,10 +12,35 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const includeArchived = searchParams.get("includeArchived") === "true";
 
-    let query: FirebaseFirestore.Query = adminDb.collection("products").orderBy("createdAt", "desc");
-    if (!includeArchived) query = adminDb.collection("products").where("isActive", "==", true).orderBy("createdAt", "desc");
+    let snapshot;
+    try {
+      const q = adminDb.collection("products").orderBy("createdAt", "desc");
+      if (!includeArchived) {
+        snapshot = await q.where("isActive", "==", true).get();
+      } else {
+        snapshot = await q.get();
+      }
+    } catch (firebaseErr: any) {
+      // Fallback for missing composite index (FAILED_PRECONDITION)
+      console.warn("Falling back to in-memory filter due to missing index:", firebaseErr.message);
+      snapshot = await adminDb.collection("products").get();
+      
+      let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (!includeArchived) {
+        docs = docs.filter((d: any) => d.isActive === true);
+      }
+      
+      // In-memory sort by createdAt desc
+      docs.sort((a: any, b: any) => {
+        const tA = a.createdAt?.seconds || 0;
+        const tB = b.createdAt?.seconds || 0;
+        return tB - tA;
+      });
+      
+      return NextResponse.json({ success: true, products: docs });
+    }
 
-    const snapshot = await query.get();
     const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json({ success: true, products });
@@ -30,16 +55,16 @@ export async function POST(req: Request) {
     const user = await verifyAdmin(req);
     const body = await req.json();
 
-    const { name, description, images, variants, category_id, category_slug, is_featured } = body;
+    const { name, description, images, variants, options, category_id, category_slug, is_featured, isActive } = body;
 
-    if (!name || !variants || typeof variants !== "object" || Object.keys(variants).length === 0) {
-      return NextResponse.json({ success: false, error: "name and at least one variant are required" }, { status: 400 });
+    if (!name || !variants || !Array.isArray(variants) || variants.length === 0) {
+      return NextResponse.json({ success: false, error: "name and at least one variant array are required" }, { status: 400 });
     }
 
-    // Validate each variant
-    for (const [size, data] of Object.entries(variants as Record<string, any>)) {
-      if (typeof data.price !== "number" || typeof data.stock !== "number") {
-        return NextResponse.json({ success: false, error: `Variant "${size}" must have numeric price and stock` }, { status: 400 });
+    // Validate each variant in the array
+    for (const v of variants) {
+      if (!v.sku || typeof v.price !== "number" || typeof v.stock !== "number") {
+        return NextResponse.json({ success: false, error: "Each variant must have a sku, and numeric price/stock" }, { status: 400 });
       }
     }
 
@@ -49,8 +74,9 @@ export async function POST(req: Request) {
       name: String(name).trim(),
       description: description || "",
       images: Array.isArray(images) ? images : [],
-      variants,               // { S: { price, stock }, M: { price, stock } }
-      isActive: true,
+      options: Array.isArray(options) ? options : [{ name: "Size", values: variants.map(v => v.sku) }],
+      variants,               // [ { sku, options, price, stock } ]
+      isActive: isActive !== undefined ? isActive : true,
       is_featured: is_featured || false,
       category_id: category_id || "",
       category_slug: category_slug || "",
@@ -87,6 +113,18 @@ export async function PATCH(req: Request) {
     const ref = adminDb.collection("products").doc(id);
     const snap = await ref.get();
     if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
+
+    // V2 Validation for variants if present in update
+    if (data.variants) {
+        if (!Array.isArray(data.variants)) {
+            return NextResponse.json({ success: false, error: "variants must be an array" }, { status: 400 });
+        }
+        for (const v of data.variants) {
+            if (!v.sku || typeof v.price !== "number" || typeof v.stock !== "number") {
+                return NextResponse.json({ success: false, error: "Invalid variant data in array" }, { status: 400 });
+            }
+        }
+    }
 
     await ref.update({ ...data, updatedAt: FieldValue.serverTimestamp() });
 

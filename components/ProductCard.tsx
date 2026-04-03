@@ -23,13 +23,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   const SIZE_REQUIRED_CATEGORIES = ["baby", "kids", "maternity", "feeding"];
 
   // Get image from images array (first image) or fallback
-  const displayImage = (product as any).images?.[0] || (product as any).image_url || (product as any).image || '/placeholder.jpg';
+  const displayImage = product.images?.[0] || '/placeholder.jpg';
 
-  // Get price from first variant or fallback to product.price
-  const displayPrice = (product as any).variants?.[0]?.price ?? (product as any).price ?? 0;
+  // Get price from first variant or fallback to 0
+  const displayPrice = product.variants?.[0]?.price ?? 0;
 
-  // Get stock from first variant or total stock
-  const displayStock = (product as any).variants?.[0]?.stock ?? (product as any).stock ?? 0;
+  // Get stock from first variant or fallback to 0
+  const displayStock = product.variants?.[0]?.stock ?? 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,7 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
     
     // Get SKU from first variant or use product ID
-    const sku = (product as any).variants?.[0]?.sku || product.id;
+    const sku = product.variants?.[0]?.sku || product.id;
     
     addToCart({
       id: product.id,
