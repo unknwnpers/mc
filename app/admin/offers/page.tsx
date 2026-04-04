@@ -64,13 +64,19 @@ export default function AdminOffersPage() {
     isActive: true,
     appliesTo: 'all' as 'all' | 'category' | 'product',
     categorySlug: '',
+    productIds: [] as string[],
     displayText: 'SAVE 20%',
     startDate: '',
     endDate: ''
   });
 
+  // Products for selection
+  const [products, setProducts] = useState<Array<{id: string; name: string}>>([]);
+  const [productSearch, setProductSearch] = useState('');
+
   useEffect(() => {
     fetchOffers();
+    fetchProducts();
   }, []);
 
   const fetchOffers = async () => {
@@ -159,10 +165,26 @@ export default function AdminOffersPage() {
       isActive: true,
       appliesTo: 'all',
       categorySlug: '',
+      productIds: [],
       displayText: 'SAVE 20%',
       startDate: '',
       endDate: ''
     });
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/admin/products', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProducts(data.products.map((p: any) => ({ id: p.id, name: p.name })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    }
   };
 
   const openEdit = (offer: Offer) => {
@@ -205,6 +227,7 @@ export default function AdminOffersPage() {
       isActive: offer.isActive,
       appliesTo: offer.appliesTo,
       categorySlug: offer.categorySlug || '',
+      productIds: offer.productIds || [],
       displayText: offer.displayText,
       startDate: toDateInputValue(offer.startDate),
       endDate: toDateInputValue(offer.endDate)
@@ -497,6 +520,58 @@ export default function AdminOffersPage() {
                         <option key={slug} value={slug}>{name}</option>
                       ))}
                     </select>
+                  </div>
+                )}
+
+                {/* Product Selection */}
+                {formData.appliesTo === 'product' && (
+                  <div>
+                    <label className="block text-sm font-medium text-white/60 mb-2">
+                      Select Products ({formData.productIds.length} selected)
+                    </label>
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      placeholder="Search products..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-blush mb-2"
+                    />
+                    <div className="max-h-48 overflow-y-auto bg-white/5 border border-white/10 rounded-xl p-2">
+                      {products
+                        .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                        .map(product => (
+                          <label
+                            key={product.id}
+                            className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.productIds.includes(product.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({ ...formData, productIds: [...formData.productIds, product.id] });
+                                } else {
+                                  setFormData({ ...formData, productIds: formData.productIds.filter(id => id !== product.id) });
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-blush focus:ring-blush"
+                            />
+                            <span className="text-sm text-white/80">{product.name}</span>
+                          </label>
+                        ))}
+                      {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                        <p className="text-white/40 text-sm p-2">No products found</p>
+                      )}
+                    </div>
+                    {formData.productIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, productIds: [] })}
+                        className="text-xs text-white/40 hover:text-white/60 mt-1"
+                      >
+                        Clear all
+                      </button>
+                    )}
                   </div>
                 )}
 

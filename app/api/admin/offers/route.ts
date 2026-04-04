@@ -104,6 +104,13 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    if (appliesTo === 'product' && (!productIds || productIds.length === 0)) {
+      return NextResponse.json(
+        { success: false, error: 'At least one product must be selected for product-specific offers' },
+        { status: 400 }
+      );
+    }
+    
     const offerData: Omit<Offer, 'id'> = {
       name,
       type,
