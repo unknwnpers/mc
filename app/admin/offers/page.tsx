@@ -171,12 +171,18 @@ export default function AdminOffersPage() {
     // Helper to convert Firestore Timestamp or string to date input format
     const toDateInputValue = (dateValue: any): string => {
       if (!dateValue) return '';
-      // Handle Firestore Timestamp {seconds, nanoseconds}
-      if (dateValue.seconds) {
-        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0];
+      try {
+        // Handle Firestore Timestamp {seconds, nanoseconds}
+        if (dateValue.seconds) {
+          return new Date(dateValue.seconds * 1000).toISOString().split('T')[0];
+        }
+        // Handle string or Date
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0];
+      } catch {
+        return '';
       }
-      // Handle string or Date
-      return new Date(dateValue).toISOString().split('T')[0];
     };
     
     setFormData({
@@ -201,12 +207,18 @@ export default function AdminOffersPage() {
 
   const formatDate = (dateValue?: any) => {
     if (!dateValue) return 'No expiry';
-    // Handle Firestore Timestamp {seconds, nanoseconds}
-    if (dateValue.seconds) {
-      return new Date(dateValue.seconds * 1000).toLocaleDateString('en-IN');
+    try {
+      // Handle Firestore Timestamp {seconds, nanoseconds}
+      if (dateValue.seconds) {
+        return new Date(dateValue.seconds * 1000).toLocaleDateString('en-IN');
+      }
+      // Handle string or Date
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      return date.toLocaleDateString('en-IN');
+    } catch {
+      return 'Invalid date';
     }
-    // Handle string or Date
-    return new Date(dateValue).toLocaleDateString('en-IN');
   };
 
   const isOfferActive = (offer: Offer) => {
@@ -214,16 +226,24 @@ export default function AdminOffersPage() {
     const now = new Date();
     
     // Helper to get Date from Firestore Timestamp or string
-    const getDate = (dateValue: any): Date => {
-      if (!dateValue) return new Date(0);
-      if (dateValue.seconds) {
-        return new Date(dateValue.seconds * 1000);
+    const getDate = (dateValue: any): Date | null => {
+      if (!dateValue) return null;
+      try {
+        if (dateValue.seconds) {
+          return new Date(dateValue.seconds * 1000);
+        }
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? null : date;
+      } catch {
+        return null;
       }
-      return new Date(dateValue);
     };
     
-    if (offer.startDate && getDate(offer.startDate) > now) return false;
-    if (offer.endDate && getDate(offer.endDate) < now) return false;
+    const startDate = getDate(offer.startDate);
+    const endDate = getDate(offer.endDate);
+    
+    if (startDate && startDate > now) return false;
+    if (endDate && endDate < now) return false;
     return true;
   };
 
