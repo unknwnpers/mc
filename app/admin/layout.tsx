@@ -8,7 +8,7 @@ import { signOut } from "firebase/auth";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Archive, ShoppingBag,
-  Users, BarChart2, LogOut, ChevronRight, Menu, X, Shield, Tag
+  Users, BarChart2, LogOut, ChevronRight, Menu, X, Shield, Tag, Percent
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ const NAV = [
   { href: "/admin/inventory", label: "Inventory",  icon: Archive },
   { href: "/admin/orders",    label: "Orders",     icon: ShoppingBag },
   { href: "/admin/users",     label: "Users",      icon: Users },
+  { href: "/admin/offers",    label: "Offers",     icon: Percent },
   { href: "/admin/coupons",   label: "Coupons",    icon: Tag },
   { href: "/admin/security",  label: "Security",   icon: Shield },
 ];
