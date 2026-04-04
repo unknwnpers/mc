@@ -60,7 +60,7 @@ export default function ProductDetailsPage() {
 
   // Fetch offer when product loads or size changes
   useEffect(() => {
-    if (product && selectedSize) {
+    if (product) {
       fetchOfferForVariant();
     }
   }, [product, selectedSize]);
@@ -129,19 +129,27 @@ export default function ProductDetailsPage() {
   };
 
   const fetchOfferForVariant = async () => {
-    if (!product || !selectedSize) return;
+    if (!product) return;
     
     try {
       const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
-      const variant = variants?.find(v => v.sku === selectedSize);
       
-      if (!variant) return;
+      // Get price from selected variant, or first variant, or 0
+      let price = 0;
+      if (selectedSize && variants) {
+        const variant = variants.find(v => v.sku === selectedSize);
+        price = variant?.price ?? 0;
+      } else if (variants && variants.length > 0) {
+        price = variants[0].price;
+      }
+      
+      if (price === 0) return;
       
       const response = await fetch('/api/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          price: variant.price,
+          price,
           categorySlug: product.category_slug,
           productId: product.id
         })
