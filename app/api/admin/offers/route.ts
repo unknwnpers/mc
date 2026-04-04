@@ -38,10 +38,29 @@ export async function GET(request: NextRequest) {
       .orderBy('createdAt', 'desc')
       .get();
     
-    const offers = offersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Offer[];
+    // Helper to convert Firestore Timestamp to ISO string
+    const convertTimestamp = (timestamp: any): string | null => {
+      if (!timestamp) return null;
+      if (timestamp.toDate) {
+        return timestamp.toDate().toISOString();
+      }
+      if (timestamp.seconds) {
+        return new Date(timestamp.seconds * 1000).toISOString();
+      }
+      return null;
+    };
+    
+    const offers = offersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        startDate: convertTimestamp(data.startDate),
+        endDate: convertTimestamp(data.endDate),
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt)
+      };
+    });
     
     return NextResponse.json({ success: true, offers });
     
