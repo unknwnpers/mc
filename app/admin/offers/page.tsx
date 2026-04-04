@@ -167,6 +167,18 @@ export default function AdminOffersPage() {
 
   const openEdit = (offer: Offer) => {
     setEditingOffer(offer);
+    
+    // Helper to convert Firestore Timestamp or string to date input format
+    const toDateInputValue = (dateValue: any): string => {
+      if (!dateValue) return '';
+      // Handle Firestore Timestamp {seconds, nanoseconds}
+      if (dateValue.seconds) {
+        return new Date(dateValue.seconds * 1000).toISOString().split('T')[0];
+      }
+      // Handle string or Date
+      return new Date(dateValue).toISOString().split('T')[0];
+    };
+    
     setFormData({
       name: offer.name,
       type: offer.type,
@@ -175,8 +187,8 @@ export default function AdminOffersPage() {
       appliesTo: offer.appliesTo,
       categorySlug: offer.categorySlug || '',
       displayText: offer.displayText,
-      startDate: offer.startDate ? new Date(offer.startDate).toISOString().split('T')[0] : '',
-      endDate: offer.endDate ? new Date(offer.endDate).toISOString().split('T')[0] : ''
+      startDate: toDateInputValue(offer.startDate),
+      endDate: toDateInputValue(offer.endDate)
     });
     setShowForm(true);
   };
@@ -187,16 +199,31 @@ export default function AdminOffersPage() {
     setShowForm(true);
   };
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'No expiry';
-    return new Date(dateStr).toLocaleDateString('en-IN');
+  const formatDate = (dateValue?: any) => {
+    if (!dateValue) return 'No expiry';
+    // Handle Firestore Timestamp {seconds, nanoseconds}
+    if (dateValue.seconds) {
+      return new Date(dateValue.seconds * 1000).toLocaleDateString('en-IN');
+    }
+    // Handle string or Date
+    return new Date(dateValue).toLocaleDateString('en-IN');
   };
 
   const isOfferActive = (offer: Offer) => {
     if (!offer.isActive) return false;
     const now = new Date();
-    if (offer.startDate && new Date(offer.startDate) > now) return false;
-    if (offer.endDate && new Date(offer.endDate) < now) return false;
+    
+    // Helper to get Date from Firestore Timestamp or string
+    const getDate = (dateValue: any): Date => {
+      if (!dateValue) return new Date(0);
+      if (dateValue.seconds) {
+        return new Date(dateValue.seconds * 1000);
+      }
+      return new Date(dateValue);
+    };
+    
+    if (offer.startDate && getDate(offer.startDate) > now) return false;
+    if (offer.endDate && getDate(offer.endDate) < now) return false;
     return true;
   };
 
