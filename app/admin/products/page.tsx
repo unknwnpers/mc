@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 import {
   Package, Plus, Pencil, Archive, RefreshCw, X, Save,
   Check, Loader2, Image as ImageIcon, Trash2, GripVertical, ChevronRight,
-  AlertTriangle
+  AlertTriangle, Upload, FileSpreadsheet
 } from "lucide-react";
 import type { ProductVariant, ProductOption } from "@/lib/types";
+import { parseExcelFile, ParsedProduct, ImportResult, DuplicateEntry, SizeIssue } from "@/lib/excel-import";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Product {
@@ -85,6 +86,17 @@ export default function AdminProductsPage() {
   const [deleting, setDeleting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<ImageUploadPreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Import State ──────────────────────────────────────────────────────────
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportResult | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showSizeIssuesModal, setShowSizeIssuesModal] = useState(false);
+  const [pendingImport, setPendingImport] = useState<ImportResult | null>(null);
+  const [sizeFixStrategy, setSizeFixStrategy] = useState<'convert' | 'skip' | null>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchProducts = useCallback(async () => {
@@ -175,6 +187,106 @@ export default function AdminProductsPage() {
   }
   function removeImage(url: string) {
     setForm(f => ({ ...f, images: f.images.filter(u => u !== url) }));
+  }
+
+  // ── Import helpers ────────────────────────────────────────────────────────
+  async function handleExcelSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('Please upload an Excel file (.xlsx or .xls)');
+      return;
+    }
+
+    setImportFile(file);
+    const result = await parseExcelFile(file);
+    setImportPreview(result);
+
+    if (!result.success) {
+      toast.error(`Import validation failed: ${result.errors.length} errors`);
+    } else if (result.sizeIssues.length > 0) {
+      // Show size issues modal first (before duplicates)
+      setPendingImport(result);
+      setShowSizeIssuesModal(true);
+      toast.warning(`${result.sizeIssues.length} invalid size entries detected`);
+    } else if (result.duplicates.length > 0) {
+      // Show duplicate confirmation modal
+      setPendingImport(result);
+      setShowDuplicateModal(true);
+      toast.warning(`${result.duplicates.length} duplicate entries detected`);
+    } else if (result.warnings.length > 0) {
+      toast.warning(`Import ready with ${result.warnings.length} warnings`);
+    } else {
+      toast.success(`Import ready: ${result.products.length} products`);
+    }
+  }
+
+  async function executeImport(mergeDuplicates = false, sizeFix: 'convert' | 'skip' | null = null) {
+    if (!importPreview?.success && !pendingImport?.success) return;
+    
+    const importData = (mergeDuplicates || sizeFix) && pendingImport ? pendingImport : importPreview;
+    if (!importData || (importData.products.length === 0 && sizeFix !== 'skip')) return;
+
+    setImporting(true);
+    try {
+      const res = await adminFetch('/api/admin/products/import', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          products: importData.products,
+          mergeDuplicates,
+          sizeFix,
+          sizeIssues: importData.sizeIssues
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      const summaryParts = [`${data.results.created} created`, `${data.results.updated} updated`];
+      if (data.results.converted > 0) summaryParts.push(`${data.results.converted} converted`);
+      if (data.results.skipped > 0) summaryParts.push(`${data.results.skipped} skipped`);
+      
+      toast.success(`Import complete: ${summaryParts.join(', ')}`);
+      
+      if (data.results.errors.length > 0) {
+        data.results.errors.forEach((err: string) => toast.error(err));
+      }
+
+      // Reset and refresh
+      setShowImport(false);
+      setShowDuplicateModal(false);
+      setShowSizeIssuesModal(false);
+      setImportFile(null);
+      setImportPreview(null);
+      setPendingImport(null);
+      setSizeFixStrategy(null);
+      if (excelInputRef.current) excelInputRef.current.value = '';
+      fetchProducts();
+    } catch (e: any) {
+      toast.error(e.message || 'Import failed');
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function downloadTemplate() {
+    const csv = 'Product Name,Category,Size,Price,Stock,Image URL\n' +
+                'Organic Cotton Onesie,baby-essentials,0-3M,599,50,https://example.com/image1.jpg\n' +
+                'Organic Cotton Onesie,baby-essentials,3-6M,599,30,\n' +
+                'Maternity Dress,maternity-wear,M,1299,20,https://example.com/image2.jpg';
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'product-import-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Template downloaded');
   }
 
   // ── Variant (size) helpers ────────────────────────────────────────────────
@@ -336,6 +448,10 @@ Type "DELETE" to confirm (press OK).`
               className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all disabled:opacity-40">
               <RefreshCw className={cn("w-4 h-4 text-white/60", fetching && "animate-spin")} />
             </button>
+            <button onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 bg-white/10 text-white border border-white/20 px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/20 transition-all">
+              <Upload className="w-4 h-4" /> Import
+            </button>
             <button onClick={openCreate}
               className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/90 transition-all">
               <Plus className="w-4 h-4" /> New Product
@@ -391,7 +507,7 @@ Type "DELETE" to confirm (press OK).`
                               ? "border-red-500/30 bg-red-500/10 text-red-400"
                               : "border-white/10 bg-white/5 text-white/60"
                           )}>
-                          {v.sku} · ₹{v.price} · {v.stock === 0 ? "OOS" : `${v.stock}`}
+                          {(v as any).options?.Size || v.sku} · ₹{v.price} · {v.stock === 0 ? "OOS" : `${v.stock}`}
                         </button>
                       ))}
                     </div>
@@ -488,6 +604,375 @@ Type "DELETE" to confirm (press OK).`
                 <button onClick={saveStock} disabled={savingStock}
                   className="flex-1 bg-white text-black font-semibold py-3 rounded-xl hover:bg-white/90 transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                   {savingStock ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Import Modal ──────────────────────────────────────────────────── */}
+        {showImport && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl bg-[#111] border border-white/10 rounded-2xl flex flex-col max-h-[90vh] overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <FileSpreadsheet className="w-5 h-5 text-blush" />
+                  <h2 className="text-lg font-bold text-white">Bulk Import Products</h2>
+                </div>
+                <button onClick={() => { setShowImport(false); setImportFile(null); setImportPreview(null); }}
+                  className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all">
+                  <X className="w-4 h-4 text-white/60" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-auto p-6">
+                {!importPreview ? (
+                  <div className="space-y-6">
+                    {/* Upload Area */}
+                    <div 
+                      onClick={() => excelInputRef.current?.click()}
+                      className="border-2 border-dashed border-white/10 rounded-2xl p-12 text-center hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer"
+                    >
+                      <Upload className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                      <p className="text-white font-medium mb-2">Click to upload Excel file</p>
+                      <p className="text-white/40 text-sm">.xlsx or .xls format</p>
+                    </div>
+                    <input 
+                      ref={excelInputRef}
+                      type="file" 
+                      accept=".xlsx,.xls" 
+                      onChange={handleExcelSelect}
+                      className="hidden"
+                    />
+
+                    {/* Template Download */}
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <p className="text-white/60 text-sm mb-3">Required columns:</p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {['Product Name', 'Category', 'Size', 'Price', 'Stock'].map(col => (
+                          <span key={col} className="text-xs bg-white/10 text-white/80 px-2 py-1 rounded">{col}</span>
+                        ))}
+                        <span className="text-xs bg-white/5 text-white/40 px-2 py-1 rounded">Image URL (optional)</span>
+                      </div>
+                      <button onClick={downloadTemplate}
+                        className="text-sm text-blush hover:text-white transition-colors flex items-center gap-2">
+                        <FileSpreadsheet className="w-4 h-4" /> Download Template
+                      </button>
+                    </div>
+
+                    {/* Category Reference */}
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <p className="text-white/60 text-sm mb-3">Valid categories:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {CATEGORY_OPTIONS.map(cat => (
+                          <div key={cat.value} className="flex justify-between text-white/80">
+                            <span>{cat.label}</span>
+                            <span className="text-white/40">{cat.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Preview Results */}
+                    <div className={cn(
+                      "rounded-xl p-4 border",
+                      importPreview.success ? "bg-green-500/10 border-green-500/20" : "bg-red-500/10 border-red-500/20"
+                    )}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {importPreview.success ? (
+                          <Check className="w-5 h-5 text-green-400" />
+                        ) : (
+                          <AlertTriangle className="w-5 h-5 text-red-400" />
+                        )}
+                        <span className={cn("font-medium", importPreview.success ? "text-green-400" : "text-red-400")}>
+                          {importPreview.success ? 'Ready to Import' : 'Validation Failed'}
+                        </span>
+                      </div>
+                      <p className="text-white/60 text-sm">
+                        {importPreview.products.length} products • {importPreview.totalVariants} total variants
+                      </p>
+                    </div>
+
+                    {/* Errors */}
+                    {importPreview.errors.length > 0 && (
+                      <div className="bg-red-500/5 rounded-xl p-4 border border-red-500/10 max-h-40 overflow-auto">
+                        <p className="text-red-400 text-sm font-medium mb-2">Errors ({importPreview.errors.length}):</p>
+                        {importPreview.errors.map((err, i) => (
+                          <p key={i} className="text-red-300/80 text-xs mb-1">• {err}</p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Warnings */}
+                    {importPreview.warnings.length > 0 && (
+                      <div className="bg-yellow-500/5 rounded-xl p-4 border border-yellow-500/10 max-h-32 overflow-auto">
+                        <p className="text-yellow-400 text-sm font-medium mb-2">Warnings ({importPreview.warnings.length}):</p>
+                        {importPreview.warnings.map((warn, i) => (
+                          <p key={i} className="text-yellow-300/80 text-xs mb-1">• {warn}</p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Product Preview */}
+                    {importPreview.products.length > 0 && (
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10 max-h-60 overflow-auto">
+                        <p className="text-white/60 text-sm font-medium mb-3">Products to import:</p>
+                        {importPreview.products.map((p, i) => (
+                          <div key={i} className="mb-3 pb-3 border-b border-white/5 last:border-0">
+                            <p className="text-white text-sm font-medium">{p.name}</p>
+                            <p className="text-white/40 text-xs">{p.category_slug} • {p.variants.length} variant(s)</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center gap-3 px-6 py-5 border-t border-white/10">
+                <button 
+                  onClick={() => { setShowImport(false); setImportFile(null); setImportPreview(null); }}
+                  className="flex-1 bg-white/5 text-white font-medium py-3 rounded-xl hover:bg-white/10 transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                {importPreview?.success && importPreview.duplicates.length === 0 && (
+                  <button 
+                    onClick={() => executeImport(false)}
+                    disabled={importing}
+                    className="flex-1 bg-blush text-white font-medium py-3 rounded-xl hover:bg-blush/90 transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {importing ? 'Importing...' : `Import ${importPreview.products.length} Products`}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Duplicate Confirmation Modal ─────────────────────────────────── */}
+        {showDuplicateModal && pendingImport && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-[#111] border border-white/10 rounded-2xl flex flex-col max-h-[90vh] overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+                <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                <div>
+                  <h2 className="text-lg font-bold text-white">Duplicate Sizes Detected</h2>
+                  <p className="text-white/40 text-sm">{pendingImport.duplicates.length} duplicate entries found</p>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-auto p-6">
+                <p className="text-white/60 text-sm mb-4">
+                  The following products have duplicate size entries. How would you like to handle them?
+                </p>
+
+                {/* Duplicate List */}
+                <div className="space-y-3 mb-6">
+                  {pendingImport.duplicates.slice(0, 5).map((dup, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/10">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white font-medium text-sm">{dup.productName}</span>
+                        <span className="text-white/40 text-xs">Size: {dup.size}</span>
+                      </div>
+                      <div className="text-white/40 text-xs">
+                        Rows: {dup.rows.join(', ')} • 
+                        {dup.hasPriceConflict ? (
+                          <span className="text-red-400">Price conflict: ₹{dup.prices.join(' vs ₹')}</span>
+                        ) : (
+                          <span>₹{dup.prices[0]} each</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {pendingImport.duplicates.length > 5 && (
+                    <p className="text-white/40 text-xs text-center">
+                      ... and {pendingImport.duplicates.length - 5} more
+                    </p>
+                  )}
+                </div>
+
+                {/* Price Conflict Warning */}
+                {pendingImport.duplicates.some(d => d.hasPriceConflict) && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4">
+                    <p className="text-red-400 text-sm font-medium mb-1">⚠️ Price Conflicts Detected</p>
+                    <p className="text-red-300/80 text-xs">
+                      Some duplicates have different prices. Merging will use the first price encountered.
+                    </p>
+                  </div>
+                )}
+
+                {/* Options */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <p className="text-white/60 text-sm mb-3">Choose an action:</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-3 text-white/80">
+                      <div className="w-5 h-5 rounded bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-green-400" />
+                      </div>
+                      <div>
+                        <span className="font-medium text-white">Merge Automatically</span>
+                        <p className="text-white/40 text-xs">Combine stock quantities, keep first price</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 text-white/80">
+                      <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <X className="w-3 h-3 text-white/40" />
+                      </div>
+                      <div>
+                        <span className="font-medium text-white">Cancel Upload</span>
+                        <p className="text-white/40 text-xs">Fix duplicates in Excel and re-upload</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center gap-3 px-6 py-5 border-t border-white/10">
+                <button 
+                  onClick={() => { setShowDuplicateModal(false); setPendingImport(null); }}
+                  className="flex-1 bg-white/5 text-white font-medium py-3 rounded-xl hover:bg-white/10 transition-all text-sm"
+                >
+                  Cancel Upload
+                </button>
+                <button 
+                  onClick={() => executeImport(true, sizeFixStrategy)}
+                  disabled={importing}
+                  className="flex-1 bg-green-500 text-white font-medium py-3 rounded-xl hover:bg-green-500/90 transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {importing ? 'Merging...' : sizeFixStrategy ? `Merge & ${sizeFixStrategy === 'convert' ? 'Convert' : 'Skip'}` : 'Merge & Import'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Size Issues Modal ────────────────────────────────────────────── */}
+        {showSizeIssuesModal && pendingImport && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-[#111] border border-white/10 rounded-2xl flex flex-col max-h-[90vh] overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+                <AlertTriangle className="w-6 h-6 text-orange-400" />
+                <div>
+                  <h2 className="text-lg font-bold text-white">Invalid Sizes Detected</h2>
+                  <p className="text-white/40 text-sm">{pendingImport.sizeIssues.length} rows with size issues</p>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-auto p-6">
+                <p className="text-white/60 text-sm mb-4">
+                  Some products have sizes that don't match their category. How would you like to handle them?
+                </p>
+
+                {/* Issues List */}
+                <div className="space-y-3 mb-6">
+                  {pendingImport.sizeIssues.slice(0, 5).map((issue, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/10">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white font-medium text-sm">{issue.productName}</span>
+                        <span className="text-orange-400 text-xs">{issue.size}</span>
+                      </div>
+                      <div className="text-white/40 text-xs">
+                        Row {issue.row} • {issue.category}
+                        {issue.suggestedFix && (
+                          <span className="text-green-400 ml-2">→ Suggest: {issue.suggestedFix}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {pendingImport.sizeIssues.length > 5 && (
+                    <p className="text-white/40 text-xs text-center">
+                      ... and {pendingImport.sizeIssues.length - 5} more
+                    </p>
+                  )}
+                </div>
+
+                {/* Valid Sizes Reference */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4">
+                  <p className="text-white/60 text-sm mb-2">Valid sizes by category:</p>
+                  <div className="space-y-1 text-xs text-white/40">
+                    <div><span className="text-white/60">Baby Essentials:</span> 0-3M, 3-6M, 6-9M, 9-12M, 12-18M, 18-24M</div>
+                    <div><span className="text-white/60">Kids Clothing:</span> 1-2Y, 2-3Y, 3-4Y, 4-5Y, 5-6Y, 6-7Y, 7-8Y, 8-9Y, 9-10Y, 10-12Y, 12-14Y</div>
+                    <div><span className="text-white/60">Maternity Wear:</span> S, M, L, XL, XXL, Free Size</div>
+                    <div><span className="text-white/60">Accessories:</span> Free Size</div>
+                  </div>
+                </div>
+
+                {/* Options */}
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3 text-sm p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                    <div className="w-5 h-5 rounded bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3 h-3 text-green-400" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-white">Convert Automatically</span>
+                      <p className="text-white/40 text-xs">Map invalid sizes to valid ones (S→0-3M, M→3-6M, etc.)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm p-3 bg-white/5 rounded-xl border border-white/10">
+                    <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <X className="w-3 h-3 text-white/40" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-white">Skip Invalid Rows</span>
+                      <p className="text-white/40 text-xs">Import only valid rows, skip problematic ones</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center gap-3 px-6 py-5 border-t border-white/10">
+                <button 
+                  onClick={() => { setShowSizeIssuesModal(false); setPendingImport(null); setSizeFixStrategy(null); }}
+                  className="flex-1 bg-white/5 text-white font-medium py-3 rounded-xl hover:bg-white/10 transition-all text-sm"
+                >
+                  Cancel Import
+                </button>
+                <button 
+                  onClick={() => {
+                    setSizeFixStrategy('skip');
+                    // Check for duplicates after size fix decision
+                    if (pendingImport.duplicates.length > 0) {
+                      setShowSizeIssuesModal(false);
+                      setShowDuplicateModal(true);
+                    } else {
+                      executeImport(false, 'skip');
+                    }
+                  }}
+                  disabled={importing}
+                  className="flex-1 bg-white/10 text-white font-medium py-3 rounded-xl hover:bg-white/20 transition-all text-sm"
+                >
+                  Skip & Continue
+                </button>
+                <button 
+                  onClick={() => {
+                    setSizeFixStrategy('convert');
+                    // Check for duplicates after size fix decision
+                    if (pendingImport.duplicates.length > 0) {
+                      setShowSizeIssuesModal(false);
+                      setShowDuplicateModal(true);
+                    } else {
+                      executeImport(false, 'convert');
+                    }
+                  }}
+                  disabled={importing}
+                  className="flex-1 bg-green-500 text-white font-medium py-3 rounded-xl hover:bg-green-500/90 transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Convert
                 </button>
               </div>
             </div>
@@ -675,7 +1160,7 @@ Type "DELETE" to confirm (press OK).`
 
                       {form.variants.map(v => (
                         <div key={v.sku} className="grid grid-cols-[80px_1fr_1fr_32px] gap-3 items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:border-white/20 transition-all">
-                          <span className="text-sm font-bold text-white font-mono">{v.sku}</span>
+                          <span className="text-sm font-bold text-white font-mono">{(v as any).options?.Size || v.sku}</span>
                           <input type="number" min={0} value={v.price === 0 ? "" : v.price}
                             placeholder="0"
                             onChange={e => setVariantField(v.sku, "price", e.target.value)}

@@ -82,10 +82,10 @@ export default function ContactPage() {
                     <div>
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-2">Concierge Phone</p>
                       <a
-                        href="tel:+919746356346"
+                        href="tel:+919633572427"
                         className="text-charcoal font-medium font-sans text-lg hover:text-blush transition-colors"
                       >
-                        +91 97463 56346
+                        +91 96335 72427
                       </a>
                     </div>
                   </div>
@@ -97,10 +97,10 @@ export default function ContactPage() {
                     <div>
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-2">Email Inquiries</p>
                       <a
-                        href="mailto:support@miksandchiks.com"
+                        href="mailto:miksandchiks@gmail.com"
                         className="text-charcoal font-medium font-sans text-lg hover:text-blush transition-colors"
                       >
-                        support@miksandchiks.com
+                        miksandchiks@gmail.com
                       </a>
                     </div>
                   </div>

@@ -44,10 +44,14 @@ export interface UserProfile {
   name: string | null;
   email: string | null;
   role: "customer" | "admin" | "superadmin";
-  address?: string;
-  phone?: string;
-  city?: string;
-  pincode?: string;
+  // Structured address fields (India/Kerala optimized)
+  addressLine1?: string;    // House name / building
+  addressLine2?: string;    // Area / locality
+  landmark?: string;        // Optional landmark
+  city?: string;            // City
+  state?: string;           // State (default: Kerala)
+  pincode?: string;         // 6-digit PIN code
+  phone?: string;           // 10-digit Indian phone
   created_at: any;
   updated_at?: any;
 }

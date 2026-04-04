@@ -218,13 +218,14 @@ export default function CartPage() {
                                 />
                             </div>
 
-                            {(!profile?.address || !profile?.phone) && user && (
+                            {/* Check if profile has required delivery info */}
+                            {user && (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) && (
                                 <div className="mb-8 p-6 bg-cream/50 rounded-3xl border border-blush/10 flex items-start gap-4">
                                     <Info className="w-6 h-6 text-blush shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Delivery Profile</p>
                                         <p className="text-sm text-charcoal/60 leading-relaxed font-sans">
-                                            Please add your address and phone number to proceed with checkout.
+                                            Please add your delivery address and phone number to proceed with checkout.
                                         </p>
                                     </div>
                                 </div>
@@ -238,7 +239,8 @@ export default function CartPage() {
                                         return;
                                     }
 
-                                    if (!profile?.address || !profile?.phone) {
+                                    // Check if profile has required delivery info
+                                    if (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) {
                                         toast.warning("Please complete your delivery profile first");
                                         router.push("/profile?redirect=/cart");
                                         return;
@@ -356,7 +358,7 @@ export default function CartPage() {
                                     <div className="h-6 w-6 animate-spin rounded-full border-3 border-solid border-white border-r-transparent" />
                                 ) : (
                                     <>
-                                        {(!profile?.address || !profile?.phone) ? "Complete Profile" : "Secure Checkout"}
+                                        {(!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) ? "Complete Profile" : "Secure Checkout"}
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                                     </>
                                 )}

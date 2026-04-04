@@ -20,7 +20,12 @@ function ProfileContent() {
   const redirectPath = searchParams.get("redirect");
 
   const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("Kerala");
+  const [pincode, setPincode] = useState("");
   const [phone, setPhone] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -29,7 +34,12 @@ function ProfileContent() {
   useEffect(() => {
     if (profile) {
       setName(profile.name || "");
-      setAddress(profile.address || "");
+      setAddressLine1(profile.addressLine1 || "");
+      setAddressLine2(profile.addressLine2 || "");
+      setLandmark(profile.landmark || "");
+      setCity(profile.city || "");
+      setState(profile.state || "Kerala");
+      setPincode(profile.pincode || "");
       setPhone(profile.phone || "");
     }
   }, [profile]);
@@ -70,19 +80,44 @@ function ProfileContent() {
   }
 
   const handleSave = async () => {
-    if (!name.trim() || !address.trim() || !phone.trim()) {
-      toast.error("All profile fields are required for delivery");
+    // Validation
+    if (!name.trim() || name.trim().length < 3) {
+      toast.error("Name must be at least 3 characters");
       return;
     }
 
-    if (!/^\d{10}$/.test(phone)) {
-      toast.error("Please enter a valid 10-digit phone number");
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      toast.error("Please enter a valid 10-digit Indian phone number (starting with 6-9)");
+      return;
+    }
+
+    if (!addressLine1.trim()) {
+      toast.error("House/Building name is required");
+      return;
+    }
+
+    if (!city.trim()) {
+      toast.error("City is required");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(pincode)) {
+      toast.error("Please enter a valid 6-digit PIN code");
       return;
     }
 
     setIsSaving(true);
     try {
-      await updateProfile({ name: name.trim(), address: address.trim(), phone: phone.trim() });
+      await updateProfile({ 
+        name: name.trim(), 
+        addressLine1: addressLine1.trim(),
+        addressLine2: addressLine2.trim(),
+        landmark: landmark.trim(),
+        city: city.trim(),
+        state: state,
+        pincode: pincode.trim(),
+        phone: phone.trim()
+      });
       toast.success("Profile updated successfully");
       if (redirectPath) {
         router.push(redirectPath);
@@ -153,16 +188,86 @@ function ProfileContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Delivery Address</label>
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">House / Building Name *</label>
                   <div className="relative group">
-                    <MapPin className="absolute left-5 top-5 w-5 h-5 text-neutral-300 group-focus-within:text-blush transition-colors" />
-                    <textarea 
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full pl-14 pr-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300 min-h-[140px] resize-none"
-                      placeholder="Detailed shipping address"
+                    <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                    <input 
+                      type="text"
+                      value={addressLine1}
+                      onChange={(e) => setAddressLine1(e.target.value)}
+                      className="w-full pl-14 pr-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                      placeholder="e.g., Sunshine Villa"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Area / Locality</label>
+                  <div className="relative group">
+                    <input 
+                      type="text"
+                      value={addressLine2}
+                      onChange={(e) => setAddressLine2(e.target.value)}
+                      className="w-full px-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                      placeholder="e.g., MG Road, Near Temple"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Landmark (Optional)</label>
+                  <div className="relative group">
+                    <input 
+                      type="text"
+                      value={landmark}
+                      onChange={(e) => setLandmark(e.target.value)}
+                      className="w-full px-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                      placeholder="e.g., Opposite Lulu Mall"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">City *</label>
+                    <input 
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                      placeholder="Kottayam"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">State</label>
+                    <select 
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="w-full px-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal"
+                    >
+                      <option value="Kerala">Kerala</option>
+                      <option value="Tamil Nadu">Tamil Nadu</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Andhra Pradesh">Andhra Pradesh</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">PIN Code *</label>
+                  <input 
+                    type="text"
+                    maxLength={6}
+                    value={pincode}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setPincode(val);
+                    }}
+                    className="w-full px-6 py-5 bg-neutral-50 border-none rounded-3xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                    placeholder="686531"
+                  />
                 </div>
 
                 <div className="space-y-2">

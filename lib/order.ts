@@ -9,9 +9,9 @@ export async function createOrder(
     const userSnap = await getDoc(doc(db, "users", userId));
     const userData = userSnap.data();
 
-    // 2. Strict validation
-    if (!userData?.address || !userData?.phone || !userData?.name) {
-        throw new Error("Incomplete profile");
+    // 2. Strict validation (check for structured address fields)
+    if (!userData?.addressLine1 || !userData?.city || !userData?.pincode || !userData?.phone || !userData?.name) {
+        throw new Error("Incomplete profile - please add delivery address");
     }
 
     // 3. Calculate total
@@ -29,11 +29,14 @@ export async function createOrder(
         quantity: item.quantity
     }));
 
-    // 5. Create Order
+    // 5. Create Order with structured address
     const orderRef = await addDoc(collection(db, "orders"), {
         userId,
         userName: userData.name || "Customer",
-        address: userData.address,
+        shippingAddress: `${userData.addressLine1}${userData.addressLine2 ? ', ' + userData.addressLine2 : ''}${userData.landmark ? ', Near ' + userData.landmark : ''}`,
+        city: userData.city,
+        state: userData.state || "Kerala",
+        pincode: userData.pincode,
         phone: userData.phone,
         items: cleanedItems,
         total,

@@ -19,8 +19,6 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
-  
-  const SIZE_REQUIRED_CATEGORIES = ["baby", "kids", "maternity", "feeding"];
 
   // Get image from images array (first image) or fallback
   const displayImage = product.images?.[0] || '/placeholder.jpg';
@@ -33,22 +31,49 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    
     if (!user) {
       toast.info("Please login to add items to cart");
       router.push(`/login?redirect=/products/${product.id}`);
       return;
     }
 
-    // Check if size is required
-    if (SIZE_REQUIRED_CATEGORIES.includes(product.category_slug || "")) {
+    const variants = product.variants;
+    const hasVariants = variants && variants.length > 0;
+
+    // If product has multiple variants, force selection on detail page
+    if (hasVariants && variants.length > 1) {
       toast.info("Please select a size first");
       router.push(`/products/${product.id}`);
       return;
     }
-    
-    // Get SKU from first variant or use product ID
-    const sku = product.variants?.[0]?.sku || product.id;
-    
+
+    // If product has exactly one variant, use it directly
+    if (hasVariants && variants.length === 1) {
+      const variant = variants[0];
+      
+      // Check stock
+      if (variant.stock <= 0) {
+        toast.error("Sorry, this item is out of stock");
+        return;
+      }
+
+      addToCart({
+        id: product.id,
+        name: product.name,
+        price: variant.price,
+        image: displayImage,
+        quantity: 1,
+        stock: variant.stock,
+        sku: variant.sku,
+        selectedSize: variant.sku,  // Use actual SKU as size label
+      });
+      
+      toast.success(`${product.name} added to cart!`);
+      return;
+    }
+
+    // Fallback for products without variants (legacy)
     addToCart({
       id: product.id,
       name: product.name,
@@ -56,9 +81,11 @@ export default function ProductCard({ product }: ProductCardProps) {
       image: displayImage,
       quantity: 1,
       stock: displayStock,
-      sku: sku,
+      sku: product.id,
       selectedSize: "Free Size"
     });
+    
+    toast.success(`${product.name} added to cart!`);
   };
 
   return (
@@ -112,7 +139,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 : "bg-blush text-white hover:bg-[#f48c82]"
             )}
           >
-            {displayStock <= 0 ? "Empty" : "Add"}
+            {displayStock <= 0 ? "Out of Stock" : "Add"}
           </button>
         </div>
       </div>

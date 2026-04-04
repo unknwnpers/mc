@@ -119,10 +119,10 @@ export default async function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
             <div className="space-y-4">
               <h2 className="text-5xl font-serif font-bold text-charcoal tracking-tight leading-tight">
-                Shop by <span className="text-blush italic">Category</span>
+                Curated <span className="text-blush italic">Collections</span>
               </h2>
               <p className="text-neutral-500 text-lg font-sans max-w-xl">
-                Explore our carefully curated collections designed for every stage of your journey.
+                Discover thoughtfully selected essentials for every stage of motherhood.
               </p>
             </div>
             <Link href="/products" className="group flex items-center gap-3 text-xs font-black uppercase tracking-widest text-blush hover:text-charcoal transition-colors">

@@ -62,12 +62,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           // Auto-upgrade existing admin email accounts that weren't promoted yet
           const needsRoleUpgrade = u.email === ADMIN_EMAIL && data.role !== "superadmin" && data.role !== "admin";
-          const needsFieldFill   = data.address === undefined || data.phone === undefined;
+          const needsFieldFill   = !data.addressLine1 || !data.phone;
 
           if (needsRoleUpgrade || needsFieldFill) {
             const updated: UserProfile = {
               ...data,
-              address: data.address || "",
+              addressLine1: data.addressLine1 || "",
               phone:   data.phone   || "",
               role:    needsRoleUpgrade ? "superadmin" : data.role,
               updated_at: new Date().toISOString(),
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             name: u.displayName,
             email: u.email,
             role,
-            address: "",
+            addressLine1: "",
             phone: "",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()

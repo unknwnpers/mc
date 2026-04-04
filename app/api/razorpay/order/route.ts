@@ -18,8 +18,9 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    if (!profile?.address) {
-      return NextResponse.json({ error: "Shipping address required" }, { status: 400 });
+    // Check for required delivery info (structured address)
+    if (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) {
+      return NextResponse.json({ error: "Complete delivery profile required (address, city, pincode, phone)" }, { status: 400 });
     }
 
     for (const item of cart) {
@@ -130,8 +131,9 @@ export async function POST(req: Request) {
         phone: profile.phone || "",
       },
       shipping: {
-        address: profile.address || "",
+        address: `${profile.addressLine1 || ''}${profile.addressLine2 ? ', ' + profile.addressLine2 : ''}${profile.landmark ? ', Near ' + profile.landmark : ''}`,
         city:    profile.city    || "",
+        state:   profile.state   || "Kerala",
         pincode: profile.pincode || "",
       },
       createdAt: FieldValue.serverTimestamp(),

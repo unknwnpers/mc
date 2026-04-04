@@ -20,6 +20,20 @@ import { ReviewsDisplay } from '@/components/ReviewsDisplay';
 
 
 
+interface AppliedOffer {
+  hasOffer: boolean;
+  offer?: {
+    id: string;
+    name: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    displayText: string;
+  };
+  originalPrice: number;
+  discountedPrice: number;
+  savings: number;
+}
+
 export default function ProductDetailsPage() {
   const params = useParams();
   const id = params.id as string;
@@ -34,6 +48,7 @@ export default function ProductDetailsPage() {
   const [averageRating, setAverageRating] = useState(0);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
   const { addToCart } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -42,6 +57,24 @@ export default function ProductDetailsPage() {
     fetchProduct();
     fetchReviews();
   }, [id]);
+
+  // Fetch offer when product loads or size changes
+  useEffect(() => {
+    if (product && selectedSize) {
+      fetchOfferForVariant();
+    }
+  }, [product, selectedSize]);
+
+  // Auto-select size if only one variant available
+  useEffect(() => {
+    if (product) {
+      const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
+      if (variants && variants.length === 1 && variants[0].stock > 0) {
+        // Only one size in stock → auto-select
+        setSelectedSize(variants[0].sku);
+      }
+    }
+  }, [product]);
 
   useEffect(() => {
     const checkFav = async () => {
@@ -92,6 +125,34 @@ export default function ProductDetailsPage() {
       console.error("Failed to fetch reviews:", error);
     } finally {
       setReviewsLoading(false);
+    }
+  };
+
+  const fetchOfferForVariant = async () => {
+    if (!product || !selectedSize) return;
+    
+    try {
+      const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
+      const variant = variants?.find(v => v.sku === selectedSize);
+      
+      if (!variant) return;
+      
+      const response = await fetch('/api/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          price: variant.price,
+          categorySlug: product.category_slug,
+          productId: product.id
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setOfferData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching offer:', error);
     }
   };
 
@@ -177,7 +238,7 @@ export default function ProductDetailsPage() {
     const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
     const hasSizeOption = variants && variants.length > 0;
 
-    // If product has sizes, require selection
+    // CRITICAL: If product has sizes, require selection
     if (hasSizeOption && !selectedSize) {
       toast.error("Please select a size first");
       return;
@@ -188,8 +249,15 @@ export default function ProductDetailsPage() {
       ? variants.find((v: any) => v.sku === selectedSize)
       : null;
 
+    // Validate variant exists
     if (hasSizeOption && !variant) {
       toast.error("Invalid size selection");
+      return;
+    }
+
+    // Double-check stock availability
+    if (variant && variant.stock <= 0) {
+      toast.error("Sorry, this size is out of stock");
       return;
     }
 
@@ -290,14 +358,23 @@ export default function ProductDetailsPage() {
               {(() => {
                 const variants = (product as any).variants as any[] | undefined;
                 const v = variants?.find((v: any) => v.sku === selectedSize);
-                const price = v?.price ?? variants?.[0]?.price ?? 0;
+                const basePrice = v?.price ?? variants?.[0]?.price ?? 0;
+                
+                // Use offer data if available, otherwise show base price
+                const displayPrice = offerData?.discountedPrice ?? basePrice;
+                const hasDiscount = offerData?.hasOffer && offerData.savings > 0;
+                
                 return (
                   <>
-                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{price}</span>
-                    <div className="flex items-center gap-3 pt-1">
-                      <span className="text-neutral-300 line-through text-lg font-medium">₹{Math.round(price * 1.2)}</span>
-                      <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-green-100 italic">SAVE 20%</span>
-                    </div>
+                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{displayPrice}</span>
+                    {hasDiscount && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <span className="text-neutral-300 line-through text-lg font-medium">₹{offerData?.originalPrice}</span>
+                        <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-green-100 italic">
+                          {offerData?.offer?.displayText || `SAVE ₹${offerData?.savings}`}
+                        </span>
+                      </div>
+                    )}
                   </>
                 );
               })()}
@@ -334,7 +411,7 @@ export default function ProductDetailsPage() {
                                             ? "bg-charcoal border-charcoal text-white shadow-xl shadow-charcoal/20"
                                             : (!isOOS && "bg-white border-[#F3E8E5] text-charcoal hover:border-blush hover:text-blush")
                                     )}>
-                                    {v.sku} {isOOS && "(Out of Stock)"}
+                                    {v.options?.Size || v.sku} {isOOS && "(Out of Stock)"}
                                 </button>
                                 );
                             })}
@@ -345,40 +422,48 @@ export default function ProductDetailsPage() {
 
             <div className="mt-auto space-y-8">
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={!user || ((product as any).variants?.length > 0 && !selectedSize)}
-                    className={cn(
-                      "flex-1 px-8 py-5 rounded-2xl transition-all shadow-2xl font-bold text-lg active:scale-95 flex items-center justify-center gap-4 group",
-                      !user
-                        ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
-                        : ((product as any).variants?.length > 0 && !selectedSize) 
-                          ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
-                          : "bg-blush text-white hover:bg-[#f48c82] shadow-blush/20"
-                    )}
-                  >
-                    <ShoppingCart className="w-6 h-6 transition-transform group-hover:translate-x-1" />
-                    {!user ? "Login Required" : ((product as any).variants?.length > 0 && !selectedSize) ? "Select Size First" : "Add to Cart"}
-                  </button>
-                  <button 
-                    onClick={toggleFavorite}
-                    className={cn(
-                      "p-5 rounded-2xl border transition-all duration-300 active:scale-90 shadow-sm",
-                      isFav 
-                        ? "bg-blush border-blush text-white shadow-blush/30" 
-                        : "bg-white border-[#F3E8E5] text-neutral-300 hover:text-blush hover:border-blush/30"
-                    )}
-                  >
-                    <Heart className={cn("w-6 h-6", isFav && "fill-current")} />
-                  </button>
-                  <button 
-                    onClick={handleShare}
-                    className="p-5 border border-[#F3E8E5] rounded-2xl hover:bg-neutral-50 transition-all text-neutral-300 hover:text-charcoal active:scale-90 shadow-sm"
-                  >
-                    <Share2 className="w-6 h-6" />
-                  </button>
-                </div>
+                {(() => {
+                  const variants = (product as any).variants;
+                  const hasVariants = variants && variants.length > 0;
+                  const needsSizeSelection = hasVariants && !selectedSize;
+                  
+                  return (
+                    <>
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={!user || needsSizeSelection}
+                        className={cn(
+                          "flex-1 px-8 py-5 rounded-2xl transition-all shadow-2xl font-bold text-lg active:scale-95 flex items-center justify-center gap-4 group",
+                          !user
+                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
+                            : needsSizeSelection
+                              ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
+                              : "bg-blush text-white hover:bg-[#f48c82] shadow-blush/20"
+                        )}
+                      >
+                        <ShoppingCart className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+                        {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : "Add to Cart"}
+                      </button>
+                      <button 
+                        onClick={toggleFavorite}
+                        className={cn(
+                          "p-5 rounded-2xl border transition-all duration-300 active:scale-90 shadow-sm",
+                          isFav 
+                            ? "bg-blush border-blush text-white shadow-blush/30" 
+                            : "bg-white border-[#F3E8E5] text-neutral-300 hover:text-blush hover:border-blush/30"
+                        )}
+                      >
+                        <Heart className={cn("w-6 h-6", isFav && "fill-current")} />
+                      </button>
+                      <button 
+                        onClick={handleShare}
+                        className="p-5 border border-[#F3E8E5] rounded-2xl hover:bg-neutral-50 transition-all text-neutral-300 hover:text-charcoal active:scale-90 shadow-sm"
+                      >
+                        <Share2 className="w-6 h-6" />
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="flex items-center gap-4">

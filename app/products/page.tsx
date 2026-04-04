@@ -11,19 +11,27 @@ import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { Search, SlidersHorizontal, ArrowUpDown, Tag, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { PRODUCT_CATEGORIES, normalizeUrlCategory } from '@/lib/constants';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   
   // FILTERS STATE
   const [searchTerm, setSearchTerm] = useState("");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("latest");
-  const selectedCategory = searchParams.get('category');
+  const urlCategory = searchParams.get('category');
+  const selectedCategory = urlCategory ? normalizeUrlCategory(urlCategory) : null;
+
+  // Use constants for categories to ensure slug consistency with products
+  const categories = Object.entries(PRODUCT_CATEGORIES).map(([slug, name]) => ({
+    id: slug,
+    slug,
+    name
+  }));
 
   // Debounce Search
   useEffect(() => {
@@ -34,39 +42,20 @@ function ProductsContent() {
   }, [searchTerm]);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
     fetchProducts();
   }, [selectedCategory, sort, search]);
-
-  const fetchCategories = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, 'categories'));
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[]);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const constraints: any[] = [];
-
-      // 1. ACTIVE PRODUCTS ONLY (CRITICAL FIX)
-      constraints.push(where("isActive", "==", true));
-
-      // 2. CATEGORY FILTER
-      if (selectedCategory && selectedCategory !== 'all') {
-        constraints.push(where("category_slug", "==", selectedCategory));
-      }
-
-      // 3. SORTING - Only createdAt in query, price sort done in-memory
-      constraints.push(orderBy("createdAt", "desc"));
-
-      const q = query(collection(db, "products"), ...constraints);
+      // SIMPLIFIED QUERY: Fetch all active products, filter in-memory
+      // This avoids Firestore composite index requirements
+      const q = query(
+        collection(db, "products"), 
+        where("isActive", "==", true),
+        orderBy("createdAt", "desc")
+      );
+      
       const snapshot = await getDocs(q);
       
       let data = snapshot.docs.map((doc) => ({
@@ -74,7 +63,12 @@ function ProductsContent() {
         ...doc.data(),
       })) as Product[];
 
-      // 4. IN-MEMORY PRICE SORT (since price is in variants)
+      // 1. CATEGORY FILTER (in-memory to avoid index issues)
+      if (selectedCategory) {
+        data = data.filter(p => p.category_slug === selectedCategory);
+      }
+
+      // 2. IN-MEMORY PRICE SORT (since price is in variants)
       if (sort === "price_low") {
         data.sort((a, b) => {
           const priceA = a.variants?.[0]?.price || 0;
@@ -90,7 +84,7 @@ function ProductsContent() {
       }
       // else: already sorted by createdAt desc
 
-      // 5. SEARCH (Client-side)
+      // 3. SEARCH (Client-side)
       if (search) {
         const term = search.toLowerCase();
         data = data.filter(p => 
@@ -110,7 +104,7 @@ function ProductsContent() {
         
         // Manual filter - ACTIVE + CATEGORY
         data = data.filter(p => p.isActive !== false);
-        if (selectedCategory && selectedCategory !== 'all') {
+        if (selectedCategory) {
           data = data.filter(p => p.category_slug === selectedCategory);
         }
         
@@ -167,10 +161,10 @@ function ProductsContent() {
           {/* 🔹 Header section */}
           <div className="mt-10 mb-12">
             <h1 className="text-5xl md:text-6xl font-serif font-bold text-charcoal tracking-tight">
-              Explore Our <span className="text-blush italic">Collections</span>
+              The <span className="text-blush italic">Collection</span>
             </h1>
             <p className="text-neutral-500 mt-6 max-w-lg text-lg font-sans leading-relaxed">
-              Premium maternity and kids wear crafted for your most precious moments.
+              Thoughtfully curated essentials for mothers and children, crafted with care.
             </p>
           </div>
 
