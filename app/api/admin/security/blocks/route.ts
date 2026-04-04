@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { Redis } from "@upstash/redis";
 
-// Initialize Redis
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-});
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
+// Initialize Redis only if credentials are available
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
+
+const redis = redisUrl && redisToken 
+  ? new Redis({ url: redisUrl, token: redisToken })
+  : null;
 
 /**
  * GET /api/admin/security/blocks
@@ -15,6 +20,16 @@ const redis = new Redis({
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAdmin(request);
+    
+    // Return empty if Redis not configured
+    if (!redis) {
+      return NextResponse.json({
+        success: true,
+        blocks: [],
+        count: 0,
+        message: "Redis not configured - blocking disabled",
+      });
+    }
     
     // Get all blocks from Redis list
     const blocks = await redis.lrange("blocks", 0, -1);
@@ -58,6 +73,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Identifier required" },
         { status: 400 }
+      );
+    }
+    
+    // Return error if Redis not configured
+    if (!redis) {
+      return NextResponse.json(
+        { success: false, error: "Redis not configured" },
+        { status: 503 }
       );
     }
     

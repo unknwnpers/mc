@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 
+// Force dynamic rendering - this route uses request data
+export const dynamic = 'force-dynamic';
+
 export interface AppliedOffer {
   id: string;
   name: string;

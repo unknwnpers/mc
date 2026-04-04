@@ -10,6 +10,9 @@ import { verifySuperAdmin } from '@/lib/rbac';
 import { logSecurityEvent } from '@/lib/logger';
 import { getClientInfo } from '@/lib/logger';
 
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
 interface ImportVariant {
   size: string;
   price: number;

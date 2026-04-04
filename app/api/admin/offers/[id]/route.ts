@@ -9,6 +9,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { verifySuperAdmin } from '@/lib/rbac';
 import { logSecurityEvent, getClientInfo } from '@/lib/logger';
 
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
 // PUT /api/admin/offers/[id] - Update offer
 export async function PUT(
   request: NextRequest,

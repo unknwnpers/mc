@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/security/logs
  * Fetch security logs for dashboard

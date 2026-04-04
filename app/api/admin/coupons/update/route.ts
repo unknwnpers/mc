@@ -5,6 +5,9 @@ import { FieldValue } from "firebase-admin/firestore";
 import { logSecurityEvent } from "@/lib/logger";
 import { getClientInfo } from "@/lib/logger";
 
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
 /**
  * PATCH /api/admin/coupons/update
  * Update coupon (SUPERADMIN ONLY)

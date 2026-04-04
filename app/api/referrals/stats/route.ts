@@ -3,6 +3,9 @@ import { getAuth } from "firebase-admin/auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/referrals/stats
  * Get referral statistics for current user

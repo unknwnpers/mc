@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/rbac";
 import { adminDb } from "@/lib/firebase-admin";
 
+// Force dynamic rendering - this route uses request-based auth
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/coupons
  * List all coupons (ADMIN+)

@@ -1,10 +1,16 @@
 import { Redis } from "@upstash/redis";
 
-// Initialize Upstash Redis
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-});
+// Initialize Upstash Redis only if credentials are available
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
+
+const redis = redisUrl && redisToken 
+  ? new Redis({ url: redisUrl, token: redisToken })
+  : null;
+
+if (!redis) {
+  console.warn("[Rate Limiter] Redis not configured - rate limiting disabled");
+}
 
 export interface RateLimitResult {
   success: boolean;
@@ -23,6 +29,15 @@ export async function rateLimit(
   limit: number = 20,
   windowInSeconds: number = 60
 ): Promise<RateLimitResult> {
+  // If Redis not configured, allow all requests
+  if (!redis) {
+    return {
+      success: true,
+      remaining: limit,
+      resetAt: Date.now() + windowInSeconds * 1000,
+    };
+  }
+  
   const key = `rate:${identifier}`;
   
   try {
@@ -57,6 +72,11 @@ export async function rateLimit(
  * Check if IP is blocked
  */
 export async function isBlocked(identifier: string): Promise<boolean> {
+  // If Redis not configured, nothing is blocked
+  if (!redis) {
+    return false;
+  }
+  
   try {
     const blocked = await redis.get(`blocked:${identifier}`);
     return !!blocked;
@@ -74,6 +94,12 @@ export async function blockIdentifier(
   durationSeconds: number = 3600,
   reason?: string
 ): Promise<void> {
+  // If Redis not configured, silently skip
+  if (!redis) {
+    console.warn(`[Rate Limiter] Cannot block ${identifier} - Redis not configured`);
+    return;
+  }
+  
   try {
     await redis.set(`blocked:${identifier}`, "true", {
       ex: durationSeconds,
@@ -104,6 +130,11 @@ export async function trackFailedAttempt(
   maxAttempts: number = 5,
   windowMinutes: number = 5
 ): Promise<{ blocked: boolean; attempts: number }> {
+  // If Redis not configured, silently skip tracking
+  if (!redis) {
+    return { blocked: false, attempts: 0 };
+  }
+  
   const key = `failed:${identifier}`;
   const windowMs = windowMinutes * 60 * 1000;
   
@@ -135,6 +166,11 @@ export async function trackFailedAttempt(
  * Reset failed attempts counter
  */
 export async function resetFailedAttempts(identifier: string): Promise<void> {
+  // If Redis not configured, silently skip
+  if (!redis) {
+    return;
+  }
+  
   try {
     await redis.del(`failed:${identifier}`);
   } catch (error) {
