@@ -168,7 +168,7 @@ export default function AdminOffersPage() {
   const openEdit = (offer: Offer) => {
     setEditingOffer(offer);
     
-    // Helper to convert Firestore Timestamp or string to date input format
+    // Helper to convert Firestore Timestamp or string to date input format (YYYY-MM-DD)
     const toDateInputValue = (dateValue: any): string => {
       if (!dateValue) return '';
       try {
@@ -176,7 +176,20 @@ export default function AdminOffersPage() {
         if (dateValue.seconds) {
           return new Date(dateValue.seconds * 1000).toISOString().split('T')[0];
         }
-        // Handle string or Date
+        // Handle string in DD-MM-YYYY format
+        if (typeof dateValue === 'string' && dateValue.match(/^\d{2}-\d{2}-\d{4}$/)) {
+          const [day, month, year] = dateValue.split('-');
+          return `${year}-${month}-${day}`;
+        }
+        // Handle string in YYYY-MM-DD format
+        if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return dateValue;
+        }
+        // Handle Date object
+        if (dateValue instanceof Date) {
+          return dateValue.toISOString().split('T')[0];
+        }
+        // Fallback
         const date = new Date(dateValue);
         if (isNaN(date.getTime())) return '';
         return date.toISOString().split('T')[0];
@@ -212,12 +225,25 @@ export default function AdminOffersPage() {
       if (dateValue.seconds) {
         return new Date(dateValue.seconds * 1000).toLocaleDateString('en-IN');
       }
-      // Handle string or Date
+      // Handle string in DD-MM-YYYY format (common in India)
+      if (typeof dateValue === 'string' && dateValue.match(/^\d{2}-\d{2}-\d{4}$/)) {
+        const [day, month, year] = dateValue.split('-');
+        return new Date(`${year}-${month}-${day}`).toLocaleDateString('en-IN');
+      }
+      // Handle string in YYYY-MM-DD format
+      if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return new Date(dateValue).toLocaleDateString('en-IN');
+      }
+      // Handle Date object
+      if (dateValue instanceof Date) {
+        return dateValue.toLocaleDateString('en-IN');
+      }
+      // Fallback: try to parse as is
       const date = new Date(dateValue);
-      if (isNaN(date.getTime())) return 'Invalid date';
+      if (isNaN(date.getTime())) return 'No expiry';
       return date.toLocaleDateString('en-IN');
     } catch {
-      return 'Invalid date';
+      return 'No expiry';
     }
   };
 
@@ -232,6 +258,22 @@ export default function AdminOffersPage() {
         if (dateValue.seconds) {
           return new Date(dateValue.seconds * 1000);
         }
+        // Handle string in DD-MM-YYYY format
+        if (typeof dateValue === 'string' && dateValue.match(/^\d{2}-\d{2}-\d{4}$/)) {
+          const [day, month, year] = dateValue.split('-');
+          const date = new Date(`${year}-${month}-${day}`);
+          return isNaN(date.getTime()) ? null : date;
+        }
+        // Handle string in YYYY-MM-DD format
+        if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const date = new Date(dateValue);
+          return isNaN(date.getTime()) ? null : date;
+        }
+        // Handle Date object
+        if (dateValue instanceof Date) {
+          return dateValue;
+        }
+        // Fallback
         const date = new Date(dateValue);
         return isNaN(date.getTime()) ? null : date;
       } catch {
