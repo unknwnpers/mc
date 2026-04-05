@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Shield, AlertTriangle, Activity, Ban, Clock, CheckCircle, XCircle, TrendingUp, Eye, Lock, Wifi, WifiOff } from "lucide-react";
+import { Shield, AlertTriangle, Activity, Ban, Clock, CheckCircle, XCircle, TrendingUp, Eye, Lock, Wifi, WifiOff, Filter, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 interface SecurityLog {
@@ -40,10 +41,29 @@ interface SecurityStats {
   recentActivity: SecurityLog[];
 }
 
+interface PaginationInfo {
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  totalCount: number;
+}
+
+interface FilterState {
+  startDate: string;
+  endDate: string;
+  type: string;
+  status: string;
+  userId: string;
+  action: string;
+}
+
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+
+const DEFAULT_LIMIT = 50;
 
 export default function SecurityDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const [stats, setStats] = useState<SecurityStats | null>(null);
   const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
@@ -56,6 +76,25 @@ export default function SecurityDashboard() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  
+  // Filter and pagination state
+  const [filters, setFilters] = useState<FilterState>({
+    startDate: searchParams.get("startDate") || "",
+    endDate: searchParams.get("endDate") || "",
+    type: searchParams.get("type") || "",
+    status: searchParams.get("status") || "",
+    userId: searchParams.get("userId") || "",
+    action: searchParams.get("action") || "",
+  });
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    limit: parseInt(searchParams.get("limit") || String(DEFAULT_LIMIT)),
+    offset: parseInt(searchParams.get("offset") || "0"),
+    hasMore: false,
+    totalCount: 0,
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [debouncedAction, setDebouncedAction] = useState(filters.action);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -236,14 +275,39 @@ export default function SecurityDashboard() {
     }
   }
 
+  // Build query string from filters and pagination
+  const buildQueryString = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set("limit", String(pagination.limit));
+    params.set("offset", String(pagination.offset));
+    
+    if (filters.startDate) params.set("startDate", filters.startDate);
+    if (filters.endDate) params.set("endDate", filters.endDate);
+    if (filters.type) params.set("type", filters.type);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.userId) params.set("userId", filters.userId);
+    if (debouncedAction) params.set("action", debouncedAction);
+    
+    return params.toString();
+  }, [filters, pagination.limit, pagination.offset, debouncedAction]);
+
+  // Update URL with current filters
+  const updateURL = useCallback(() => {
+    const queryString = buildQueryString();
+    router.replace(`/admin/security?${queryString}`, { scroll: false });
+  }, [buildQueryString, router]);
+
+  // Apply filters and fetch data
   async function fetchSecurityData() {
     setLoadingData(true);
     try {
       const token = await user?.getIdToken();
       if (!token) return;
 
-      // Fetch security logs
-      const logsRes = await fetch("/api/admin/security/logs?limit=50", {
+      const queryString = buildQueryString();
+
+      // Fetch security logs with filters
+      const logsRes = await fetch(`/api/admin/security/logs?${queryString}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const logsData = await logsRes.json();
@@ -267,12 +331,18 @@ export default function SecurityDashboard() {
       ).length;
 
       setStats({
-        totalLogs: logs.length,
+        totalLogs: logsData.totalCount || logs.length,
         failedAttempts,
         blockedIPs: blocked.length,
         adminActions,
-        recentActivity: logs.slice(0, 20),
+        recentActivity: logs,
       });
+
+      setPagination(prev => ({
+        ...prev,
+        hasMore: logsData.pagination?.hasMore || false,
+        totalCount: logsData.totalCount || 0,
+      }));
 
       setBlockedIPs(blocked);
     } catch (error) {
@@ -282,6 +352,67 @@ export default function SecurityDashboard() {
       setLoadingData(false);
     }
   }
+
+  // Debounce action filter
+  useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      setDebouncedAction(filters.action);
+    }, 300);
+    
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [filters.action]);
+
+  // Fetch data when filters or pagination change
+  useEffect(() => {
+    if (user) {
+      fetchSecurityData();
+      updateURL();
+    }
+  }, [filters.type, filters.status, filters.userId, debouncedAction, pagination.limit, pagination.offset]);
+
+  // Handle date filter changes (apply on button click)
+  const applyDateFilters = () => {
+    setPagination(prev => ({ ...prev, offset: 0 }));
+    fetchSecurityData();
+    updateURL();
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      startDate: "",
+      endDate: "",
+      type: "",
+      status: "",
+      userId: "",
+      action: "",
+    });
+    setDebouncedAction("");
+    setPagination(prev => ({ ...prev, offset: 0 }));
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = Object.values(filters).some(v => v !== "");
+
+  // Pagination handlers
+  const goToPage = (newOffset: number) => {
+    setPagination(prev => ({ ...prev, offset: Math.max(0, newOffset) }));
+  };
+
+  const goToFirstPage = () => goToPage(0);
+  const goToPreviousPage = () => goToPage(pagination.offset - pagination.limit);
+  const goToNextPage = () => goToPage(pagination.offset + pagination.limit);
+  const goToLastPage = () => {
+    const lastOffset = Math.floor((pagination.totalCount - 1) / pagination.limit) * pagination.limit;
+    goToPage(lastOffset);
+  };
 
   function formatTimestamp(timestamp: any): string {
     try {
@@ -543,9 +674,158 @@ export default function SecurityDashboard() {
         <TabsContent value="activity" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Complete Activity Log</CardTitle>
-              <p className="text-sm text-gray-500">All security and admin events</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Complete Activity Log</CardTitle>
+                  <p className="text-sm text-gray-500">All security and admin events</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  Filters
+                  {hasActiveFilters && (
+                    <Badge variant="secondary" className="ml-1">
+                      {Object.values(filters).filter(v => v !== "").length}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
+            
+            {/* Filter Panel */}
+            {showFilters && (
+              <CardContent className="border-b bg-gray-50/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Date Range */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Date Range</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="date"
+                        value={filters.startDate}
+                        onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="flex-1"
+                      />
+                      <span className="text-gray-400 self-center">to</span>
+                      <Input
+                        type="date"
+                        value={filters.endDate}
+                        onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Type Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Type</label>
+                    <select
+                      value={filters.type}
+                      onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+                      className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                    >
+                      <option value="">All Types</option>
+                      <option value="SECURITY">Security</option>
+                      <option value="ADMIN_ACTION">Admin Action</option>
+                      <option value="AUTH">Authentication</option>
+                    </select>
+                  </div>
+                  
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Status</label>
+                    <select
+                      value={filters.status}
+                      onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="SUCCESS">Success</option>
+                      <option value="FAILED">Failed</option>
+                    </select>
+                  </div>
+                  
+                  {/* User ID Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">User ID</label>
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search by user ID..."
+                        value={filters.userId}
+                        onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Action Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Action</label>
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search by action..."
+                        value={filters.action}
+                        onChange={(e) => setFilters(prev => ({ ...prev, action: e.target.value }))}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Apply/Clear Buttons */}
+                  <div className="space-y-2 flex items-end">
+                    <div className="flex gap-2 w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearFilters}
+                        disabled={!hasActiveFilters}
+                        className="flex-1"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Clear
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={applyDateFilters}
+                        className="flex-1"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            )}
+            
+            {/* Pagination Info */}
+            <CardContent className="border-b py-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {pagination.offset + 1}-{Math.min(pagination.offset + pagination.limit, pagination.totalCount)} of {pagination.totalCount} results
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Per page:</span>
+                  <select
+                    value={pagination.limit}
+                    onChange={(e) => setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), offset: 0 }))}
+                    className="h-8 px-2 rounded-md border border-gray-300 bg-white text-sm"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+            
             <CardContent>
               {stats?.recentActivity && stats.recentActivity.length > 0 ? (
                 <Table>
@@ -605,7 +885,57 @@ export default function SecurityDashboard() {
                   </TableBody>
                 </Table>
               ) : (
-                <p className="text-gray-500 text-center py-8">No activity found</p>
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-2">No activity found</p>
+                  {hasActiveFilters && (
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              )}
+              
+              {/* Pagination Controls */}
+              {pagination.totalCount > 0 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Page {Math.floor(pagination.offset / pagination.limit) + 1} of {Math.ceil(pagination.totalCount / pagination.limit)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToFirstPage}
+                      disabled={pagination.offset === 0}
+                    >
+                      First
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
+                      disabled={pagination.offset === 0}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
+                      disabled={!pagination.hasMore}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToLastPage}
+                      disabled={!pagination.hasMore}
+                    >
+                      Last
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
