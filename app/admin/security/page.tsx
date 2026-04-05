@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Shield, AlertTriangle, Activity, Ban, Clock, CheckCircle, XCircle, TrendingUp, Eye, Lock } from "lucide-react";
+import { Shield, AlertTriangle, Activity, Ban, Clock, CheckCircle, XCircle, TrendingUp, Eye, Lock, Wifi, WifiOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ interface SecurityLog {
   status: "SUCCESS" | "FAILED";
   metadata?: any;
   timestamp: any;
+  isNew?: boolean; // Flag for real-time updates
 }
 
 interface BlockedIP {
@@ -39,6 +40,8 @@ interface SecurityStats {
   recentActivity: SecurityLog[];
 }
 
+type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+
 export default function SecurityDashboard() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -46,6 +49,13 @@ export default function SecurityDashboard() {
   const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Real-time connection state
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -61,8 +71,153 @@ export default function SecurityDashboard() {
   useEffect(() => {
     if (user) {
       fetchSecurityData();
+      setupEventSource();
+    }
+    
+    return () => {
+      cleanupEventSource();
+    };
+  }, [user]);
+
+  // Setup SSE connection for real-time security events
+  const setupEventSource = useCallback(async () => {
+    if (!user) return;
+    
+    // Clean up existing connection
+    cleanupEventSource();
+    
+    setConnectionStatus('connecting');
+    
+    try {
+      const token = await user.getIdToken();
+      const eventSource = new EventSource(`/api/admin/security/events?token=${token}`);
+      eventSourceRef.current = eventSource;
+      
+      eventSource.onopen = () => {
+        console.log('[SSE] Connected to security event stream');
+        setConnectionStatus('connected');
+        reconnectAttemptsRef.current = 0;
+      };
+      
+      eventSource.addEventListener('connected', (event) => {
+        const data = JSON.parse(event.data);
+        console.log('[SSE]', data.message);
+      });
+      
+      eventSource.addEventListener('security-log', (event) => {
+        const newLog: SecurityLog = JSON.parse(event.data);
+        
+        // Add to recent activity with highlight flag
+        setStats(prev => {
+          if (!prev) return prev;
+          
+          // Check if log already exists
+          if (prev.recentActivity.some(log => log.id === newLog.id)) {
+            return prev;
+          }
+          
+          const updatedActivity = [{ ...newLog, isNew: true }, ...prev.recentActivity].slice(0, 50);
+          
+          // Update stats based on log type
+          const isFailedAuth = newLog.status === 'FAILED' && newLog.type === 'AUTH';
+          const isAdminAction = newLog.type === 'ADMIN_ACTION';
+          
+          return {
+            ...prev,
+            totalLogs: prev.totalLogs + 1,
+            failedAttempts: isFailedAuth ? prev.failedAttempts + 1 : prev.failedAttempts,
+            adminActions: isAdminAction ? prev.adminActions + 1 : prev.adminActions,
+            recentActivity: updatedActivity,
+          };
+        });
+        
+        setLastUpdate(new Date());
+        
+        // Remove highlight after 5 seconds
+        setTimeout(() => {
+          setStats(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              recentActivity: prev.recentActivity.map(log => 
+                log.id === newLog.id ? { ...log, isNew: false } : log
+              ),
+            };
+          });
+        }, 5000);
+      });
+      
+      eventSource.addEventListener('heartbeat', () => {
+        setLastUpdate(new Date());
+      });
+      
+      eventSource.addEventListener('error', (event) => {
+        console.error('[SSE] Error:', event);
+        setConnectionStatus('error');
+        
+        // Attempt reconnection with exponential backoff
+        const maxDelay = 30000; // 30 seconds max
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), maxDelay);
+        reconnectAttemptsRef.current++;
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (document.visibilityState !== 'hidden') {
+            setupEventSource();
+          }
+        }, delay);
+      });
+      
+      eventSource.onerror = (error) => {
+        console.error('[SSE] Connection error:', error);
+        setConnectionStatus('disconnected');
+        eventSource.close();
+        
+        // Attempt reconnection
+        const maxDelay = 30000;
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), maxDelay);
+        reconnectAttemptsRef.current++;
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (document.visibilityState !== 'hidden') {
+            setupEventSource();
+          }
+        }, delay);
+      };
+      
+    } catch (error) {
+      console.error('[SSE] Failed to setup:', error);
+      setConnectionStatus('error');
     }
   }, [user]);
+
+  // Clean up SSE connection
+  const cleanupEventSource = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Handle page visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reconnect when page becomes visible
+        if (connectionStatus === 'disconnected' || connectionStatus === 'error') {
+          setupEventSource();
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [connectionStatus, setupEventSource]);
 
   async function checkAdminAccess() {
     try {
@@ -215,13 +370,41 @@ export default function SecurityDashboard() {
     );
   }
 
+  // Connection status indicator component
+  const ConnectionStatusIndicator = () => {
+    const statusConfig = {
+      connected: { icon: Wifi, color: 'text-green-500', bg: 'bg-green-50', label: 'Live' },
+      connecting: { icon: Wifi, color: 'text-yellow-500', bg: 'bg-yellow-50', label: 'Connecting...' },
+      disconnected: { icon: WifiOff, color: 'text-gray-400', bg: 'bg-gray-50', label: 'Offline' },
+      error: { icon: WifiOff, color: 'text-red-500', bg: 'bg-red-50', label: 'Error' },
+    };
+    
+    const config = statusConfig[connectionStatus];
+    const Icon = config.icon;
+    
+    return (
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${config.bg} border`}>
+        <Icon className={`w-4 h-4 ${config.color}`} />
+        <span className={`text-sm font-medium ${config.color}`}>{config.label}</span>
+        {lastUpdate && connectionStatus === 'connected' && (
+          <span className="text-xs text-gray-400">
+            Updated {lastUpdate.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Security Dashboard</h1>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <Shield className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900">Security Dashboard</h1>
+          </div>
+          <ConnectionStatusIndicator />
         </div>
         <p className="text-gray-600">
           Monitor security events, blocked IPs, and admin activity
@@ -320,8 +503,18 @@ export default function SecurityDashboard() {
                   </TableHeader>
                   <TableBody>
                     {stats.recentActivity.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>{getTypeBadge(log.type)}</TableCell>
+                      <TableRow 
+                        key={log.id}
+                        className={log.isNew ? 'bg-green-50 transition-colors duration-500' : ''}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {log.isNew && (
+                              <span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+                            )}
+                            {getTypeBadge(log.type)}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getActionIcon(log.action)}
@@ -368,8 +561,18 @@ export default function SecurityDashboard() {
                   </TableHeader>
                   <TableBody>
                     {stats.recentActivity.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>{getTypeBadge(log.type)}</TableCell>
+                      <TableRow 
+                        key={log.id}
+                        className={log.isNew ? 'bg-green-50 transition-colors duration-500' : ''}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {log.isNew && (
+                              <span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
+                            )}
+                            {getTypeBadge(log.type)}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getActionIcon(log.action)}
