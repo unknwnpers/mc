@@ -95,6 +95,21 @@ export default function SecurityDashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [debouncedAction, setDebouncedAction] = useState(filters.action);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Sessions state
+  interface AdminSession {
+    id: string;
+    userId: string;
+    userEmail: string;
+    role: string;
+    ip: string;
+    userAgent: string;
+    loginTime: string;
+    lastActivity: string;
+  }
+  const [sessions, setSessions] = useState<AdminSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessionToTerminate, setSessionToTerminate] = useState<AdminSession | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -490,6 +505,70 @@ export default function SecurityDashboard() {
     }
   }
 
+  // Fetch active admin sessions
+  async function fetchSessions() {
+    setLoadingSessions(true);
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/security/sessions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+      } else {
+        toast.error("Failed to fetch sessions");
+      }
+    } catch (error) {
+      console.error("Failed to fetch sessions:", error);
+      toast.error("Failed to fetch sessions");
+    } finally {
+      setLoadingSessions(false);
+    }
+  }
+
+  // Terminate a session (force logout)
+  async function handleTerminateSession(session: AdminSession) {
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/security/sessions", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ sessionId: session.id }),
+      });
+
+      if (res.ok) {
+        toast.success(`Session for ${session.userEmail} terminated`);
+        fetchSessions();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to terminate session");
+      }
+    } catch (error) {
+      toast.error("Failed to terminate session");
+    } finally {
+      setSessionToTerminate(null);
+    }
+  }
+
+  // Load sessions when tab changes to sessions
+  useEffect(() => {
+    if (activeTab === "sessions" && user) {
+      fetchSessions();
+      // Auto-refresh every 30 seconds
+      const interval = setInterval(fetchSessions, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, user]);
+
   if (loading || loadingData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -599,7 +678,7 @@ export default function SecurityDashboard() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">
             <TrendingUp className="w-4 h-4 mr-2" />
             Overview
@@ -607,6 +686,10 @@ export default function SecurityDashboard() {
           <TabsTrigger value="activity">
             <Clock className="w-4 h-4 mr-2" />
             Activity Feed
+          </TabsTrigger>
+          <TabsTrigger value="sessions">
+            <Shield className="w-4 h-4 mr-2" />
+            Sessions
           </TabsTrigger>
           <TabsTrigger value="blocked">
             <Lock className="w-4 h-4 mr-2" />
@@ -941,6 +1024,104 @@ export default function SecurityDashboard() {
           </Card>
         </TabsContent>
 
+        {/* Sessions Tab */}
+        <TabsContent value="sessions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Active Admin Sessions</CardTitle>
+                  <p className="text-sm text-gray-500">
+                    Currently logged-in admin and superadmin users
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchSessions}
+                  disabled={loadingSessions}
+                >
+                  {loadingSessions ? (
+                    <Clock className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Activity className="w-4 h-4" />
+                  )}
+                  <span className="ml-2">Refresh</span>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingSessions ? (
+                <div className="flex items-center justify-center py-8">
+                  <Clock className="w-8 h-8 animate-spin text-gray-400" />
+                </div>
+              ) : sessions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>IP Address</TableHead>
+                      <TableHead>Login Time</TableHead>
+                      <TableHead>Last Activity</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sessions.map((session) => (
+                      <TableRow key={session.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{session.userEmail}</span>
+                            {user?.uid === session.userId && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                You
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={session.role === "superadmin" ? "default" : "secondary"}>
+                            {session.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {session.ip}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {formatTimestamp(session.loginTime)}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {formatTimestamp(session.lastActivity)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSessionToTerminate(session)}
+                            disabled={user?.uid === session.userId}
+                            className={user?.uid === session.userId ? "opacity-50 cursor-not-allowed" : ""}
+                          >
+                            Terminate
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-12 h-12 mx-auto text-green-600 mb-2" />
+                  <p className="text-gray-500">No active admin sessions</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    All admin users are currently logged out
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Blocked IPs Tab */}
         <TabsContent value="blocked" className="space-y-4">
           <Card>
@@ -1012,6 +1193,33 @@ export default function SecurityDashboard() {
       <div className="mt-6 text-center text-sm text-gray-500">
         <p>Dashboard updates automatically when you refresh the page</p>
       </div>
+
+      {/* Terminate Session Confirmation Modal */}
+      {sessionToTerminate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">Terminate Session?</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to force logout <strong>{sessionToTerminate.userEmail}</strong>? 
+              This will immediately end their admin session.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setSessionToTerminate(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleTerminateSession(sessionToTerminate)}
+              >
+                Terminate Session
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

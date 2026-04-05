@@ -5,12 +5,14 @@ import { auth, db } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getCurrentSessionId } from "@/lib/session-manager";
 
 type AuthContextType = {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  sessionId: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -27,6 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
@@ -47,6 +50,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  // Create admin session via API
+  const createAdminSession = async (u: User, role: string) => {
+    try {
+      const token = await u.getIdToken();
+      const response = await fetch('/api/admin/security/sessions/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: u.uid,
+          userEmail: u.email,
+          role,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSessionId(data.sessionId);
+      }
+    } catch (error) {
+      console.error('Failed to create admin session:', error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -55,6 +84,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Sync Profile
         const profileRef = doc(db, "users", u.uid);
         const profileSnap = await getDoc(profileRef);
+        
+        let userRole = "customer";
         
         if (profileSnap.exists()) {
           const data = profileSnap.data() as UserProfile;
@@ -74,8 +105,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             };
             await setDoc(profileRef, updated, { merge: true });
             setProfile(updated);
+            userRole = updated.role;
           } else {
             setProfile(data);
+            userRole = data.role;
           }
         } else {
           // Auto-promote known admin email to superadmin
@@ -94,9 +127,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           };
           await setDoc(profileRef, newProfile);
           setProfile(newProfile);
+          userRole = role;
+        }
+        
+        // Create admin session if user is admin/superadmin
+        if (userRole === "admin" || userRole === "superadmin") {
+          await createAdminSession(u, userRole);
         }
       } else {
         setProfile(null);
+        setSessionId(null);
       }
       
       setLoading(false);
@@ -106,7 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, updateProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, updateProfile, sessionId }}>
       {children}
     </AuthContext.Provider>
   );
