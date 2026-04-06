@@ -21,7 +21,33 @@ export async function GET(req: Request) {
     }
 
     const snapshot = await query.get();
-    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const orders = snapshot.docs.map(doc => {
+      const data = doc.data();
+      
+      // Helper to convert Firestore Timestamp to ISO string
+      const convertTimestamp = (ts: any): string | null => {
+        if (!ts) return null;
+        if (ts.toDate && typeof ts.toDate === "function") {
+          return ts.toDate().toISOString();
+        }
+        if (ts.seconds) {
+          return new Date(ts.seconds * 1000).toISOString();
+        }
+        return null;
+      };
+      
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt) || data.createdAt,
+        updatedAt: convertTimestamp(data.updatedAt) || data.updatedAt,
+        // Convert timeline timestamps if present
+        timeline: data.timeline?.map((step: any) => ({
+          ...step,
+          time: convertTimestamp(step.time) || step.time,
+        })),
+      };
+    });
 
     return NextResponse.json({ success: true, orders });
   } catch (err: any) {
