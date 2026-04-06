@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Users, Shield, Ban, CheckCircle, AlertTriangle, Loader2, Search } from "lucide-react";
+import { Users, Shield, Ban, CheckCircle, AlertTriangle, Loader2, Search, Eye, Download, Filter, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface User {
   id: string;
@@ -46,6 +47,54 @@ export default function UsersManagementPage() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [blocking, setBlocking] = useState(false);
+  
+  // Advanced filters
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Sorting
+  const [sortBy, setSortBy] = useState<"name" | "email" | "joined">("joined");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Bulk Operations
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState<{ action: string; count: number } | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Parse createdAt strings back to Date objects
+        const users = (data.users || []).map((u: any) => ({
+          ...u,
+          createdAt: u.createdAt ? new Date(u.createdAt) : null,
+        }));
+        setUsers(users);
+      } else {
+        toast.error(data.error || "Failed to fetch users");
+      }
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoadingData(false);
+    }
+  }, [user]);
 
   // Check admin access
   useEffect(() => {
@@ -63,32 +112,7 @@ export default function UsersManagementPage() {
     if (user) {
       fetchUsers();
     }
-  }, [user, loading, profile, router]);
-
-  async function fetchUsers() {
-    setLoadingData(true);
-    try {
-      const token = await user?.getIdToken();
-      if (!token) return;
-
-      const res = await fetch("/api/admin/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setUsers(data.users || []);
-      } else {
-        toast.error(data.error || "Failed to fetch users");
-      }
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-      toast.error("Failed to load users");
-    } finally {
-      setLoadingData(false);
-    }
-  }
+  }, [user, loading, profile, router, fetchUsers]);
 
   async function updateRole(userId: string, newRole: string) {
     try {
@@ -187,11 +211,143 @@ export default function UsersManagementPage() {
     return false;
   }
 
-  // Filter users by search term
-  const filteredUsers = users.filter((user) =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter, sort, and paginate users
+  const filteredUsers = useMemo(() => {
+    let result = users.filter((u) => {
+      const matchesSearch = 
+        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesRole = roleFilter === "all" || u.role === roleFilter;
+      const matchesStatus = 
+        statusFilter === "all" || 
+        (statusFilter === "active" && !u.blocked) ||
+        (statusFilter === "blocked" && u.blocked);
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+
+    // Sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case "joined":
+          const aTime = a.createdAt?.getTime() || 0;
+          const bTime = b.createdAt?.getTime() || 0;
+          comparison = aTime - bTime;
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    return result;
+  }, [users, searchTerm, roleFilter, statusFilter, sortBy, sortOrder]);
+
+  // Pagination
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredUsers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter]);
+
+  // Export users to CSV
+  const exportUsers = () => {
+    const headers = ["Email", "Name", "Role", "Status", "Joined"];
+    const rows = filteredUsers.map(u => [
+      u.email,
+      u.name || "",
+      u.role,
+      u.blocked ? "Blocked" : "Active",
+      u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A"
+    ]);
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `users_export_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success(`Exported ${filteredUsers.length} users`);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+  };
+
+  // ── Bulk Operations ───────────────────────────────────────────────────────
+  function toggleUserSelection(id: string) {
+    setSelectedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  }
+
+  function selectAllUsers() {
+    if (selectedUsers.size === paginatedUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(paginatedUsers.map(u => u.id)));
+    }
+  }
+
+  async function executeBulkAction(action: string) {
+    if (selectedUsers.size === 0) return;
+    setBulkActionLoading(true);
+    
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const ids = Array.from(selectedUsers);
+      const res = await fetch("/api/admin/users/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action, ids }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success(`${action} completed for ${ids.length} users`);
+        setSelectedUsers(new Set());
+        fetchUsers();
+      } else {
+        toast.error(data.error || "Bulk action failed");
+      }
+    } catch (error) {
+      console.error("Bulk action error:", error);
+      toast.error("Bulk action failed");
+    } finally {
+      setBulkActionLoading(false);
+      setShowBulkConfirm(null);
+    }
+  }
+
+  const hasActiveFilters = searchTerm || roleFilter !== "all" || statusFilter !== "all";
 
   if (loading || loadingData) {
     return (
@@ -263,12 +419,94 @@ export default function UsersManagementPage() {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search & Filters */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>All Users</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className={showFilters ? "bg-blue-50" : ""}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+                {hasActiveFilters && (
+                  <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center">!</Badge>
+                )}
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportUsers}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          </div>
         </CardHeader>
+
+        {/* Bulk Action Bar */}
+        {selectedUsers.size > 0 && (
+          <div className="mx-6 mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <span className="font-medium text-blue-900">
+                {selectedUsers.size} user{selectedUsers.size !== 1 ? "s" : ""} selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {profile?.role === "superadmin" && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkConfirm({ action: "set_customer", count: selectedUsers.size })}
+                    disabled={bulkActionLoading}
+                  >
+                    Set as Customer
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkConfirm({ action: "set_admin", count: selectedUsers.size })}
+                    disabled={bulkActionLoading}
+                  >
+                    Set as Admin
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkConfirm({ action: "block", count: selectedUsers.size })}
+                    disabled={bulkActionLoading}
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                  >
+                    <Ban className="w-4 h-4 mr-1" /> Block
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkConfirm({ action: "unblock", count: selectedUsers.size })}
+                    disabled={bulkActionLoading}
+                    className="text-green-600 border-green-200 hover:bg-green-50"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" /> Unblock
+                  </Button>
+                </>
+              )}
+              <div className="w-px h-6 bg-blue-200 mx-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedUsers(new Set())}
+                className="text-blue-700"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
         <CardContent>
+          {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
@@ -279,21 +517,123 @@ export default function UsersManagementPage() {
             />
           </div>
 
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-600">Role:</label>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="All roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="superadmin">SuperAdmin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-600">Status:</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="All status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters
+                </Button>
+              )}
+
+              <div className="ml-auto text-sm text-gray-500">
+                Showing {filteredUsers.length} of {users.length} users
+              </div>
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
+                    onChange={selectAllUsers}
+                    className="rounded border-gray-300"
+                  />
+                </TableHead>
+                <TableHead>
+                  <button 
+                    onClick={() => {
+                      if (sortBy === "email") setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                      else { setSortBy("email"); setSortOrder("asc"); }
+                    }}
+                    className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                  >
+                    Email {sortBy === "email" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button 
+                    onClick={() => {
+                      if (sortBy === "name") setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                      else { setSortBy("name"); setSortOrder("asc"); }
+                    }}
+                    className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                  >
+                    Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead>
+                  <button 
+                    onClick={() => {
+                      if (sortBy === "joined") setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                      else { setSortBy("joined"); setSortOrder("desc"); }
+                    }}
+                    className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                  >
+                    Joined {sortBy === "joined" && (sortOrder === "asc" ? "↑" : "↓")}
+                  </button>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell>{user.name}</TableCell>
+              {paginatedUsers.map((user) => (
+                <TableRow key={user.id} className={selectedUsers.has(user.id) ? "bg-blue-50/50" : "group"}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.has(user.id)}
+                      onChange={() => toggleUserSelection(user.id)}
+                      className="rounded border-gray-300"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <Link 
+                      href={`/admin/users/${user.id}`}
+                      className="hover:text-blue-600 transition-colors"
+                    >
+                      {user.email}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/admin/users/${user.id}`} className="hover:text-blue-600 transition-colors">
+                      {user.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {user.createdAt ? (
@@ -308,6 +648,13 @@ export default function UsersManagementPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
+                      {/* View Details Button */}
+                      <Link href={`/admin/users/${user.id}`}>
+                        <Button variant="ghost" size="sm" title="View Details">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      
                       {/* Role Selector - Only if can manage */}
                       {canManageUser(user.role) ? (
                         <Select
@@ -364,10 +711,76 @@ export default function UsersManagementPage() {
           {filteredUsers.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               {searchTerm ? (
-                <p>No users found matching "{searchTerm}"</p>
+                <p>No users found matching &quot;{searchTerm}&quot;</p>
               ) : (
                 <p>No users found</p>
               )}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+              <div className="flex items-center gap-4">
+                <p className="text-gray-500 text-sm">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Show:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="px-2 py-1 rounded-lg border border-gray-200 text-sm focus:outline-none"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = i + 1;
+                    if (totalPages > 5) {
+                      if (currentPage > 3) pageNum = currentPage - 2 + i;
+                      if (currentPage > totalPages - 2) pageNum = totalPages - 4 + i;
+                    }
+                    if (pageNum > totalPages) return null;
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-9 h-9 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -404,6 +817,34 @@ export default function UsersManagementPage() {
               {blocking 
                 ? (selectedUser?.blocked ? "Unblocking..." : "Blocking...") 
                 : (selectedUser?.blocked ? "Unblock User" : "Block User")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={!!showBulkConfirm} onOpenChange={() => setShowBulkConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              Confirm Bulk Action
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to <strong>{showBulkConfirm?.action.replace("_", " ")}</strong> {showBulkConfirm?.count} user{showBulkConfirm?.count !== 1 ? "s" : ""}?
+              <p className="mt-2 text-sm text-gray-500">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowBulkConfirm(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => showBulkConfirm && executeBulkAction(showBulkConfirm.action)}
+              className="bg-orange-600 hover:bg-orange-700"
+              disabled={bulkActionLoading}
+            >
+              {bulkActionLoading ? "Processing..." : "Confirm"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

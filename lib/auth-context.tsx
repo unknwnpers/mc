@@ -4,8 +4,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { getCurrentSessionId } from "@/lib/session-manager";
+import { useRouter } from "next/navigation";
 
 type AuthContextType = {
   user: User | null;
@@ -13,6 +14,11 @@ type AuthContextType = {
   loading: boolean;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   sessionId: string | null;
+  passwordStatus: {
+    isExpired: boolean;
+    daysUntilExpiration: number | null;
+    changeRequired: boolean;
+  } | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -26,10 +32,16 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [passwordStatus, setPasswordStatus] = useState<{
+    isExpired: boolean;
+    daysUntilExpiration: number | null;
+    changeRequired: boolean;
+  } | null>(null);
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
@@ -133,10 +145,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Create admin session if user is admin/superadmin
         if (userRole === "admin" || userRole === "superadmin") {
           await createAdminSession(u, userRole);
+          
+          // Record login and check for new device/location notification
+          try {
+            const token = await u.getIdToken();
+            await fetch('/api/admin/security/login-notify', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+          } catch (error) {
+            console.error('Failed to record login:', error);
+          }
+          
+          // Check password expiration status
+          const passwordLastChanged = profileSnap.exists() 
+            ? (profileSnap.data() as any).passwordLastChanged 
+            : null;
+          const passwordChangeRequired = profileSnap.exists()
+            ? (profileSnap.data() as any).passwordChangeRequired
+            : false;
+          
+          // Default policy: 90 days
+          const maxAgeDays = 90;
+          const lastChangedDate = passwordLastChanged?.toDate?.() || null;
+          
+          let isExpired = false;
+          let daysUntilExpiration: number | null = null;
+          
+          if (lastChangedDate && maxAgeDays > 0) {
+            const expirationDate = new Date(lastChangedDate);
+            expirationDate.setDate(expirationDate.getDate() + maxAgeDays);
+            const now = new Date();
+            isExpired = now > expirationDate;
+            const diffTime = expirationDate.getTime() - now.getTime();
+            daysUntilExpiration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
+          
+          const status = {
+            isExpired,
+            daysUntilExpiration: daysUntilExpiration && daysUntilExpiration > 0 ? daysUntilExpiration : null,
+            changeRequired: passwordChangeRequired || false,
+          };
+          
+          setPasswordStatus(status);
+          
+          // Redirect to password change if expired or required
+          if (status.isExpired || status.changeRequired) {
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('/admin/change-password')) {
+              router.push(`/admin/change-password?expired=true&redirect=${encodeURIComponent(currentPath)}`);
+            }
+          }
         }
       } else {
         setProfile(null);
         setSessionId(null);
+        setPasswordStatus(null);
       }
       
       setLoading(false);
@@ -146,7 +212,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, updateProfile, sessionId }}>
+    <AuthContext.Provider value={{ user, profile, loading, updateProfile, sessionId, passwordStatus }}>
       {children}
     </AuthContext.Provider>
   );

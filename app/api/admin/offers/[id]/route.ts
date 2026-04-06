@@ -15,12 +15,12 @@ export const dynamic = 'force-dynamic';
 // PUT /api/admin/offers/[id] - Update offer
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const superAdmin = await verifySuperAdmin(request);
     const { ip, userAgent } = getClientInfo(request);
-    const { id } = params;
+    const { id } = await context.params;
     
     const body = await request.json();
     const { name, type, value, isActive, appliesTo, categorySlug, productIds, startDate, endDate, displayText } = body;
@@ -69,12 +69,12 @@ export async function PUT(
 // DELETE /api/admin/offers/[id] - Delete offer
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const superAdmin = await verifySuperAdmin(request);
     const { ip, userAgent } = getClientInfo(request);
-    const { id } = params;
+    const { id } = await context.params;
     
     await adminDb.collection('offers').doc(id).delete();
     

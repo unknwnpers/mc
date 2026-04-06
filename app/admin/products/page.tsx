@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
 import {
   Package, Plus, Pencil, Archive, RefreshCw, X, Save,
   Check, Loader2, Image as ImageIcon, Trash2, GripVertical, ChevronRight,
-  AlertTriangle, Upload, FileSpreadsheet
+  AlertTriangle, Upload, FileSpreadsheet, Search, Filter, ArrowUpDown,
+  LayoutGrid, List, Download
 } from "lucide-react";
 import type { ProductVariant, ProductOption } from "@/lib/types";
 import { parseExcelFile, ParsedProduct, ImportResult, DuplicateEntry, SizeIssue } from "@/lib/excel-import";
@@ -98,6 +99,24 @@ export default function AdminProductsPage() {
   const [sizeFixStrategy, setSizeFixStrategy] = useState<'convert' | 'skip' | null>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Search & Filter State ─────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [stockFilter, setStockFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"name" | "date" | "price">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // ── Bulk Operations State ─────────────────────────────────────────────────
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState<{ action: string; count: number } | null>(null);
+
+  // ── Pagination State ──────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchProducts = useCallback(async () => {
     if (!user || !isAdmin) return;
@@ -113,6 +132,86 @@ export default function AdminProductsPage() {
   }, [user, isAdmin]);
 
   useEffect(() => { if (!loading && isAdmin) fetchProducts(); }, [loading, isAdmin, fetchProducts]);
+
+  // ── Filter & Sort Logic ───────────────────────────────────────────────────
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(query) ||
+        p.category_slug.toLowerCase().includes(query) ||
+        p.variants.some(v => v.sku.toLowerCase().includes(query))
+      );
+    }
+
+    // Category filter
+    if (categoryFilter !== "all") {
+      result = result.filter(p => p.category_slug === categoryFilter);
+    }
+
+    // Stock filter
+    if (stockFilter !== "all") {
+      result = result.filter(p => {
+        const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+        const hasOutOfStock = p.variants.some(v => v.stock === 0);
+        const hasLowStock = p.variants.some(v => v.stock > 0 && v.stock <= 5);
+        
+        switch (stockFilter) {
+          case "in_stock": return totalStock > 0;
+          case "out_of_stock": return hasOutOfStock;
+          case "low_stock": return hasLowStock;
+          default: return true;
+        }
+      });
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter(p => {
+        if (statusFilter === "active") return p.isActive;
+        if (statusFilter === "archived") return !p.isActive;
+        if (statusFilter === "featured") return p.is_featured;
+        return true;
+      });
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "date":
+          comparison = (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+          break;
+        case "price":
+          const aPrice = a.variants[0]?.price || 0;
+          const bPrice = b.variants[0]?.price || 0;
+          comparison = aPrice - bPrice;
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    return result;
+  }, [products, searchQuery, categoryFilter, stockFilter, statusFilter, sortBy, sortOrder]);
+
+  // ── Pagination Logic ──────────────────────────────────────────────────────
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, stockFilter, statusFilter]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -411,6 +510,105 @@ Type "DELETE" to confirm (press OK).`
     finally { setSavingStock(false); }
   }
 
+  // ── Bulk Operations ───────────────────────────────────────────────────────
+  function toggleProductSelection(id: string) {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  function selectAllProducts() {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+    }
+  }
+
+  async function executeBulkAction(action: string) {
+    if (selectedProducts.size === 0) return;
+    setBulkActionLoading(true);
+    
+    try {
+      const ids = Array.from(selectedProducts);
+      const res = await adminFetch("/api/admin/products/bulk", {
+        method: "POST",
+        body: JSON.stringify({ action, ids }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      toast.success(`${action.replace("_", " ")} completed for ${ids.length} products`);
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (e: any) {
+      toast.error(e.message || "Bulk action failed");
+    } finally {
+      setBulkActionLoading(false);
+      setShowBulkConfirm(null);
+    }
+  }
+
+  // ── Export Products ───────────────────────────────────────────────────────
+  function exportProducts() {
+    const productsToExport = filteredProducts.length > 0 ? filteredProducts : products;
+    
+    // Create CSV content
+    const headers = ["Product Name", "Category", "Size", "Price", "Stock", "Status", "Featured", "Image URL"];
+    const rows: string[] = [];
+    
+    productsToExport.forEach(p => {
+      const baseRow = [
+        p.name,
+        p.category_slug,
+        "",
+        "",
+        "",
+        p.isActive ? "Active" : "Archived",
+        p.is_featured ? "Yes" : "No",
+        p.images?.[0] || ""
+      ];
+      
+      if (p.variants.length === 0) {
+        rows.push(baseRow.join(","));
+      } else {
+        p.variants.forEach(v => {
+          const variantRow = [
+            p.name,
+            p.category_slug,
+            (v as any).options?.Size || v.sku,
+            v.price.toString(),
+            v.stock.toString(),
+            p.isActive ? "Active" : "Archived",
+            p.is_featured ? "Yes" : "No",
+            p.images?.[0] || ""
+          ];
+          rows.push(variantRow.join(","));
+        });
+      }
+    });
+    
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `products-export-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${productsToExport.length} products`);
+  }
+
   // ── Guards ────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
@@ -433,20 +631,24 @@ Type "DELETE" to confirm (press OK).`
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center">
               <Package className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">Products</h1>
-              <p className="text-white/40 text-sm">{products.filter(p => p.isActive).length} active</p>
+              <p className="text-white/40 text-sm">{filteredProducts.filter(p => p.isActive).length} of {products.length} active</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={fetchProducts} disabled={fetching}
               className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all disabled:opacity-40">
               <RefreshCw className={cn("w-4 h-4 text-white/60", fetching && "animate-spin")} />
+            </button>
+            <button onClick={exportProducts}
+              className="flex items-center gap-2 bg-white/5 text-white border border-white/10 px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/10 transition-all">
+              <Download className="w-4 h-4" /> Export
             </button>
             <button onClick={() => setShowImport(true)}
               className="flex items-center gap-2 bg-white/10 text-white border border-white/20 px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-white/20 transition-all">
@@ -459,6 +661,202 @@ Type "DELETE" to confirm (press OK).`
           </div>
         </div>
 
+        {/* ── Search & Filters ─────────────────────────────────────────────── */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input
+                type="text"
+                placeholder="Search products, categories, sizes..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-all"
+              />
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-white/30 appearance-none min-w-[120px]"
+              >
+                <option value="all" className="bg-[#111]">All Categories</option>
+                {CATEGORY_OPTIONS.map(c => (
+                  <option key={c.value} value={c.value} className="bg-[#111]">{c.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={stockFilter}
+                onChange={e => setStockFilter(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-white/30 appearance-none min-w-[120px]"
+              >
+                <option value="all" className="bg-[#111]">All Stock</option>
+                <option value="in_stock" className="bg-[#111]">In Stock</option>
+                <option value="low_stock" className="bg-[#111]">Low Stock (≤5)</option>
+                <option value="out_of_stock" className="bg-[#111]">Out of Stock</option>
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-white/30 appearance-none min-w-[120px]"
+              >
+                <option value="all" className="bg-[#111]">All Status</option>
+                <option value="active" className="bg-[#111]">Active</option>
+                <option value="archived" className="bg-[#111]">Archived</option>
+                <option value="featured" className="bg-[#111]">Featured</option>
+              </select>
+
+              {/* Sort */}
+              <button
+                onClick={() => {
+                  if (sortBy === "name") {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  } else {
+                    setSortBy("name");
+                    setSortOrder("asc");
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm transition-all",
+                  sortBy === "name"
+                    ? "bg-white/10 border-white/30 text-white"
+                    : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                )}
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (sortBy === "date") {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  } else {
+                    setSortBy("date");
+                    setSortOrder("desc");
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm transition-all",
+                  sortBy === "date"
+                    ? "bg-white/10 border-white/30 text-white"
+                    : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                )}
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
+              </button>
+
+              {/* View Toggle */}
+              <div className="flex bg-white/5 border border-white/10 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "p-2 rounded-lg transition-all",
+                    viewMode === "grid" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+                  )}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={cn(
+                    "p-2 rounded-lg transition-all",
+                    viewMode === "list" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+                  )}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchQuery || categoryFilter !== "all" || stockFilter !== "all" || statusFilter !== "all") && (
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+              <span className="text-white/40 text-xs">Active filters:</span>
+              {searchQuery && (
+                <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full flex items-center gap-1">
+                  Search: "{searchQuery}" <button onClick={() => setSearchQuery("")} className="hover:text-red-400">×</button>
+                </span>
+              )}
+              {categoryFilter !== "all" && (
+                <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full flex items-center gap-1">
+                  {CATEGORY_OPTIONS.find(c => c.value === categoryFilter)?.label}
+                  <button onClick={() => setCategoryFilter("all")} className="hover:text-red-400">×</button>
+                </span>
+              )}
+              {stockFilter !== "all" && (
+                <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full flex items-center gap-1">
+                  {stockFilter.replace("_", " ")}
+                  <button onClick={() => setStockFilter("all")} className="hover:text-red-400">×</button>
+                </span>
+              )}
+              {statusFilter !== "all" && (
+                <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full flex items-center gap-1">
+                  {statusFilter}
+                  <button onClick={() => setStatusFilter("all")} className="hover:text-red-400">×</button>
+                </span>
+              )}
+              <button
+                onClick={() => { setSearchQuery(""); setCategoryFilter("all"); setStockFilter("all"); setStatusFilter("all"); }}
+                className="text-xs text-white/40 hover:text-white ml-auto"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Bulk Action Bar ────────────────────────────────────────────── */}
+        {selectedProducts.size > 0 && (
+          <div className="bg-white/10 border border-white/20 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center">
+                <Check className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-white font-medium">
+                {selectedProducts.size} product{selectedProducts.size !== 1 ? "s" : ""} selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBulkConfirm({ action: "archive", count: selectedProducts.size })}
+                disabled={bulkActionLoading}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/30 transition-all disabled:opacity-50"
+              >
+                <Archive className="w-3.5 h-3.5" /> Archive
+              </button>
+              <button
+                onClick={() => setShowBulkConfirm({ action: "restore", count: selectedProducts.size })}
+                disabled={bulkActionLoading}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/20 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Restore
+              </button>
+              <button
+                onClick={() => setShowBulkConfirm({ action: "delete", count: selectedProducts.size })}
+                disabled={bulkActionLoading}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-all disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+              <div className="w-px h-6 bg-white/10 mx-1" />
+              <button
+                onClick={() => setSelectedProducts(new Set())}
+                className="px-3 py-2 text-white/60 text-sm hover:text-white transition-all"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Product Grid ────────────────────────────────────────────────── */}
         {fetching ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -466,18 +864,123 @@ Type "DELETE" to confirm (press OK).`
               <div key={i} className="bg-white/5 rounded-2xl h-52 animate-pulse" />
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-24 bg-white/3 rounded-2xl border border-white/10 border-dashed">
             <Package className="w-10 h-10 text-white/20 mx-auto mb-4" />
-            <p className="text-white/40 text-sm">No products yet. Create your first one!</p>
+            <p className="text-white/40 text-sm">
+              {products.length === 0 ? "No products yet. Create your first one!" : "No products match your filters."}
+            </p>
+            {products.length > 0 && (
+              <button
+                onClick={() => { setSearchQuery(""); setCategoryFilter("all"); setStockFilter("all"); setStatusFilter("all"); }}
+                className="text-white/60 hover:text-white text-sm mt-2 underline"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        ) : viewMode === "list" ? (
+          /* ── List View ───────────────────────────────────────────────────── */
+          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-[40px_auto_1fr_120px_100px_100px_120px] gap-4 px-4 py-3 border-b border-white/10 text-xs font-bold text-white/30 uppercase tracking-widest items-center">
+              <input
+                type="checkbox"
+                checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProducts.has(p.id))}
+                onChange={selectAllProducts}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 text-white focus:ring-0 focus:ring-offset-0"
+              />
+              <div className="w-12">Image</div>
+              <div>Product</div>
+              <div>Category</div>
+              <div>Stock</div>
+              <div>Status</div>
+              <div className="text-right">Actions</div>
+            </div>
+            <div className="divide-y divide-white/5">
+              {paginatedProducts.map(p => {
+                const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+                const hasOutOfStock = p.variants.some(v => v.stock === 0);
+                const hasLowStock = p.variants.some(v => v.stock > 0 && v.stock <= 5);
+                return (
+                  <div key={p.id} className={cn(
+                    "grid grid-cols-[40px_auto_1fr_120px_100px_100px_120px] gap-4 px-4 py-3 items-center hover:bg-white/5 transition-colors",
+                    !p.isActive && "opacity-50",
+                    selectedProducts.has(p.id) && "bg-white/5"
+                  )}>
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(p.id)}
+                      onChange={() => toggleProductSelection(p.id)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-white focus:ring-0 focus:ring-offset-0"
+                    />
+                    <div className="w-12 h-12 rounded-lg bg-white/5 overflow-hidden">
+                      {p.images?.[0] ? (
+                        <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 text-white/20" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium text-sm truncate">{p.name}</p>
+                      <p className="text-white/40 text-xs">{p.variants.length} variant(s)</p>
+                    </div>
+                    <div className="text-white/60 text-xs">{p.category_slug.replace(/-/g, " ")}</div>
+                    <div>
+                      {hasOutOfStock ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">Out of Stock</span>
+                      ) : hasLowStock ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">Low Stock</span>
+                      ) : (
+                        <span className="text-white/60 text-xs">{totalStock} in stock</span>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                      {!p.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">Archived</span>}
+                      {p.is_featured && <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">Featured</span>}
+                      {p.isActive && !p.is_featured && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Active</span>}
+                    </div>
+                    <div className="flex gap-1 justify-end">
+                      <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                        <Pencil className="w-3.5 h-3.5 text-white/60" />
+                      </button>
+                      {p.isActive && (
+                        <>
+                          <button onClick={() => setDeleteConfirm({ productId: p.id, productName: p.name })}
+                            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all">
+                            <Trash2 className="w-3.5 h-3.5 text-red-400/80" />
+                          </button>
+                          <button onClick={() => archiveProduct(p.id, p.name)}
+                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 transition-all">
+                            <Archive className="w-3.5 h-3.5 text-amber-400/80" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
+          /* ── Grid View ───────────────────────────────────────────────────── */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {products.map(p => (
+            {paginatedProducts.map(p => (
               <div key={p.id} className={cn(
-                "bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group",
-                !p.isActive && "opacity-40"
+                "bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group relative",
+                !p.isActive && "opacity-40",
+                selectedProducts.has(p.id) && "border-white/30 bg-white/5"
               )}>
+                {/* Checkbox */}
+                <div className="absolute top-3 left-3 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.has(p.id)}
+                    onChange={() => toggleProductSelection(p.id)}
+                    className="w-5 h-5 rounded border-white/30 bg-black/50 text-white focus:ring-0 focus:ring-offset-0"
+                  />
+                </div>
                 {/* Image */}
                 <div className="h-40 bg-white/5 flex items-center justify-center overflow-hidden">
                   {p.images?.[0]
@@ -534,6 +1037,104 @@ Type "DELETE" to confirm (press OK).`
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── Pagination ───────────────────────────────────────────────────── */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-8">
+            <p className="text-white/40 text-sm">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  // Show pages around current page
+                  let pageNum = i + 1;
+                  if (totalPages > 5) {
+                    if (currentPage > 3) {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    if (currentPage > totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    }
+                  }
+                  if (pageNum > totalPages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "h-9 w-9 rounded-xl text-sm font-medium transition-all",
+                        currentPage === pageNum
+                          ? "bg-white text-black"
+                          : "bg-white/5 text-white/60 hover:bg-white/10"
+                      )}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-9 px-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Bulk Confirm Modal ─────────────────────────────────────────── */}
+        {showBulkConfirm && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle className={cn(
+                  "w-6 h-6",
+                  showBulkConfirm.action === "delete" ? "text-red-400" : "text-amber-400"
+                )} />
+                <h2 className="text-lg font-bold text-white">
+                  Confirm {showBulkConfirm.action.replace("_", " ")}
+                </h2>
+              </div>
+              <p className="text-white/60 text-sm mb-6">
+                Are you sure you want to {showBulkConfirm.action.replace("_", " ")} {showBulkConfirm.count} product{showBulkConfirm.count !== 1 ? "s" : ""}?
+                {showBulkConfirm.action === "delete" && " This action cannot be undone."}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBulkConfirm(null)}
+                  disabled={bulkActionLoading}
+                  className="flex-1 bg-white/5 text-white font-medium py-3 rounded-xl hover:bg-white/10 transition-all text-sm disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => executeBulkAction(showBulkConfirm.action)}
+                  disabled={bulkActionLoading}
+                  className={cn(
+                    "flex-1 text-white font-medium py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50",
+                    showBulkConfirm.action === "delete" ? "bg-red-500 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-600"
+                  )}
+                >
+                  {bulkActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Confirm
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

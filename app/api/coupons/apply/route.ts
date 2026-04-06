@@ -62,7 +62,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+    // Handle Firestore Timestamp or string/Date for expiresAt
+    let expiresAt: Date | null = null;
+    if (coupon.expiresAt) {
+      if (coupon.expiresAt.toDate) {
+        // Firestore Timestamp
+        expiresAt = coupon.expiresAt.toDate();
+      } else {
+        // String or Date
+        expiresAt = new Date(coupon.expiresAt);
+      }
+    }
+    if (expiresAt !== null && expiresAt < new Date()) {
       return NextResponse.json(
         { success: false, error: "Coupon has expired" },
         { status: 400 }

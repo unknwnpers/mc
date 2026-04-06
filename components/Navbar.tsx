@@ -44,7 +44,7 @@ export default function Navbar() {
             <span className="font-serif text-2xl text-gold tracking-wide">
               Miks & <span className="text-gold italic">Chiks</span>
             </span>
-            <span className="text-[9px] tracking-[0.35em] text-neutral-400 uppercase font-bold mt-1">
+            <span className="text-xs tracking-[0.35em] text-neutral-400 uppercase font-bold mt-1">
               Premium Maternity & Kids
             </span>
           </div>
@@ -56,7 +56,7 @@ export default function Navbar() {
             <Link
               key={link.name}
               href={link.href}
-              className="text-charcoal/70 hover:text-blush transition-colors duration-300 font-bold text-[11px] uppercase tracking-[0.2em]"
+              className="text-charcoal/70 hover:text-blush transition-colors duration-300 font-bold text-xs uppercase tracking-[0.2em]"
             >
               {link.name}
             </Link>
@@ -65,7 +65,7 @@ export default function Navbar() {
           {user?.email === "admin@miksandchiks.com" && (
             <Link
               href="/admin/orders"
-              className="text-gold hover:text-gold-light transition-colors duration-300 font-black text-[11px] uppercase tracking-widest bg-cream px-4 py-2.5 rounded-xl border border-gold/10"
+              className="text-gold hover:text-gold-light transition-colors duration-300 font-black text-xs uppercase tracking-widest bg-cream px-4 py-2.5 rounded-xl border border-gold/10"
             >
               Admin
             </Link>
@@ -76,7 +76,7 @@ export default function Navbar() {
           <Link href="/cart" className="relative p-2 text-charcoal hover:text-blush transition-all hover:scale-110">
             <ShoppingBag className="h-6 w-6" />
             {cart.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-blush text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] shadow-lg shadow-blush/30">
+              <span className="absolute -top-1 -right-1 bg-blush text-white text-xs font-black px-1.5 py-0.5 rounded-full min-w-[20px] shadow-lg shadow-blush/30">
                 {cart.length}
               </span>
             )}
@@ -84,15 +84,15 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-6">
-              <Link href="/profile" className="text-[11px] font-bold text-charcoal/80 hover:text-blush transition-colors uppercase tracking-widest">
+              <Link href="/profile" className="text-xs font-bold text-charcoal/80 hover:text-blush transition-colors uppercase tracking-widest">
                 Profile
               </Link>
-              <Link href="/orders" className="text-[11px] font-bold text-charcoal/80 hover:text-blush transition-colors uppercase tracking-widest">
+              <Link href="/orders" className="text-xs font-bold text-charcoal/80 hover:text-blush transition-colors uppercase tracking-widest">
                 Orders
               </Link>
               <button
                 onClick={handleLogout}
-                className="bg-blush text-white px-7 py-3 rounded-2xl text-[11px] font-bold hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/10 active:scale-95"
+                className="bg-blush text-white px-7 py-3 rounded-2xl text-sm font-bold hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/10 active:scale-95"
               >
                 Logout
               </button>
@@ -100,7 +100,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="bg-blush text-white px-8 py-3 rounded-2xl text-[11px] font-bold hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/10 active:scale-95"
+              className="bg-blush text-white px-8 py-3 rounded-2xl text-sm font-bold hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/10 active:scale-95"
             >
               Login
             </Link>
@@ -112,7 +112,7 @@ export default function Navbar() {
           <Link href="/cart" className="relative p-2 text-charcoal">
             <ShoppingBag className="h-6 w-6" />
             {cart.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-blush text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] shadow-lg shadow-blush/30">
+              <span className="absolute -top-1 -right-1 bg-blush text-white text-xs font-black px-1.5 py-0.5 rounded-full min-w-[20px] shadow-lg shadow-blush/30">
                 {cart.length}
               </span>
             )}

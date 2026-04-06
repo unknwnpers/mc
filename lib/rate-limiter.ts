@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { getSecurityPolicies } from "./security-policies";
 
 // Initialize Upstash Redis only if credentials are available
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
@@ -12,6 +13,24 @@ if (!redis) {
   console.warn("[Rate Limiter] Redis not configured - rate limiting disabled");
 }
 
+// Cache for policies to avoid repeated Firestore calls
+let policiesCache: { policies: Awaited<ReturnType<typeof getSecurityPolicies>>; timestamp: number } | null = null;
+const POLICIES_CACHE_TTL = 30000; // 30 seconds
+
+/**
+ * Get security policies with caching
+ */
+async function getCachedPolicies() {
+  const now = Date.now();
+  if (policiesCache && (now - policiesCache.timestamp) < POLICIES_CACHE_TTL) {
+    return policiesCache.policies;
+  }
+  
+  const policies = await getSecurityPolicies();
+  policiesCache = { policies, timestamp: now };
+  return policies;
+}
+
 export interface RateLimitResult {
   success: boolean;
   remaining: number;
@@ -20,21 +39,38 @@ export interface RateLimitResult {
 
 /**
  * Global rate limiter using Redis (works on Vercel serverless)
+ * Uses security policies for configuration
  * @param identifier - Usually IP address or user ID
- * @param limit - Max requests per window
- * @param windowInSeconds - Time window (default: 60s)
+ * @param limit - Max requests per window (overrides policy if provided)
+ * @param windowInSeconds - Time window (overrides policy if provided)
  */
 export async function rateLimit(
   identifier: string,
-  limit: number = 20,
-  windowInSeconds: number = 60
+  limit?: number,
+  windowInSeconds?: number
 ): Promise<RateLimitResult> {
+  // Get policies for configuration
+  const policies = await getCachedPolicies();
+  
+  // Use provided values or fall back to policies
+  const effectiveLimit = limit ?? policies.rateLimitRequests;
+  const effectiveWindow = windowInSeconds ?? policies.rateLimitWindow;
+  
+  // If rate limiting is disabled, allow all requests
+  if (!policies.rateLimitEnabled) {
+    return {
+      success: true,
+      remaining: effectiveLimit,
+      resetAt: Date.now() + effectiveWindow * 1000,
+    };
+  }
+  
   // If Redis not configured, allow all requests
   if (!redis) {
     return {
       success: true,
-      remaining: limit,
-      resetAt: Date.now() + windowInSeconds * 1000,
+      remaining: effectiveLimit,
+      resetAt: Date.now() + effectiveWindow * 1000,
     };
   }
   
@@ -46,14 +82,14 @@ export async function rateLimit(
     
     // Set expiry on first request
     if (count === 1) {
-      await redis.expire(key, windowInSeconds);
+      await redis.expire(key, effectiveWindow);
     }
     
-    const remaining = Math.max(0, limit - count);
-    const resetAt = Date.now() + windowInSeconds * 1000;
+    const remaining = Math.max(0, effectiveLimit - count);
+    const resetAt = Date.now() + effectiveWindow * 1000;
     
     return {
-      success: count <= limit,
+      success: count <= effectiveLimit,
       remaining,
       resetAt,
     };
@@ -124,33 +160,43 @@ export async function blockIdentifier(
 
 /**
  * Track failed login attempts
+ * Uses security policies for configuration
  */
 export async function trackFailedAttempt(
   identifier: string,
-  maxAttempts: number = 5,
-  windowMinutes: number = 5
+  maxAttempts?: number,
+  windowMinutes?: number
 ): Promise<{ blocked: boolean; attempts: number }> {
+  // Get policies for configuration
+  const policies = await getCachedPolicies();
+  
+  // Use provided values or fall back to policies
+  const effectiveMaxAttempts = maxAttempts ?? policies.maxFailedAttempts;
+  const effectiveWindowMinutes = windowMinutes ?? policies.failedAttemptsWindow;
+  
+  // If auto-block is disabled, just track but don't block
+  const autoBlockEnabled = policies.autoBlockEnabled;
+  
   // If Redis not configured, silently skip tracking
   if (!redis) {
     return { blocked: false, attempts: 0 };
   }
   
   const key = `failed:${identifier}`;
-  const windowMs = windowMinutes * 60 * 1000;
   
   try {
     const attempts = await redis.incr(key);
     
     if (attempts === 1) {
-      await redis.expire(key, windowMinutes * 60);
+      await redis.expire(key, effectiveWindowMinutes * 60);
     }
     
-    // Auto-block if too many failures
-    if (attempts > maxAttempts) {
+    // Auto-block if too many failures and auto-block is enabled
+    if (autoBlockEnabled && attempts > effectiveMaxAttempts) {
       await blockIdentifier(
         identifier,
-        60 * 60, // 1 hour
-        `Too many failed attempts: ${attempts} in ${windowMinutes}m`
+        policies.blockDuration * 60, // Convert minutes to seconds
+        `Too many failed attempts: ${attempts} in ${effectiveWindowMinutes}m`
       );
       return { blocked: true, attempts };
     }

@@ -152,7 +152,7 @@ export default async function Home() {
                   <p className="text-white/80 text-sm line-clamp-2 font-medium">
                     {category.description}
                   </p>
-                  <div className="pt-4 flex items-center space-x-3 text-white font-black text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-4 transition-all duration-500">
+                  <div className="pt-4 flex items-center space-x-3 text-white font-black text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-4 transition-all duration-500">
                     <span>Discover</span>
                     <ArrowRight className="h-3 w-3" />
                   </div>

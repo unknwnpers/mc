@@ -12,10 +12,15 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get("limit") || "100", 10);
 
     const snap = await adminDb.collection("users").orderBy("created_at", "desc").limit(limit).get();
-    const users = snap.docs.map(doc => ({ 
-      id: doc.id,  // Map Firestore doc ID to frontend 'id' field
-      ...doc.data() 
-    }));
+    const users = snap.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to Date for proper serialization
+        createdAt: data.created_at?.toDate?.() || data.created_at || null,
+      };
+    });
 
     return NextResponse.json({ success: true, users });
   } catch (err: any) {

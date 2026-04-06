@@ -37,21 +37,34 @@ export async function POST(req: Request) {
       );
     }
 
+    const previousStock = variants[idx].stock;
     const updatedVariants = variants.map((v, i) =>
       i === idx ? { ...v, stock: Number(stock) } : v
     );
 
     await ref.update({ variants: updatedVariants, updatedAt: FieldValue.serverTimestamp() });
 
+    // Log to admin_logs
     await adminDb.collection("admin_logs").add({
       adminId:   user.uid,
       action:    "update_inventory",
       resourceId: productId,
-      details:   `Set SKU "${sku}" stock to ${stock}`,
+      details:   `Set SKU "${sku}" stock from ${previousStock} to ${stock}`,
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    return NextResponse.json({ success: true, productId, sku, stock });
+    // Log to inventory_logs for history tracking
+    await adminDb.collection("inventory_logs").add({
+      productId,
+      sku,
+      action: "update",
+      previousStock,
+      newStock: stock,
+      changedBy: user.uid,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return NextResponse.json({ success: true, productId, sku, stock, previousStock });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }

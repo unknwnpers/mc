@@ -20,15 +20,24 @@ export interface CartItem {
 // ── Reserve ───────────────────────────────────────────────────────────────────
 export async function reserveStock(items: CartItem[], userId: string): Promise<string> {
   const reservationRef = adminDb.collection("reservations").doc();
+  
+  // Validate items first (outside transaction)
+  for (const item of items) {
+    if (!item.id || !item.sku || item.quantity <= 0) {
+      throw new Error(`Invalid cart item: ${JSON.stringify(item)}`);
+    }
+  }
 
   await adminDb.runTransaction(async (tx) => {
-    for (const item of items) {
-      if (!item.id || !item.sku || item.quantity <= 0) {
-        throw new Error(`Invalid cart item: ${JSON.stringify(item)}`);
-      }
-
-      const productRef  = adminDb.collection("products").doc(item.id);
-      const productSnap = await tx.get(productRef);
+    // First, read ALL products
+    const productRefs = items.map(item => adminDb.collection("products").doc(item.id));
+    const productSnaps = await tx.getAll(...productRefs);
+    
+    // Then, process all writes
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const productSnap = productSnaps[i];
+      const productRef = productRefs[i];
 
       if (!productSnap.exists) {
         throw new Error(`Product not found: ${item.id}`);
@@ -99,12 +108,23 @@ export async function releaseReservation(reservationId: string): Promise<void> {
     const res = resSnap.data()!;
     if (res.status !== "reserved") return;
 
-    for (const item of res.items) {
-      const productRef  = adminDb.collection("products").doc(item.productId);
-      const productSnap = await tx.get(productRef);
-      if (!productSnap.exists) continue;
+    // First, read ALL products
+    const productRefs = res.items.map((item: any) => 
+      adminDb.collection("products").doc(item.productId)
+    );
+    const productSnaps = productRefs.length > 0 
+      ? await tx.getAll(...productRefs) 
+      : [];
+    
+    // Then, process all writes
+    for (let i = 0; i < res.items.length; i++) {
+      const item = res.items[i];
+      const productSnap = productSnaps[i];
+      const productRef = productRefs[i];
+      
+      if (!productSnap?.exists) continue;
 
-      const data     = productSnap.data()!;
+      const data     = productSnap.data() as any;
       const variants = (data.variants || []) as ProductVariant[];
       const idx      = variants.findIndex(v => v.sku === item.sku);
       if (idx === -1) continue;

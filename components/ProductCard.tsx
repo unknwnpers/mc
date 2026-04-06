@@ -106,7 +106,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         />
 
         {displayStock <= 0 && (
-          <span className="absolute top-3 left-3 bg-black text-white text-[10px] uppercase font-bold px-2 py-1 rounded tracking-widest z-20">
+          <span className="absolute top-3 left-3 bg-black text-white text-xs uppercase font-bold px-2 py-1 rounded tracking-widest z-20">
             Out of Stock
           </span>
         )}
@@ -120,7 +120,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h3>
         </Link>
 
-        <p className="text-[10px] text-gray-400 mt-2 uppercase tracking-[0.2em] font-bold">
+        <p className="text-xs text-gray-400 mt-2 uppercase tracking-[0.2em] font-bold">
           {product.category_slug || "Collection"}
         </p>
 
@@ -133,7 +133,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             onClick={handleAddToCart}
             disabled={displayStock <= 0}
             className={cn(
-              "text-[11px] px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10",
+              "text-sm px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10",
               displayStock <= 0 
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                 : "bg-blush text-white hover:bg-[#f48c82]"

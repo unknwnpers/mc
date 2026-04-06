@@ -110,26 +110,35 @@ export async function getSession(sessionId: string): Promise<AdminSession | null
  * Get all active sessions
  */
 export async function getActiveSessions(): Promise<AdminSession[]> {
-  const snapshot = await adminDb
-    .collection(SESSION_COLLECTION)
-    .where('isActive', '==', true)
-    .orderBy('lastActivity', 'desc')
-    .get();
-  
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as any;
-    return {
-      id: doc.id,
-      userId: data.userId,
-      userEmail: data.userEmail,
-      role: data.role,
-      ip: data.ip,
-      userAgent: data.userAgent,
-      loginTime: data.loginTime?.toDate?.() || new Date(),
-      lastActivity: data.lastActivity?.toDate?.() || new Date(),
-      isActive: data.isActive,
-    };
-  });
+  try {
+    const snapshot = await adminDb
+      .collection(SESSION_COLLECTION)
+      .where('isActive', '==', true)
+      .orderBy('lastActivity', 'desc')
+      .get();
+    
+    return snapshot.docs.map((doc) => {
+      const data = doc.data() as any;
+      return {
+        id: doc.id,
+        userId: data.userId,
+        userEmail: data.userEmail,
+        role: data.role,
+        ip: data.ip,
+        userAgent: data.userAgent,
+        loginTime: data.loginTime?.toDate?.() || new Date(),
+        lastActivity: data.lastActivity?.toDate?.() || new Date(),
+        isActive: data.isActive,
+      };
+    });
+  } catch (error: any) {
+    // If index error, return empty array instead of crashing
+    if (error.message?.includes('index')) {
+      console.warn('Firestore index required for sessions query. Please create the index in Firebase Console.');
+      return [];
+    }
+    throw error;
+  }
 }
 
 /**

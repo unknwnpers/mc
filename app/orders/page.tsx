@@ -125,11 +125,11 @@ export default function OrdersPage() {
                     {user && orders.length > 0 && (
                         <div className="flex gap-4">
                             <div className="bg-white px-8 py-5 rounded-3xl border border-[#F3E8E5] shadow-sm">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400 mb-1">Total Spent</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mb-1">Total Spent</p>
                                 <p className="text-2xl font-serif font-bold text-charcoal">₹{totalSpent}</p>
                             </div>
                             <div className="bg-charcoal px-8 py-5 rounded-3xl shadow-xl shadow-charcoal/10">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-1">Orders</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 mb-1">Orders</p>
                                 <p className="text-2xl font-serif font-bold text-white">{totalOrders}</p>
                             </div>
                         </div>
@@ -187,7 +187,7 @@ export default function OrdersPage() {
                                     {/* TIMELINE DATE HEADER */}
                                     <div className="flex items-center gap-6 mb-8">
                                         <div className="h-px flex-1 bg-neutral-200" />
-                                        <h3 className="text-[11px] font-black text-neutral-400 uppercase tracking-[0.3em] whitespace-nowrap bg-neutral-50 px-6 py-2 rounded-full border border-neutral-100 shadow-sm">
+                                        <h3 className="text-xs font-black text-neutral-400 uppercase tracking-[0.3em] whitespace-nowrap bg-neutral-50 px-6 py-2 rounded-full border border-neutral-100 shadow-sm">
                                             {getLabel(date)}
                                         </h3>
                                         <div className="h-px flex-1 bg-neutral-200" />
@@ -204,7 +204,7 @@ export default function OrdersPage() {
                                             return (
                                                 <div key={order.id} className="group bg-white rounded-[40px] border border-[#F3E8E5] shadow-sm hover:shadow-2xl hover:shadow-blush/10 transition-all duration-700 overflow-hidden relative">
                                                     {/* PREMIUM TIMESTAMP BADGE */}
-                                                    <div className="absolute top-0 right-10 bg-cream px-6 py-2 rounded-b-2xl border-x border-b border-blush/10 text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                                                    <div className="absolute top-0 right-10 bg-cream px-6 py-2 rounded-b-2xl border-x border-b border-blush/10 text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                                                         <Clock className="w-3 h-3 text-blush/40" />
                                                         {formatDistanceToNow(orderDate, { addSuffix: true })}
                                                     </div>
@@ -212,13 +212,13 @@ export default function OrdersPage() {
                                                     <div className="p-8 pb-4 pt-10 flex flex-col md:flex-row gap-8 md:items-center justify-between">
                                                         <div className="space-y-3">
                                                             <div className="flex items-center gap-3">
-                                                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">Order Ref</p>
+                                                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">Order Ref</p>
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-blush/20" />
                                                                 <p className="font-mono text-neutral-500 text-xs">#{order.id.slice(0, 8)}</p>
                                                             </div>
                                                             <div className="flex flex-col gap-1">
                                                                 <p className="text-4xl font-serif font-bold text-charcoal tracking-tight">₹{order.total}</p>
-                                                                <p className="text-[11px] text-neutral-400 font-medium tracking-wide">
+                                                                <p className="text-xs text-neutral-400 font-medium tracking-wide">
                                                                     {orderDate.toLocaleString("en-IN", {
                                                                         day: "numeric",
                                                                         month: "short",
@@ -231,13 +231,13 @@ export default function OrdersPage() {
                                                         </div>
 
                                                         <div className="flex flex-wrap items-center gap-4">
-                                                            <div className={cn("inline-flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all", status.color)}>
+                                                            <div className={cn("inline-flex items-center gap-3 px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all", status.color)}>
                                                                 <StatusIcon className="w-4 h-4" />
                                                                 {status.label}
                                                             </div>
                                                             <Link
                                                                 href={`/orders/${order.id}`}
-                                                                className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-cream text-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-blush hover:text-white transition-all group/btn shadow-sm"
+                                                                className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-cream text-charcoal text-xs font-bold uppercase tracking-widest hover:bg-blush hover:text-white transition-all group/btn shadow-sm"
                                                             >
                                                                 View Tracking
                                                                 <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />

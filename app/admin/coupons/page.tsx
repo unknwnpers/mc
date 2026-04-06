@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Tag, Plus, Edit, Trash2, ToggleLeft, ToggleRight, AlertCircle } from "lucide-react";
+import { Tag, Plus, Edit, Trash2, ToggleLeft, ToggleRight, AlertCircle, Search, Filter, X, Download, Copy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,26 @@ export default function CouponsManagementPage() {
     expiresAt: "",
     active: true,
   });
+
+  // Search & Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'percentage' | 'fixed'>('all');
+  const [usageFilter, setUsageFilter] = useState<'all' | 'low' | 'high' | 'exhausted'>('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Sorting states
+  const [sortBy, setSortBy] = useState<'code' | 'value' | 'usage' | 'expiresAt' | 'created'>('created');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Bulk operations states
+  const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState<{ action: 'activate' | 'deactivate' | 'delete'; count: number } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -253,6 +273,232 @@ export default function CouponsManagementPage() {
     );
   }
 
+  // Filter and sort coupons
+  const filteredCoupons = useMemo(() => {
+    let result = coupons.filter(coupon => {
+      // Search by code
+      const matchesSearch = searchTerm === '' || 
+        coupon.code.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Status filter
+      let matchesStatus = true;
+      if (statusFilter !== 'all') {
+        const now = new Date();
+        const isExpired = coupon.expiresAt ? new Date(coupon.expiresAt) < now : false;
+        
+        switch (statusFilter) {
+          case 'active':
+            matchesStatus = coupon.active && !isExpired;
+            break;
+          case 'inactive':
+            matchesStatus = !coupon.active;
+            break;
+          case 'expired':
+            matchesStatus = isExpired;
+            break;
+        }
+      }
+
+      // Type filter
+      const matchesType = typeFilter === 'all' || coupon.type === typeFilter;
+
+      // Usage filter
+      let matchesUsage = true;
+      if (usageFilter !== 'all') {
+        const usagePercentage = (coupon.usedCount / coupon.usageLimit) * 100;
+        switch (usageFilter) {
+          case 'low':
+            matchesUsage = usagePercentage < 25;
+            break;
+          case 'high':
+            matchesUsage = usagePercentage >= 75 && usagePercentage < 100;
+            break;
+          case 'exhausted':
+            matchesUsage = coupon.usedCount >= coupon.usageLimit;
+            break;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesType && matchesUsage;
+    });
+
+    // Sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'code':
+          comparison = a.code.localeCompare(b.code);
+          break;
+        case 'value':
+          comparison = a.value - b.value;
+          break;
+        case 'usage':
+          const aUsage = a.usedCount / a.usageLimit;
+          const bUsage = b.usedCount / b.usageLimit;
+          comparison = aUsage - bUsage;
+          break;
+        case 'expiresAt':
+          const aExp = a.expiresAt ? new Date(a.expiresAt).getTime() : Infinity;
+          const bExp = b.expiresAt ? new Date(b.expiresAt).getTime() : Infinity;
+          comparison = aExp - bExp;
+          break;
+        case 'created':
+          const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          comparison = aCreated - bCreated;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [coupons, searchTerm, statusFilter, typeFilter, usageFilter, sortBy, sortOrder]);
+
+  const hasActiveFilters = searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || usageFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setUsageFilter('all');
+    setCurrentPage(1);
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
+  const paginatedCoupons = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredCoupons.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredCoupons, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter, usageFilter, sortBy, sortOrder]);
+
+  // ── Bulk Operations ───────────────────────────────────────────────────────
+  function toggleCouponSelection(code: string) {
+    setSelectedCoupons(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(code)) newSet.delete(code);
+      else newSet.add(code);
+      return newSet;
+    });
+  }
+
+  function selectAllCoupons() {
+    if (selectedCoupons.size === paginatedCoupons.length) {
+      setSelectedCoupons(new Set());
+    } else {
+      setSelectedCoupons(new Set(paginatedCoupons.map(c => c.code)));
+    }
+  }
+
+  async function executeBulkAction(action: 'activate' | 'deactivate' | 'delete') {
+    if (selectedCoupons.size === 0) return;
+    setBulkActionLoading(true);
+    
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const selectedCodes = Array.from(selectedCoupons);
+      
+      if (action === 'delete') {
+        // Delete coupons one by one using code
+        for (const code of selectedCodes) {
+          await fetch(`/api/admin/coupons/${code}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+        }
+        toast.success(`Deleted ${selectedCodes.length} coupon${selectedCodes.length !== 1 ? 's' : ''}`);
+      } else {
+        // Activate/deactivate via update API
+        for (const code of selectedCodes) {
+          await fetch("/api/admin/coupons/update", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ code, updates: { active: action === 'activate' } }),
+          });
+        }
+        toast.success(`${action === 'activate' ? 'Activated' : 'Deactivated'} ${selectedCodes.length} coupon${selectedCodes.length !== 1 ? 's' : ''}`);
+      }
+      
+      setSelectedCoupons(new Set());
+      fetchCoupons();
+    } catch (error) {
+      console.error('Bulk action error:', error);
+      toast.error('Bulk action failed');
+    } finally {
+      setBulkActionLoading(false);
+      setShowBulkConfirm(null);
+    }
+  }
+
+  // Duplicate a coupon
+  async function duplicateCoupon(coupon: Coupon) {
+    try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
+      const payload = {
+        code: `${coupon.code}-COPY`,
+        type: coupon.type,
+        value: coupon.value,
+        minOrder: coupon.minOrder,
+        maxDiscount: coupon.maxDiscount,
+        usageLimit: coupon.usageLimit,
+        expiresAt: "",
+        active: false, // Start as inactive
+      };
+
+      const res = await fetch("/api/admin/coupons/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Coupon duplicated successfully');
+        fetchCoupons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        toast.error(data.error || 'Failed to duplicate coupon');
+      }
+    } catch (error) {
+      console.error('Duplicate error:', error);
+      toast.error('Failed to duplicate coupon');
+    }
+  }
+
+  // Export coupons to CSV
+  function exportCoupons() {
+    const couponsToExport = filteredCoupons.length > 0 ? filteredCoupons : coupons;
+    const headers = ["Code", "Type", "Value", "Min Order", "Max Discount", "Usage Limit", "Used Count", "Status", "Expires At"];
+    const rows = couponsToExport.map(c => [
+      c.code,
+      c.type,
+      c.value.toString(),
+      c.minOrder.toString(),
+      c.maxDiscount?.toString() || "",
+      c.usageLimit.toString(),
+      c.usedCount.toString(),
+      c.active ? "Active" : "Inactive",
+      c.expiresAt ? formatDate(c.expiresAt) : "Never"
+    ]);
+
+    const csv = [headers.join(","), ...rows.map(r => r.map(cell => `"${cell}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `coupons-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${couponsToExport.length} coupons`);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -278,17 +524,221 @@ export default function CouponsManagementPage() {
           </p>
         </div>
         
-        <Button
-          onClick={() => {
-            resetForm();
-            setCreateDialogOpen(true);
-          }}
-          className="bg-blush hover:bg-[#f48c82] text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Coupon
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={exportCoupons}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Button
+            onClick={() => {
+              resetForm();
+              setCreateDialogOpen(true);
+            }}
+            className="bg-blush hover:bg-[#f48c82] text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Coupon
+          </Button>
+        </div>
       </div>
+
+      {/* Search & Filters */}
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search coupons by code..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Toggle */}
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className={showFilters || hasActiveFilters ? "border-blush text-blush" : ""}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+            {hasActiveFilters && (
+              <Badge className="ml-2 bg-blush text-white">
+                {[statusFilter, typeFilter, usageFilter].filter(f => f !== 'all').length + (searchTerm ? 1 : 0)}
+              </Badge>
+            )}
+          </Button>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <Button variant="ghost" onClick={clearFilters}>
+              Clear all
+            </Button>
+          )}
+        </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="bg-gray-50 rounded-lg p-4 flex flex-wrap gap-4">
+            {/* Status Filter */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">Type</label>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="all">All Types</option>
+                <option value="percentage">Percentage</option>
+                <option value="fixed">Fixed Amount</option>
+              </select>
+            </div>
+
+            {/* Usage Filter */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">Usage</label>
+              <select
+                value={usageFilter}
+                onChange={(e) => setUsageFilter(e.target.value as typeof usageFilter)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+              >
+                <option value="all">All Usage</option>
+                <option value="low">Low (&lt;25%)</option>
+                <option value="high">High (75-99%)</option>
+                <option value="exhausted">Exhausted (100%)</option>
+              </select>
+            </div>
+
+            {/* Sort By */}
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">Sort By</label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="created">Created Date</option>
+                  <option value="code">Code</option>
+                  <option value="value">Value</option>
+                  <option value="usage">Usage %</option>
+                  <option value="expiresAt">Expiration</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="h-10 w-10"
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Results count */}
+        <div className="flex items-center justify-between">
+          <p className="text-gray-500 text-sm">
+            Showing {filteredCoupons.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredCoupons.length)} of {filteredCoupons.length} coupons
+            {filteredCoupons.length !== coupons.length && ' (filtered)'}
+          </p>
+          
+          {/* Items per page selector */}
+          {filteredCoupons.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500 text-sm">Show:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-8 px-2 rounded-md border border-input bg-background text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bulk Action Bar */}
+      {selectedCoupons.size > 0 && (
+        <div className="mb-6 bg-blush/10 border border-blush/30 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Tag className="w-5 h-5 text-blush" />
+            <span className="font-medium text-blush">
+              {selectedCoupons.size} coupon{selectedCoupons.size !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBulkConfirm({ action: 'activate', count: selectedCoupons.size })}
+              disabled={bulkActionLoading}
+              className="text-green-600 border-green-200 hover:bg-green-50"
+            >
+              Activate
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBulkConfirm({ action: 'deactivate', count: selectedCoupons.size })}
+              disabled={bulkActionLoading}
+              className="text-orange-600 border-orange-200 hover:bg-orange-50"
+            >
+              Deactivate
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBulkConfirm({ action: 'delete', count: selectedCoupons.size })}
+              disabled={bulkActionLoading}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              Delete
+            </Button>
+            <div className="w-px h-6 bg-blush/30 mx-1" />
+            <Button variant="ghost" size="sm" onClick={() => setSelectedCoupons(new Set())} className="text-blush">
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -348,6 +798,14 @@ export default function CouponsManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={paginatedCoupons.length > 0 && paginatedCoupons.every(c => selectedCoupons.has(c.code))}
+                    onChange={selectAllCoupons}
+                    className="rounded border-gray-300"
+                  />
+                </TableHead>
                 <TableHead>Code</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Value</TableHead>
@@ -359,8 +817,16 @@ export default function CouponsManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {coupons.map((coupon) => (
-                <TableRow key={coupon.id}>
+              {paginatedCoupons.map((coupon) => (
+                <TableRow key={coupon.code} className={selectedCoupons.has(coupon.code) ? "bg-blush/5" : ""}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedCoupons.has(coupon.code)}
+                      onChange={() => toggleCouponSelection(coupon.code)}
+                      className="rounded border-gray-300"
+                    />
+                  </TableCell>
                   <TableCell className="font-bold">{coupon.code}</TableCell>
                   <TableCell>{getTypeBadge(coupon.type)}</TableCell>
                   <TableCell>
@@ -405,6 +871,13 @@ export default function CouponsManagementPage() {
                         )}
                       </button>
                       <button
+                        onClick={() => duplicateCoupon(coupon)}
+                        className="hover:opacity-70 transition-opacity text-gray-600"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => openEditDialog(coupon)}
                         className="hover:opacity-70 transition-opacity text-blue-600"
                         title="Edit"
@@ -418,11 +891,64 @@ export default function CouponsManagementPage() {
             </TableBody>
           </Table>
 
-          {coupons.length === 0 && (
+          {filteredCoupons.length === 0 && (
             <div className="text-center py-12 text-gray-500">
               <Tag className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p>No coupons yet</p>
-              <p className="text-sm mt-1">Create your first coupon to get started</p>
+              <p>{hasActiveFilters ? 'No coupons match your filters' : 'No coupons yet'}</p>
+              <p className="text-sm mt-1">
+                {hasActiveFilters ? 'Try adjusting your search or filters' : 'Create your first coupon to get started'}
+              </p>
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="mt-4">
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = i + 1;
+                  if (totalPages > 5) {
+                    if (currentPage > 3) pageNum = currentPage - 2 + i;
+                    if (currentPage > totalPages - 2) pageNum = totalPages - 4 + i;
+                  }
+                  if (pageNum > totalPages) return null;
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={currentPage === pageNum ? "bg-blush hover:bg-[#f48c82]" : ""}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
             </div>
           )}
         </CardContent>
@@ -615,6 +1141,40 @@ export default function CouponsManagementPage() {
             </Button>
             <Button onClick={handleUpdate} className="bg-blush hover:bg-[#f48c82]">
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <Dialog open={!!showBulkConfirm} onOpenChange={() => setShowBulkConfirm(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className={
+                showBulkConfirm?.action === 'delete' ? "text-red-500" :
+                showBulkConfirm?.action === 'activate' ? "text-green-500" : "text-orange-500"
+              } />
+              Confirm Bulk {showBulkConfirm?.action.charAt(0).toUpperCase()}{showBulkConfirm?.action.slice(1)}
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {showBulkConfirm?.action} {showBulkConfirm?.count} coupon{showBulkConfirm?.count !== 1 ? 's' : ''}?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkConfirm(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => showBulkConfirm && executeBulkAction(showBulkConfirm.action)}
+              disabled={bulkActionLoading}
+              className={
+                showBulkConfirm?.action === 'delete' ? "bg-red-500 hover:bg-red-600" :
+                showBulkConfirm?.action === 'activate' ? "bg-green-500 hover:bg-green-600" : "bg-orange-500 hover:bg-orange-600"
+              }
+            >
+              {bulkActionLoading ? 'Processing...' : 'Confirm'}
             </Button>
           </DialogFooter>
         </DialogContent>

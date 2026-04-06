@@ -325,7 +325,7 @@ export default function ProductDetailsPage() {
       
       <main className="max-w-7xl mx-auto px-6 md:px-10 py-12">
         {/* BACK BUTTON */}
-        <Link href="/products" className="inline-flex items-center gap-2 text-neutral-400 hover:text-blush font-bold text-[10px] uppercase tracking-[0.2em] mb-12 transition-colors group">
+        <Link href="/products" className="inline-flex items-center gap-2 text-neutral-400 hover:text-blush font-bold text-xs uppercase tracking-[0.2em] mb-12 transition-colors group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Collection
         </Link>
@@ -352,7 +352,7 @@ export default function ProductDetailsPage() {
 
           {/* CONTENT SECTION */}
           <div className="flex flex-col h-full">
-            <nav className="flex mb-4 text-[10px] text-blush uppercase tracking-[0.2em] font-black">
+            <nav className="flex mb-4 text-xs text-blush uppercase tracking-[0.2em] font-black">
               <Link href="/" className="hover:underline">Home</Link>
               <span className="mx-2 text-neutral-300">/</span>
               <span className="text-neutral-400 font-medium">{product.name}</span>
@@ -378,7 +378,7 @@ export default function ProductDetailsPage() {
                     {hasDiscount && (
                       <div className="flex items-center gap-3 pt-1">
                         <span className="text-neutral-300 line-through text-lg font-medium">₹{offerData?.originalPrice}</span>
-                        <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-green-100 italic">
+                        <span className="bg-green-50 text-green-600 text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full border border-green-100 italic">
                           {offerData?.offer?.displayText || `SAVE ₹${offerData?.savings}`}
                         </span>
                       </div>
@@ -403,7 +403,7 @@ export default function ProductDetailsPage() {
                 return (
                     <div className="mb-10">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-400">Select Size</p>
+                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">Select Size</p>
                         </div>
                         <div className="flex flex-wrap gap-3">
                             {variants.map(v => {

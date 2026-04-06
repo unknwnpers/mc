@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { 
@@ -14,7 +14,13 @@ import {
   Check,
   X,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Power,
+  Copy
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -73,6 +79,29 @@ export default function AdminOffersPage() {
   // Products for selection
   const [products, setProducts] = useState<Array<{id: string; name: string}>>([]);
   const [productSearch, setProductSearch] = useState('');
+
+  // Search & Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired' | 'scheduled'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'percentage' | 'fixed'>('all');
+  const [appliesToFilter, setAppliesToFilter] = useState<'all' | 'all_products' | 'category' | 'product'>('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Sorting states
+  const [sortBy, setSortBy] = useState<'name' | 'value' | 'startDate' | 'endDate' | 'created'>('created');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(9);
+
+  // Bulk operations states
+  const [selectedOffers, setSelectedOffers] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState<{ action: 'activate' | 'deactivate' | 'delete'; count: number } | null>(null);
+
+  // Quick toggle loading state
+  const [togglingOfferId, setTogglingOfferId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOffers();
@@ -312,6 +341,245 @@ export default function AdminOffersPage() {
     return true;
   };
 
+  // Filter and sort offers
+  const filteredOffers = useMemo(() => {
+    let result = offers.filter(offer => {
+      // Search by name
+      const matchesSearch = searchTerm === '' || 
+        offer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        offer.displayText.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Status filter
+      let matchesStatus = true;
+      if (statusFilter !== 'all') {
+        const now = new Date();
+        const startDate = offer.startDate ? new Date(offer.startDate) : null;
+        const endDate = offer.endDate ? new Date(offer.endDate) : null;
+        
+        switch (statusFilter) {
+          case 'active':
+            matchesStatus = offer.isActive && 
+              (!startDate || startDate <= now) && 
+              (!endDate || endDate >= now);
+            break;
+          case 'inactive':
+            matchesStatus = !offer.isActive;
+            break;
+          case 'expired':
+            matchesStatus = endDate !== null && endDate < now;
+            break;
+          case 'scheduled':
+            matchesStatus = startDate !== null && startDate > now;
+            break;
+        }
+      }
+
+      // Type filter
+      const matchesType = typeFilter === 'all' || offer.type === typeFilter;
+
+      // Applies to filter
+      const matchesAppliesTo = appliesToFilter === 'all' || 
+        (appliesToFilter === 'all_products' && offer.appliesTo === 'all') ||
+        offer.appliesTo === appliesToFilter;
+
+      return matchesSearch && matchesStatus && matchesType && matchesAppliesTo;
+    });
+
+    // Sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'value':
+          comparison = a.value - b.value;
+          break;
+        case 'startDate':
+          const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
+          const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
+          comparison = aStart - bStart;
+          break;
+        case 'endDate':
+          const aEnd = a.endDate ? new Date(a.endDate).getTime() : Infinity;
+          const bEnd = b.endDate ? new Date(b.endDate).getTime() : Infinity;
+          comparison = aEnd - bEnd;
+          break;
+        case 'created':
+          const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          comparison = aCreated - bCreated;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [offers, searchTerm, statusFilter, typeFilter, appliesToFilter, sortBy, sortOrder]);
+
+  const hasActiveFilters = searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || appliesToFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setAppliesToFilter('all');
+    setCurrentPage(1);
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredOffers.length / itemsPerPage);
+  const paginatedOffers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredOffers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredOffers, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter, appliesToFilter, sortBy, sortOrder]);
+
+  // ── Bulk Operations ───────────────────────────────────────────────────────
+  function toggleOfferSelection(id: string) {
+    setSelectedOffers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  }
+
+  function selectAllOffers() {
+    if (selectedOffers.size === paginatedOffers.length) {
+      setSelectedOffers(new Set());
+    } else {
+      setSelectedOffers(new Set(paginatedOffers.map(o => o.id)));
+    }
+  }
+
+  async function executeBulkAction(action: 'activate' | 'deactivate' | 'delete') {
+    if (selectedOffers.size === 0) return;
+    setBulkActionLoading(true);
+    
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const ids = Array.from(selectedOffers);
+      
+      if (action === 'delete') {
+        // Delete offers one by one
+        for (const id of ids) {
+          await fetch(`/api/admin/offers/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+        toast.success(`Deleted ${ids.length} offer${ids.length !== 1 ? 's' : ''}`);
+      } else {
+        // Activate/deactivate via bulk API
+        const res = await fetch('/api/admin/offers/bulk', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action, ids }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          toast.success(`${action === 'activate' ? 'Activated' : 'Deactivated'} ${ids.length} offer${ids.length !== 1 ? 's' : ''}`);
+        } else {
+          toast.error(data.error || 'Bulk action failed');
+        }
+      }
+      
+      setSelectedOffers(new Set());
+      fetchOffers();
+    } catch (error) {
+      console.error('Bulk action error:', error);
+      toast.error('Bulk action failed');
+    } finally {
+      setBulkActionLoading(false);
+      setShowBulkConfirm(null);
+    }
+  }
+
+  // Quick toggle offer active status
+  async function quickToggleOffer(offer: Offer) {
+    setTogglingOfferId(offer.id);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const res = await fetch(`/api/admin/offers/${offer.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isActive: !offer.isActive }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Offer ${offer.isActive ? 'deactivated' : 'activated'}`);
+        fetchOffers();
+      } else {
+        toast.error(data.error || 'Failed to toggle offer');
+      }
+    } catch (error) {
+      console.error('Toggle error:', error);
+      toast.error('Failed to toggle offer');
+    } finally {
+      setTogglingOfferId(null);
+    }
+  }
+
+  // Duplicate an offer
+  async function duplicateOffer(offer: Offer) {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const payload = {
+        name: `${offer.name} (Copy)`,
+        type: offer.type,
+        value: offer.value,
+        isActive: false, // Start as inactive
+        appliesTo: offer.appliesTo,
+        categorySlug: offer.categorySlug,
+        productIds: offer.productIds,
+        displayText: offer.displayText,
+        startDate: '',
+        endDate: ''
+      };
+
+      const res = await fetch('/api/admin/offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Offer duplicated successfully');
+        fetchOffers();
+        // Scroll to top to see the new offer
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        toast.error(data.error || 'Failed to duplicate offer');
+      }
+    } catch (error) {
+      console.error('Duplicate error:', error);
+      toast.error('Failed to duplicate offer');
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -330,31 +598,255 @@ export default function AdminOffersPage() {
           </button>
         </div>
 
+        {/* Search & Filters */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <input
+                type="text"
+                placeholder="Search offers by name or display text..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-blush"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded"
+                >
+                  <X className="w-4 h-4 text-white/40" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-3 rounded-xl border transition-all",
+                showFilters || hasActiveFilters
+                  ? "bg-blush/20 border-blush text-blush"
+                  : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+              )}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-1 w-5 h-5 rounded-full bg-blush text-white text-xs flex items-center justify-center">
+                  {[statusFilter, typeFilter, appliesToFilter].filter(f => f !== 'all').length + (searchTerm ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-4 py-3 text-white/60 hover:text-white transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-wrap gap-4">
+              {/* Status Filter */}
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blush"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="expired">Expired</option>
+                  <option value="scheduled">Scheduled</option>
+                </select>
+              </div>
+
+              {/* Type Filter */}
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Type</label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blush"
+                >
+                  <option value="all">All Types</option>
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+
+              {/* Applies To Filter */}
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Applies To</label>
+                <select
+                  value={appliesToFilter}
+                  onChange={(e) => setAppliesToFilter(e.target.value as typeof appliesToFilter)}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blush"
+                >
+                  <option value="all">All</option>
+                  <option value="all_products">All Products</option>
+                  <option value="category">Category</option>
+                  <option value="product">Specific Products</option>
+                </select>
+              </div>
+
+              {/* Sort By */}
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Sort By</label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blush"
+                  >
+                    <option value="created">Created Date</option>
+                    <option value="name">Name</option>
+                    <option value="value">Value</option>
+                    <option value="startDate">Start Date</option>
+                    <option value="endDate">End Date</option>
+                  </select>
+                  <button
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
+                    title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                  >
+                    {sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Results count */}
+          <div className="flex items-center justify-between">
+            <p className="text-white/40 text-sm">
+              Showing {filteredOffers.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredOffers.length)} of {filteredOffers.length} offers
+              {filteredOffers.length !== offers.length && ` (filtered from ${offers.length})`}
+            </p>
+            
+            {/* Items per page selector */}
+            {filteredOffers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-white/40 text-sm">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-blush"
+                >
+                  <option value={6}>6</option>
+                  <option value={9}>9</option>
+                  <option value={12}>12</option>
+                  <option value={24}>24</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bulk Action Bar */}
+        {selectedOffers.size > 0 && (
+          <div className="mb-6 bg-blush/10 border border-blush/30 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-blush" />
+              <span className="font-medium text-blush">
+                {selectedOffers.size} offer{selectedOffers.size !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBulkConfirm({ action: 'activate', count: selectedOffers.size })}
+                disabled={bulkActionLoading}
+                className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors text-sm font-medium"
+              >
+                Activate
+              </button>
+              <button
+                onClick={() => setShowBulkConfirm({ action: 'deactivate', count: selectedOffers.size })}
+                disabled={bulkActionLoading}
+                className="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors text-sm font-medium"
+              >
+                Deactivate
+              </button>
+              <button
+                onClick={() => setShowBulkConfirm({ action: 'delete', count: selectedOffers.size })}
+                disabled={bulkActionLoading}
+                className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm font-medium"
+              >
+                Delete
+              </button>
+              <div className="w-px h-6 bg-blush/30 mx-1" />
+              <button
+                onClick={() => setSelectedOffers(new Set())}
+                className="px-4 py-2 text-blush hover:text-blush/80 transition-colors text-sm"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Offers Grid */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Loader2 className="w-8 h-8 animate-spin text-white/40" />
           </div>
-        ) : offers.length === 0 ? (
+        ) : filteredOffers.length === 0 ? (
           <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
             <Tag className="w-16 h-16 text-white/20 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-white/60">No offers yet</h3>
-            <p className="text-white/40 mt-2">Create your first promotional offer</p>
+            <h3 className="text-xl font-medium text-white/60">
+              {hasActiveFilters ? 'No offers match your filters' : 'No offers yet'}
+            </h3>
+            <p className="text-white/40 mt-2">
+              {hasActiveFilters ? 'Try adjusting your search or filters' : 'Create your first promotional offer'}
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="mt-4 px-4 py-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {offers.map((offer) => (
+            {paginatedOffers.map((offer) => (
               <div
                 key={offer.id}
                 className={cn(
-                  "bg-white/5 border rounded-2xl p-6 transition-all",
-                  isOfferActive(offer) 
-                    ? "border-green-500/30 bg-green-500/5" 
-                    : "border-white/10 opacity-60"
+                  "bg-white/5 border rounded-2xl p-6 transition-all relative",
+                  selectedOffers.has(offer.id)
+                    ? "border-blush/50 bg-blush/5"
+                    : isOfferActive(offer) 
+                      ? "border-green-500/30 bg-green-500/5" 
+                      : "border-white/10 opacity-60"
                 )}
               >
+                {/* Checkbox */}
+                <div className="absolute top-4 left-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedOffers.has(offer.id)}
+                    onChange={() => toggleOfferSelection(offer.id)}
+                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-blush focus:ring-blush cursor-pointer"
+                  />
+                </div>
+
                 {/* Status Badge */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 pl-8">
                   <span className={cn(
                     "text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full",
                     isOfferActive(offer)
@@ -364,6 +856,31 @@ export default function AdminOffersPage() {
                     {isOfferActive(offer) ? 'Active' : 'Inactive'}
                   </span>
                   <div className="flex gap-2">
+                    {/* Quick Toggle */}
+                    <button
+                      onClick={() => quickToggleOffer(offer)}
+                      disabled={togglingOfferId === offer.id}
+                      className={cn(
+                        "p-2 rounded-lg transition-all",
+                        offer.isActive 
+                          ? "bg-green-500/10 hover:bg-green-500/20 text-green-400" 
+                          : "bg-white/5 hover:bg-white/10 text-white/40"
+                      )}
+                      title={offer.isActive ? 'Deactivate offer' : 'Activate offer'}
+                    >
+                      {togglingOfferId === offer.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Power className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => duplicateOffer(offer)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                      title="Duplicate offer"
+                    >
+                      <Copy className="w-4 h-4 text-white/60" />
+                    </button>
                     <button
                       onClick={() => openEdit(offer)}
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
@@ -416,6 +933,54 @@ export default function AdminOffersPage() {
               </div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = i + 1;
+                  if (totalPages > 5) {
+                    if (currentPage > 3) pageNum = currentPage - 2 + i;
+                    if (currentPage > totalPages - 2) pageNum = totalPages - 4 + i;
+                  }
+                  if (pageNum > totalPages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "w-10 h-10 rounded-lg text-sm font-medium transition-all",
+                        currentPage === pageNum
+                          ? "bg-blush text-white"
+                          : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Next
+              </button>
+            </div>
+          )}
+          </>
         )}
 
         {/* Create/Edit Modal */}
@@ -667,6 +1232,52 @@ export default function AdminOffersPage() {
                   className="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium hover:bg-red-500/90 transition-all"
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Action Confirmation */}
+        {showBulkConfirm && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-[#111] border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center",
+                  showBulkConfirm.action === 'delete' ? "bg-red-500/10" : 
+                  showBulkConfirm.action === 'activate' ? "bg-green-500/10" : "bg-orange-500/10"
+                )}>
+                  <AlertTriangle className={cn(
+                    "w-6 h-6",
+                    showBulkConfirm.action === 'delete' ? "text-red-400" : 
+                    showBulkConfirm.action === 'activate' ? "text-green-400" : "text-orange-400"
+                  )} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold capitalize">
+                    {showBulkConfirm.action} {showBulkConfirm.count} Offer{showBulkConfirm.count !== 1 ? 's' : ''}?
+                  </h3>
+                  <p className="text-white/60 text-sm">This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBulkConfirm(null)}
+                  className="flex-1 bg-white/5 text-white py-3 rounded-xl font-medium hover:bg-white/10 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => executeBulkAction(showBulkConfirm.action)}
+                  disabled={bulkActionLoading}
+                  className={cn(
+                    "flex-1 text-white py-3 rounded-xl font-medium transition-all",
+                    showBulkConfirm.action === 'delete' ? "bg-red-500 hover:bg-red-500/90" : 
+                    showBulkConfirm.action === 'activate' ? "bg-green-500 hover:bg-green-500/90" : "bg-orange-500 hover:bg-orange-500/90"
+                  )}
+                >
+                  {bulkActionLoading ? 'Processing...' : 'Confirm'}
                 </button>
               </div>
             </div>

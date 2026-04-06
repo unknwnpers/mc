@@ -1,6 +1,6 @@
 import { adminDb } from "./firebase-admin";
 
-export type LogType = "ADMIN_ACTION" | "AUTH" | "SECURITY";
+export type LogType = "ADMIN_ACTION" | "AUTH" | "SECURITY" | "PASSWORD";
 export type LogStatus = "SUCCESS" | "FAILED";
 
 export interface SecurityLog {

@@ -5,10 +5,11 @@ import { FieldValue } from "firebase-admin/firestore";
 import { verifyAdmin } from "@/lib/admin-auth";
 
 // ── GET /api/admin/products/[id] ─────────────────────────────────────────────
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     await verifyAdmin(req);
-    const snap = await adminDb.collection("products").doc(params.id).get();
+    const { id } = await context.params;
+    const snap = await adminDb.collection("products").doc(id).get();
     if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
     return NextResponse.json({ success: true, product: { id: snap.id, ...snap.data() } });
   } catch (err: any) {
@@ -17,12 +18,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // ── PATCH /api/admin/products/[id] ───────────────────────────────────────────
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await verifyAdmin(req);
     const body = await req.json();
+    const { id } = await context.params;
 
-    const ref = adminDb.collection("products").doc(params.id);
+    const ref = adminDb.collection("products").doc(id);
     const snap = await ref.get();
     if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
 
@@ -49,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await adminDb.collection("admin_logs").add({
       adminId: user.uid,
       action: "update_product",
-      resourceId: params.id,
+      resourceId: id,
       details: `Updated: ${Object.keys(safeUpdate).filter(k => k !== "updatedAt").join(", ")}`,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -61,11 +63,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // ── DELETE /api/admin/products/[id] (soft archive) ───────────────────────────
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await verifyAdmin(req);
+    const { id } = await context.params;
 
-    const ref = adminDb.collection("products").doc(params.id);
+    const ref = adminDb.collection("products").doc(id);
     const snap = await ref.get();
     if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
 
@@ -74,7 +77,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     await adminDb.collection("admin_logs").add({
       adminId: user.uid,
       action: "archive_product",
-      resourceId: params.id,
+      resourceId: id,
       details: "Soft-archived",
       createdAt: FieldValue.serverTimestamp(),
     });

@@ -25,12 +25,28 @@ export async function GET(request: NextRequest) {
     query = query.orderBy("createdAt", "desc");
     
     const snapshot = await query.get();
-    const coupons = snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data(),
-      expiresAt: doc.data().expiresAt?.toDate ? doc.data().expiresAt.toDate() : null,
-      createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : null,
-    }));
+    const coupons = snapshot.docs.map((doc: any) => {
+      const data = doc.data();
+      
+      // Handle expiresAt - can be Firestore Timestamp, string, or null
+      let expiresAt: Date | null = null;
+      if (data.expiresAt) {
+        if (data.expiresAt.toDate) {
+          // Firestore Timestamp
+          expiresAt = data.expiresAt.toDate();
+        } else if (typeof data.expiresAt === 'string') {
+          // ISO string format
+          expiresAt = new Date(data.expiresAt);
+        }
+      }
+      
+      return {
+        id: doc.id,
+        ...data,
+        expiresAt,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : null,
+      };
+    });
     
     return NextResponse.json({
       success: true,

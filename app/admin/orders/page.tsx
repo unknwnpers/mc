@@ -1,6 +1,6 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { auth } from "@/lib/firebase";
 import {
@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Filter, RefreshCw, Package } from "lucide-react";
+import { LayoutDashboard, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const statusStyles: Record<string, string> = {
   pending_payment: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -34,15 +34,73 @@ const statusStyles: Record<string, string> = {
   failed:          "bg-red-200 text-red-700 border-red-300",
 };
 
+const paymentMethodStyles = {
+  cod: "bg-orange-100 text-orange-700 border-orange-200",
+  online: "bg-blue-100 text-blue-700 border-blue-200",
+};
+
+// Helper function to safely format dates
+function formatDate(dateValue: any): string {
+  if (!dateValue) return "N/A";
+  
+  try {
+    let date: Date;
+    
+    // Handle Firestore Timestamp
+    if (dateValue.toDate && typeof dateValue.toDate === "function") {
+      date = dateValue.toDate();
+    } else if (typeof dateValue === "string" || typeof dateValue === "number") {
+      date = new Date(dateValue);
+    } else if (dateValue instanceof Date) {
+      date = dateValue;
+    } else if (dateValue.seconds) {
+      // Firestore timestamp object {seconds, nanoseconds}
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      return "N/A";
+    }
+    
+    // Check if valid date
+    if (isNaN(date.getTime())) {
+      return "N/A";
+    }
+    
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "N/A";
+  }
+}
+
 const ALL_STATUSES = ["all", "pending_payment", "paid", "processing", "shipped", "delivered", "cancelled"];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders]               = useState<any[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [statusFilter, setStatusFilter]   = useState("all");
   const [fetching, setFetching]           = useState(true);
   const [updatingId, setUpdatingId]       = useState<string | null>(null);
   const { user, profile, loading }        = useAuth();
+
+  // ── Search & Filter State ─────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [dateFilter, setDateFilter]       = useState<string>("all");
+  const [minAmount, setMinAmount]         = useState<string>("");
+  const [maxAmount, setMaxAmount]         = useState<string>("");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
+  const [sortBy, setSortBy]               = useState<"date" | "amount">("date");
+  const [sortOrder, setSortOrder]         = useState<"asc" | "desc">("desc");
+
+  // ── Pagination State ──────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage]     = useState(1);
+  const [itemsPerPage, setItemsPerPage]   = useState(10);
+
+  // ── Order Details Modal State ─────────────────────────────────────────────
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   // Derive auth from profile role (works both "admin" and "superadmin")
   const isAdmin = profile?.role === "admin" || profile?.role === "superadmin";
@@ -59,7 +117,6 @@ export default function AdminOrdersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load orders");
       setOrders(data.orders || []);
-      setFilteredOrders(data.orders || []);
     } catch (err: any) {
       toast.error(err.message || "Could not load orders");
     } finally {
@@ -71,13 +128,96 @@ export default function AdminOrdersPage() {
     if (!loading && isAdmin) fetchOrders();
   }, [loading, isAdmin, fetchOrders]);
 
-  useEffect(() => {
-    if (statusFilter === "all") {
-      setFilteredOrders(orders);
-    } else {
-      setFilteredOrders(orders.filter(o => o.status === statusFilter));
+  // ── Filter & Sort Logic ───────────────────────────────────────────────────
+  const filteredOrders = useMemo(() => {
+    let result = [...orders];
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter(o => o.status === statusFilter);
     }
-  }, [statusFilter, orders]);
+
+    // Search filter (order ID, customer name, email, phone)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(o => 
+        o.id.toLowerCase().includes(query) ||
+        o.recipient?.name?.toLowerCase().includes(query) ||
+        o.recipient?.email?.toLowerCase().includes(query) ||
+        o.recipient?.phone?.toLowerCase().includes(query)
+      );
+    }
+
+    // Date filter
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      result = result.filter(o => {
+        const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+        switch (dateFilter) {
+          case "today":
+            return orderDate >= today;
+          case "week":
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return orderDate >= weekAgo;
+          case "month":
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return orderDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Amount filter
+    const min = parseFloat(minAmount) || 0;
+    const max = parseFloat(maxAmount) || Infinity;
+    if (min > 0 || max < Infinity) {
+      result = result.filter(o => o.total >= min && o.total <= max);
+    }
+
+    // Payment method filter
+    if (paymentMethodFilter !== "all") {
+      result = result.filter(o => {
+        if (paymentMethodFilter === "cod") return o.isCOD === true;
+        if (paymentMethodFilter === "online") return o.isCOD !== true;
+        return true;
+      });
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case "date":
+          const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+          const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+          comparison = aDate.getTime() - bDate.getTime();
+          break;
+        case "amount":
+          comparison = a.total - b.total;
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    return result;
+  }, [orders, statusFilter, searchQuery, dateFilter, minAmount, maxAmount, sortBy, sortOrder]);
+
+  // ── Pagination Logic ──────────────────────────────────────────────────────
+  const paginatedOrders = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredOrders, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery, dateFilter, minAmount, maxAmount, paymentMethodFilter]);
 
   const updateStatus = async (orderId: string, status: string) => {
     setUpdatingId(orderId);
@@ -101,6 +241,52 @@ export default function AdminOrdersPage() {
       setUpdatingId(null);
     }
   };
+
+  // ── Export Orders ─────────────────────────────────────────────────────────
+  function exportOrders() {
+    const ordersToExport = filteredOrders.length > 0 ? filteredOrders : orders;
+    
+    const headers = ["Order ID", "Date", "Customer Name", "Email", "Phone", "Status", "Payment Method", "COD Fee", "Total", "Items Count"];
+    const rows = ordersToExport.map(o => {
+      let dateStr = "";
+      try {
+        if (o.createdAt?.toDate) {
+          dateStr = o.createdAt.toDate().toISOString();
+        } else if (o.createdAt) {
+          const d = new Date(o.createdAt);
+          if (!isNaN(d.getTime())) dateStr = d.toISOString();
+        }
+      } catch {
+        dateStr = "";
+      }
+      
+      return [
+        o.id,
+        dateStr,
+        o.recipient?.name || "",
+        o.recipient?.email || "",
+        o.recipient?.phone || "",
+        o.status,
+        o.isCOD ? "COD" : "Online",
+        (o.paymentBreakdown?.codCharge || 0).toString(),
+        (o.total || 0).toString(),
+        (o.items || []).length.toString()
+      ];
+    });
+    
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-export-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${ordersToExport.length} orders`);
+  }
 
   /* ── Loading auth state ──────────────────────────────────────────── */
   if (loading) {
@@ -160,6 +346,12 @@ export default function AdminOrdersPage() {
               </div>
             </div>
             <button
+              onClick={exportOrders}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white border border-neutral-100 shadow-sm hover:bg-neutral-50 transition-all text-sm font-bold text-neutral-700"
+            >
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <button
               onClick={fetchOrders}
               disabled={fetching}
               className="p-3 rounded-2xl bg-white border border-neutral-100 shadow-sm hover:bg-neutral-50 transition-all disabled:opacity-50"
@@ -169,27 +361,153 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-neutral-100 mb-8 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Filter className="w-5 h-5 text-neutral-400" />
-            <span className="font-bold text-neutral-700">Filter:</span>
+        {/* Search & Filters */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-neutral-100 mb-8 space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search by order ID, customer name, email, or phone..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400 transition-all"
+            />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {ALL_STATUSES.map(s => (
+
+          {/* Filter Row */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-neutral-400" />
+              <span className="text-sm font-medium text-neutral-600">Status:</span>
+              <div className="flex flex-wrap gap-1">
+                {ALL_STATUSES.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={cn(
+                      "px-3 py-1 rounded-lg text-xs font-medium transition-all border capitalize",
+                      statusFilter === s
+                        ? "bg-neutral-900 text-white border-neutral-900"
+                        : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
+                    )}
+                  >
+                    {s.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-px h-6 bg-neutral-200" />
+
+            {/* Date Filter */}
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-neutral-400" />
+              <span className="text-sm font-medium text-neutral-600">Date:</span>
+              <select
+                value={dateFilter}
+                onChange={e => setDateFilter(e.target.value)}
+                className="px-3 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+
+            <div className="w-px h-6 bg-neutral-200" />
+
+            {/* Amount Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-neutral-600">Amount:</span>
+              <input
+                type="number"
+                placeholder="Min"
+                value={minAmount}
+                onChange={e => setMinAmount(e.target.value)}
+                className="w-20 px-2 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
+              />
+              <span className="text-neutral-400">-</span>
+              <input
+                type="number"
+                placeholder="Max"
+                value={maxAmount}
+                onChange={e => setMaxAmount(e.target.value)}
+                className="w-20 px-2 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
+              />
+            </div>
+
+            <div className="w-px h-6 bg-neutral-200" />
+
+            {/* Sort */}
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4 text-neutral-400" />
+              <span className="text-sm font-medium text-neutral-600">Sort:</span>
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
+                onClick={() => {
+                  if (sortBy === "date") {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  } else {
+                    setSortBy("date");
+                    setSortOrder("desc");
+                  }
+                }}
                 className={cn(
-                  "px-4 py-1.5 rounded-xl text-xs font-bold transition-all border capitalize",
-                  statusFilter === s
-                    ? "bg-neutral-900 text-white border-neutral-900 shadow-lg"
-                    : "bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50"
+                  "px-3 py-1 rounded-lg text-xs font-medium transition-all border",
+                  sortBy === "date"
+                    ? "bg-neutral-900 text-white border-neutral-900"
+                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
                 )}
               >
-                {s.replace("_", " ")}
+                Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
               </button>
-            ))}
+              <button
+                onClick={() => {
+                  if (sortBy === "amount") {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  } else {
+                    setSortBy("amount");
+                    setSortOrder("desc");
+                  }
+                }}
+                className={cn(
+                  "px-3 py-1 rounded-lg text-xs font-medium transition-all border",
+                  sortBy === "amount"
+                    ? "bg-neutral-900 text-white border-neutral-900"
+                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
+                )}
+              >
+                Amount {sortBy === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
+              </button>
+            </div>
+
+            <div className="w-px h-6 bg-neutral-200" />
+
+            {/* Payment Method Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-neutral-600">Payment:</span>
+              <select
+                value={paymentMethodFilter}
+                onChange={e => setPaymentMethodFilter(e.target.value)}
+                className="px-3 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
+              >
+                <option value="all">All Methods</option>
+                <option value="cod">Cash on Delivery</option>
+                <option value="online">Online Payment</option>
+              </select>
+            </div>
+
+            {/* Clear Filters */}
+            {(searchQuery || dateFilter !== "all" || minAmount || maxAmount || paymentMethodFilter !== "all") && (
+              <button
+                onClick={() => { setSearchQuery(""); setDateFilter("all"); setMinAmount(""); setMaxAmount(""); setPaymentMethodFilter("all"); }}
+                className="ml-auto text-sm text-neutral-500 hover:text-neutral-900 flex items-center gap-1"
+              >
+                <X className="w-3.5 h-3.5" /> Clear filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -202,7 +520,7 @@ export default function AdminOrdersPage() {
                 <TableHead className="font-bold text-neutral-800 py-6 px-8 uppercase tracking-widest text-[10px]">Customer / Items</TableHead>
                 <TableHead className="font-bold text-neutral-800 py-6 px-8 uppercase tracking-widest text-[10px]">Total</TableHead>
                 <TableHead className="font-bold text-neutral-800 py-6 px-8 uppercase tracking-widest text-[10px]">Status</TableHead>
-                <TableHead className="font-bold text-neutral-800 py-6 px-8 uppercase tracking-widest text-[10px] text-right">Update</TableHead>
+                <TableHead className="font-bold text-neutral-800 py-6 px-8 uppercase tracking-widest text-[10px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -222,7 +540,7 @@ export default function AdminOrdersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredOrders.map(order => (
+                paginatedOrders.map((order: any) => (
                   <TableRow key={order.id} className="border-neutral-50 hover:bg-neutral-50/50 transition-colors">
                     <TableCell className="font-mono text-[11px] text-neutral-400 py-6 px-8">
                       {order.id.slice(0, 14)}…
@@ -246,38 +564,362 @@ export default function AdminOrdersPage() {
                       <span className="text-lg font-black text-neutral-900">₹{order.total}</span>
                     </TableCell>
                     <TableCell className="py-6 px-8">
-                      <Badge className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                        statusStyles[order.status] || statusStyles.created
-                      )}>
-                        {order.status?.replace("_", " ")}
-                      </Badge>
+                      <div className="flex flex-col gap-1.5">
+                        <Badge className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit",
+                          statusStyles[order.status] || statusStyles.created
+                        )}>
+                          {order.status?.replace("_", " ")}
+                        </Badge>
+                        {order.isCOD && (
+                          <Badge className={cn(
+                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
+                            paymentMethodStyles.cod
+                          )}>
+                            COD
+                          </Badge>
+                        )}
+                        {!order.isCOD && order.status !== "pending_payment" && (
+                          <Badge className={cn(
+                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
+                            paymentMethodStyles.online
+                          )}>
+                            Paid Online
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-6 px-8 text-right">
-                      <Select
-                        defaultValue={order.status}
-                        disabled={updatingId === order.id}
-                        onValueChange={val => updateStatus(order.id, val)}
-                      >
-                        <SelectTrigger className="w-[150px] ml-auto rounded-xl border-neutral-200 font-bold text-xs shadow-sm bg-white">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-neutral-200">
-                          {["created", "processing", "shipped", "delivered", "cancelled"].map(s => (
-                            <SelectItem key={s} value={s} className="text-xs font-bold capitalize">
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition-all"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4 text-neutral-600" />
+                        </button>
+                        <Select
+                          defaultValue={order.status}
+                          disabled={updatingId === order.id}
+                          onValueChange={val => updateStatus(order.id, val)}
+                        >
+                          <SelectTrigger className="w-[130px] rounded-xl border-neutral-200 font-bold text-xs shadow-sm bg-white">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-neutral-200">
+                            {["created", "processing", "shipped", "delivered", "cancelled"].map(s => (
+                              <SelectItem key={s} value={s} className="text-xs font-bold capitalize">
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-8 py-6 border-t border-neutral-100">
+              <div className="flex items-center gap-4">
+                <p className="text-neutral-500 text-sm">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-neutral-500">Show:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={e => setItemsPerPage(Number(e.target.value))}
+                    className="px-2 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="h-9 px-3 rounded-lg border border-neutral-200 text-neutral-600 text-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = i + 1;
+                    if (totalPages > 5) {
+                      if (currentPage > 3) pageNum = currentPage - 2 + i;
+                      if (currentPage > totalPages - 2) pageNum = totalPages - 4 + i;
+                    }
+                    if (pageNum > totalPages) return null;
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={cn(
+                          "h-9 w-9 rounded-lg text-sm font-medium transition-all",
+                          currentPage === pageNum
+                            ? "bg-neutral-900 text-white"
+                            : "bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                        )}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-9 px-3 rounded-lg border border-neutral-200 text-neutral-600 text-sm hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* ── Order Details Modal ──────────────────────────────────────────── */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-8 py-6 border-b border-neutral-100">
+              <div>
+                <h2 className="text-xl font-black text-neutral-900">Order Details</h2>
+                <p className="text-neutral-500 text-sm font-mono mt-1">{selectedOrder.id}</p>
+              </div>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition-all"
+              >
+                <X className="w-5 h-5 text-neutral-600" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="p-8 space-y-8">
+                {/* Status & Date */}
+                <div className="flex items-center justify-between">
+                  <Badge className={cn(
+                    "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border",
+                    statusStyles[selectedOrder.status] || statusStyles.created
+                  )}>
+                    {selectedOrder.status?.replace("_", " ")}
+                  </Badge>
+                  <span className="text-neutral-500 text-sm">
+                    {formatDate(selectedOrder.createdAt)}
+                  </span>
+                </div>
+
+                {/* Customer Info */}
+                <div className="bg-neutral-50 rounded-2xl p-6">
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Customer</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-neutral-500">Name</p>
+                      <p className="font-bold text-neutral-900">{selectedOrder.recipient?.name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-500">Email</p>
+                      <p className="font-bold text-neutral-900">{selectedOrder.recipient?.email || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-500">Phone</p>
+                      <p className="font-bold text-neutral-900">{selectedOrder.recipient?.phone || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-500">User ID</p>
+                      <p className="font-mono text-xs text-neutral-600">{selectedOrder.userId}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                <div className="bg-neutral-50 rounded-2xl p-6">
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Shipping Address</h3>
+                  {selectedOrder.recipient?.address ? (
+                    <div className="text-neutral-900">
+                      <p className="font-bold">{selectedOrder.recipient.address.name}</p>
+                      <p>{selectedOrder.recipient.address.addressLine1}</p>
+                      {selectedOrder.recipient.address.addressLine2 && <p>{selectedOrder.recipient.address.addressLine2}</p>}
+                      {selectedOrder.recipient.address.landmark && <p className="text-neutral-500 text-sm">Landmark: {selectedOrder.recipient.address.landmark}</p>}
+                      <p>{selectedOrder.recipient.address.city}, {selectedOrder.recipient.address.state} - {selectedOrder.recipient.address.pincode}</p>
+                      <p className="text-neutral-500 text-sm mt-1">Phone: {selectedOrder.recipient.address.phone}</p>
+                    </div>
+                  ) : (
+                    <p className="text-neutral-500">No address information available</p>
+                  )}
+                </div>
+
+                {/* Order Items */}
+                <div>
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Order Items</h3>
+                  <div className="space-y-3">
+                    {(selectedOrder.items || []).map((item: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between py-3 border-b border-neutral-100 last:border-0">
+                        <div className="flex items-center gap-4">
+                          {item.image && (
+                            <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-neutral-100" />
+                          )}
+                          <div>
+                            <p className="font-bold text-neutral-900">{item.name}</p>
+                            <p className="text-sm text-neutral-500">
+                              Size: {item.selectedSize || "N/A"} × {item.quantity}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="font-bold text-neutral-900">₹{item.price * item.quantity}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment Info */}
+                <div className="bg-neutral-50 rounded-2xl p-6">
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Payment</h3>
+                  
+                  {/* Payment Method Badge */}
+                  <div className="mb-4">
+                    {selectedOrder.isCOD ? (
+                      <Badge className={cn("px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border", paymentMethodStyles.cod)}>
+                        Cash on Delivery
+                      </Badge>
+                    ) : (
+                      <Badge className={cn("px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border", paymentMethodStyles.online)}>
+                        Paid Online (Razorpay)
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-600">Subtotal</span>
+                      <span className="font-medium">₹{selectedOrder.subtotal || selectedOrder.total}</span>
+                    </div>
+                    {selectedOrder.discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount</span>
+                        <span className="font-medium">-₹{selectedOrder.discount}</span>
+                      </div>
+                    )}
+                    
+                    {/* Payment Breakdown */}
+                    {selectedOrder.paymentBreakdown && (
+                      <>
+                        {selectedOrder.paymentBreakdown.shipping > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Shipping</span>
+                            <span className="font-medium">₹{selectedOrder.paymentBreakdown.shipping}</span>
+                          </div>
+                        )}
+                        {selectedOrder.paymentBreakdown.handlingFee > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Handling Fee</span>
+                            <span className="font-medium">₹{selectedOrder.paymentBreakdown.handlingFee}</span>
+                          </div>
+                        )}
+                        {selectedOrder.paymentBreakdown.gst?.total > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">GST (5%)</span>
+                            <span className="font-medium">₹{selectedOrder.paymentBreakdown.gst.total}</span>
+                          </div>
+                        )}
+                        {selectedOrder.paymentBreakdown.codCharge > 0 && (
+                          <div className="flex justify-between text-orange-600">
+                            <span>COD Fee</span>
+                            <span className="font-medium">₹{selectedOrder.paymentBreakdown.codCharge}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {!selectedOrder.paymentBreakdown && (
+                      <div className="flex justify-between">
+                        <span className="text-neutral-600">Shipping</span>
+                        <span className="font-medium">{selectedOrder.shipping > 0 ? `₹${selectedOrder.shipping}` : "Free"}</span>
+                      </div>
+                    )}
+
+                    <div className="border-t border-neutral-200 pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-bold text-neutral-900">Total</span>
+                        <span className="font-black text-xl text-neutral-900">₹{selectedOrder.total}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Payment Status for COD */}
+                    {selectedOrder.isCOD && (
+                      <div className="pt-2 text-sm">
+                        <p className="text-orange-600 font-medium">
+                          Payment pending - Collect ₹{selectedOrder.total} on delivery
+                        </p>
+                      </div>
+                    )}
+                    
+                    {selectedOrder.razorpayOrderId && !selectedOrder.isCOD && (
+                      <div className="pt-2 text-sm text-neutral-500">
+                        <p>Payment ID: {selectedOrder.razorpayOrderId}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Order Timeline */}
+                <div>
+                  <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Order Timeline</h3>
+                  <div className="space-y-4">
+                    {[
+                      { status: "created", label: "Order Placed", time: selectedOrder.createdAt },
+                      { status: "processing", label: "Processing", time: selectedOrder.processedAt },
+                      { status: "shipped", label: "Shipped", time: selectedOrder.shippedAt },
+                      { status: "delivered", label: "Delivered", time: selectedOrder.deliveredAt },
+                    ].map((step, i) => {
+                      const isCompleted = ["created", "processing", "shipped", "delivered"].indexOf(selectedOrder.status) >= ["created", "processing", "shipped", "delivered"].indexOf(step.status);
+                      const isCurrent = selectedOrder.status === step.status;
+                      return (
+                        <div key={step.status} className="flex items-start gap-4">
+                          <div className={cn(
+                            "w-3 h-3 rounded-full mt-1.5",
+                            isCompleted ? "bg-green-500" : "bg-neutral-200",
+                            isCurrent && "ring-4 ring-green-100"
+                          )} />
+                          <div className="flex-1">
+                            <p className={cn(
+                              "font-bold",
+                              isCompleted ? "text-neutral-900" : "text-neutral-400"
+                            )}>
+                              {step.label}
+                            </p>
+                            {step.time && (
+                              <p className="text-sm text-neutral-500">
+                                {formatDate(step.time)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

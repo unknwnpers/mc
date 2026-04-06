@@ -4,7 +4,8 @@ export interface ProductVariant {
   sku: string;                        // e.g. "S", "30", "3-6M", "Free Size"
   options: Record<string, string>;    // e.g. { Size: "S" }  — multi-dim ready
   price: number;
-  stock: number;
+  stock: number;                      // Physical stock in warehouse
+  reservedStock?: number;             // Stock reserved for pending orders
 }
 
 export interface ProductOption {
@@ -22,6 +23,7 @@ export interface Product {
   variants: ProductVariant[];         // all purchasable SKUs
   isActive: boolean;
   is_featured?: boolean;
+  lowStockThreshold?: number;         // default: 3, per-product low stock threshold
   createdAt: any;
   updatedAt: any;
 }
@@ -54,6 +56,23 @@ export interface UserProfile {
   phone?: string;           // 10-digit Indian phone
   created_at: any;
   updated_at?: any;
+}
+
+// ── Saved Address ─────────────────────────────────────────────────────────────
+
+export interface SavedAddress {
+  id: string;
+  label: string;           // "Home", "Office", "Other"
+  name: string;
+  phone: string;
+  addressLine1: string;    // House name / building
+  addressLine2?: string;   // Area / locality
+  landmark?: string;       // Optional landmark
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
+  createdAt: any;
 }
 
 // ── Order ─────────────────────────────────────────────────────────────────────

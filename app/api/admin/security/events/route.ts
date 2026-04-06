@@ -1,11 +1,15 @@
 /**
  * Server-Sent Events (SSE) endpoint for real-time security logs
- * Streams new security events to connected admin clients
+ * Streams new security events and detected threats to connected admin clients
  */
 
 import { NextRequest } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
+import { detectThreats, initializeThreatRules, type SecurityLog } from '@/lib/threat-detector';
+import { createThreat, existingThreatExists } from '@/lib/threat-storage';
+import { sendAlert, getNotifiedChannels } from '@/lib/alert-service';
+import { blockIdentifier } from '@/lib/rate-limiter';
 
 // Force dynamic rendering - this route uses request-based auth and streaming
 export const dynamic = 'force-dynamic';
@@ -50,6 +54,9 @@ async function verifyAdminFromToken(token: string | null) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Initialize threat rules on first connection
+    await initializeThreatRules();
+    
     // Get token from query param (EventSource doesn't support custom headers)
     const searchParams = request.nextUrl.searchParams;
     const token = searchParams.get('token');
@@ -78,8 +85,8 @@ export async function GET(request: NextRequest) {
           .limit(1);
 
         unsubscribe = logsRef.onSnapshot(
-          (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
+          async (snapshot) => {
+            for (const change of snapshot.docChanges()) {
               if (change.type === 'added') {
                 const logData: any = {
                   id: change.doc.id,
@@ -94,6 +101,7 @@ export async function GET(request: NextRequest) {
                     : new Date().toISOString(),
                 };
 
+                // Send security log event
                 const event = `event: security-log\ndata: ${JSON.stringify(serializedLog)}\n\n`;
                 try {
                   controller.enqueue(encoder.encode(event));
@@ -101,9 +109,66 @@ export async function GET(request: NextRequest) {
                   // Client disconnected
                   console.log('[SSE] Client disconnected, stopping stream');
                   cleanup();
+                  return;
+                }
+
+                // Run threat detection on the new log
+                try {
+                  const securityLog: SecurityLog = {
+                    id: change.doc.id,
+                    type: logData.type,
+                    action: logData.action,
+                    userId: logData.userId,
+                    role: logData.role,
+                    ip: logData.ip,
+                    userAgent: logData.userAgent,
+                    status: logData.status,
+                    metadata: logData.metadata,
+                    timestamp: logData.timestamp?.toDate?.() || new Date(),
+                  };
+
+                  const threats = await detectThreats(securityLog);
+                  
+                  for (const threat of threats) {
+                    // Check if similar threat already exists
+                    const exists = await existingThreatExists(threat.ruleId, threat.source.value);
+                    if (exists) continue;
+
+                    // Send alerts through configured channels
+                    const alertResults = await sendAlert(threat);
+                    const notifiedChannels = getNotifiedChannels(alertResults);
+
+                    // Store the threat
+                    await createThreat(threat, notifiedChannels);
+
+                    // Auto-block if critical and configured
+                    if (threat.autoBlocked && threat.source.type === 'IP' && threat.source.value) {
+                      await blockIdentifier(
+                        threat.source.value,
+                        3600, // 1 hour
+                        `Auto-blocked: ${threat.ruleName}`
+                      );
+                    }
+
+                    // Send threat event through SSE
+                    const threatEvent = `event: security-threat\ndata: ${JSON.stringify({
+                      ...threat,
+                      detectedAt: threat.detectedAt.toISOString(),
+                      alertResults,
+                    })}\n\n`;
+                    try {
+                      controller.enqueue(encoder.encode(threatEvent));
+                    } catch (error) {
+                      console.log('[SSE] Client disconnected during threat event');
+                      cleanup();
+                      return;
+                    }
+                  }
+                } catch (error) {
+                  console.error('[SSE] Threat detection error:', error);
                 }
               }
-            });
+            }
           },
           (error) => {
             console.error('[SSE] Firestore listener error:', error);

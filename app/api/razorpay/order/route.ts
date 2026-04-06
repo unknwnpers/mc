@@ -5,11 +5,12 @@ import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { reserveStock } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
+import { calculatePaymentBreakdown } from "@/lib/payment-calculator";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { cart, userId, profile, couponCode } = body;
+    const { cart, userId, profile, couponCode, isCOD = false, paymentBreakdown: clientBreakdown } = body;
 
     // ── 1. Input validation ─────────────────────────────────────────────────
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -31,35 +32,44 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── 2. Server-side price calculation (never trust the client) ───────────
+    // ── 2. Server-side price calculation & validation (single transaction) ─
     let calculatedTotal = 0;
     const validatedItems: any[] = [];
-
-    for (const item of cart) {
-      const productSnap = await adminDb.collection("products").doc(item.id).get();
-      if (!productSnap.exists) {
-        return NextResponse.json({ error: `Product not found: ${item.id}` }, { status: 404 });
+    
+    // First validate all products exist and get pricing
+    const productChecks = await Promise.all(
+      cart.map(async (item: any) => {
+        const productSnap = await adminDb.collection("products").doc(item.id).get();
+        if (!productSnap.exists) {
+          return { error: `Product not found: ${item.id}`, status: 404 };
+        }
+        const data = productSnap.data()!;
+        if (!data.isActive) {
+          return { error: `Product "${data.name}" is no longer available`, status: 409 };
+        }
+        const variants = (data.variants || []) as any[];
+        const variant = variants.find((v: any) => v.sku === item.sku);
+        if (!variant) {
+          return { error: `SKU "${item.sku}" is not available for "${data.name}"`, status: 409 };
+        }
+        return { 
+          success: true, 
+          item: { ...item, price: variant.price },
+          price: variant.price 
+        };
+      })
+    );
+    
+    // Check for errors
+    for (const check of productChecks) {
+      if ('error' in check) {
+        return NextResponse.json({ error: check.error }, { status: check.status });
       }
-
-      const data = productSnap.data()!;
-      if (!data.isActive) {
-        return NextResponse.json({ error: `Product "${data.name}" is no longer available` }, { status: 409 });
-      }
-
-      const variants = (data.variants || []) as any[];
-      const variant  = variants.find((v: any) => v.sku === item.sku);
-      if (!variant) {
-        return NextResponse.json({
-          error: `SKU "${item.sku}" is not available for "${data.name}"`
-        }, { status: 409 });
-      }
-
-      calculatedTotal += variant.price * item.quantity;
-      validatedItems.push({ ...item, price: variant.price });
+      validatedItems.push(check.item);
+      calculatedTotal += check.price * check.item.quantity;
     }
 
     // ── 2.5. Server-side discount validation ──────────────────────────────
-    let finalTotal = calculatedTotal;
     let discountAmount = 0;
 
     if (couponCode) {
@@ -68,7 +78,18 @@ export async function POST(req: Request) {
 
       if (couponSnap.exists) {
         const coupon = couponSnap.data()!;
-        const isExpired = coupon.expiresAt && new Date(coupon.expiresAt) < new Date();
+        // Handle Firestore Timestamp or string/Date for expiresAt
+        let expiresAt: Date | null = null;
+        if (coupon.expiresAt) {
+          if (coupon.expiresAt.toDate) {
+            // Firestore Timestamp
+            expiresAt = coupon.expiresAt.toDate();
+          } else {
+            // String or Date
+            expiresAt = new Date(coupon.expiresAt);
+          }
+        }
+        const isExpired = expiresAt !== null && expiresAt < new Date();
         const isUsageLimitReached = coupon.usedCount >= coupon.usageLimit;
         
         if (coupon.active && !isExpired && !isUsageLimitReached && calculatedTotal >= (coupon.minOrder || 0)) {
@@ -82,10 +103,44 @@ export async function POST(req: Request) {
           }
           
           discountAmount = Math.min(discountAmount, calculatedTotal);
-          finalTotal = calculatedTotal - discountAmount;
         }
       }
     }
+
+    // ── 2.6. Server-side payment calculation (authoritative) ───────────────
+    const businessState = process.env.BUSINESS_STATE || "Karnataka";
+    const userState = profile?.state || profile?.address?.state;
+    
+    const paymentBreakdown = calculatePaymentBreakdown({
+      subtotal: calculatedTotal,
+      discount: discountAmount,
+      isCOD,
+      userState,
+      businessState,
+    });
+
+    // Security: Validate client-provided breakdown if present
+    if (clientBreakdown) {
+      const tolerance = 1; // Allow ₹1 difference for rounding
+      const isValid = 
+        Math.abs(clientBreakdown.subtotal - paymentBreakdown.subtotal) <= tolerance &&
+        Math.abs(clientBreakdown.shipping - paymentBreakdown.shipping) <= tolerance &&
+        Math.abs(clientBreakdown.handlingFee - paymentBreakdown.handlingFee) <= tolerance &&
+        Math.abs(clientBreakdown.gst.total - paymentBreakdown.gst.total) <= tolerance &&
+        Math.abs(clientBreakdown.codCharge - paymentBreakdown.codCharge) <= tolerance &&
+        Math.abs(clientBreakdown.total - paymentBreakdown.total) <= tolerance;
+      
+      if (!isValid) {
+        await auditLog("WARN", {
+          event: "PAYMENT_BREAKDOWN_MISMATCH",
+          userId,
+          details: { clientTotal: clientBreakdown.total, serverTotal: paymentBreakdown.total },
+        });
+        // Continue with server-calculated values (don't trust client)
+      }
+    }
+
+    const finalTotal = paymentBreakdown.total;
 
     // ── 3. Atomic stock reservation (fails entire cart if any item OOS) ─────
     let reservationId: string;
@@ -98,12 +153,16 @@ export async function POST(req: Request) {
       }, { status: 409 });
     }
 
-    // ── 4. Create Razorpay order ────────────────────────────────────────────
+    // ── 4. Create Razorpay order (skip for COD) ──────────────────────────────
     const razorpay = getRazorpayClient();
     let razorpayOrderId = "";
     let isMock = false;
 
-    if (razorpay) {
+    // For COD orders, generate a custom order ID without Razorpay
+    if (isCOD) {
+      razorpayOrderId = `cod_${Date.now().toString().slice(-6)}_${Math.random().toString(36).slice(2, 7)}`;
+      isMock = true; // Treat COD like mock for immediate confirmation
+    } else if (razorpay) {
       const rpOrder = await razorpay.orders.create({
         amount:   finalTotal * 100,
         currency: "INR",
@@ -122,13 +181,31 @@ export async function POST(req: Request) {
       subtotal:        calculatedTotal,
       discount:        discountAmount,
       total:           finalTotal,
-      status:          isMock ? "paid" : "pending_payment",
+      status:          isCOD ? "processing" : (isMock ? "paid" : "pending_payment"),
       couponCode:      couponCode || null,
       razorpayOrderId,
       reservationId,
+      isCOD,
+      paymentBreakdown: {
+        shipping: paymentBreakdown.shipping,
+        handlingFee: paymentBreakdown.handlingFee,
+        gst: paymentBreakdown.gst,
+        codCharge: paymentBreakdown.codCharge,
+      },
       recipient: {
         name:  profile.name  || "",
+        email: profile.email || "",
         phone: profile.phone || "",
+        address: {
+          name:        profile.name || "",
+          phone:       profile.phone || "",
+          addressLine1: profile.addressLine1 || "",
+          addressLine2: profile.addressLine2 || "",
+          landmark:    profile.landmark || "",
+          city:        profile.city || "",
+          state:       profile.state || "Kerala",
+          pincode:     profile.pincode || "",
+        },
       },
       shipping: {
         address: `${profile.addressLine1 || ''}${profile.addressLine2 ? ', ' + profile.addressLine2 : ''}${profile.landmark ? ', Near ' + profile.landmark : ''}`,
@@ -142,14 +219,14 @@ export async function POST(req: Request) {
 
     await adminDb.collection("orders").doc(razorpayOrderId).set(orderDoc);
 
-    // ── 6. Atomic completion for Mock Orders ────────────────────────────────
-    if (isMock && reservationId) {
+    // ── 6. Atomic completion for COD and Mock Orders ─────────────────────────
+    if ((isCOD || isMock) && reservationId) {
       await adminDb.collection("reservations").doc(reservationId).update({
-        status:    "paid",
+        status:    isCOD ? "confirmed" : "paid",
         updatedAt: FieldValue.serverTimestamp(),
       });
       
-      // Also update coupon usage for mock orders
+      // Also update coupon usage for COD/mock orders
       if (couponCode) {
         const couponRef = adminDb.collection("coupons").doc(couponCode.toUpperCase());
         await couponRef.update({
@@ -179,6 +256,8 @@ export async function POST(req: Request) {
       firestoreOrderId: razorpayOrderId,
       reservationId,
       isMock,
+      paymentBreakdown,
+      isCOD,
     });
 
   } catch (err: any) {

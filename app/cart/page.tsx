@@ -7,13 +7,15 @@ import { ApplyCoupon } from "@/components/ApplyCoupon";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { User, MapPin, Phone, Info, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { SavedAddress } from "@/lib/types";
+import { PaymentBreakdown } from "@/lib/payment-calculator";
 
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity, clearCart, loading } = useCart();
@@ -22,16 +24,97 @@ export default function CartPage() {
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [discount, setDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
+    const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const [addressesLoading, setAddressesLoading] = useState(true);
+    const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown | null>(null);
+    const [isCOD, setIsCOD] = useState(false);
+    const [breakdownLoading, setBreakdownLoading] = useState(false);
 
     const total = cart.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
     );
 
-    // Update final amount when total or discount changes
+    // Computed state: Check if we have a complete delivery address
+    const hasCompleteAddress = (() => {
+        // Check if a saved address is selected
+        if (selectedAddressId && addresses.length > 0) {
+            const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+            if (selectedAddr && 
+                selectedAddr.addressLine1 && 
+                selectedAddr.city && 
+                selectedAddr.pincode && 
+                selectedAddr.phone) {
+                return true;
+            }
+        }
+        // Fall back to profile address check
+        return !!(profile?.addressLine1 && profile?.city && profile?.pincode && profile?.phone);
+    })();
+
+    // Get the delivery profile (selected address or profile)
+    const getDeliveryProfile = () => {
+        if (selectedAddressId && addresses.length > 0) {
+            const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+            if (selectedAddr) {
+                return {
+                    ...profile,
+                    uid: profile?.uid || user?.uid,
+                    name: selectedAddr.name,
+                    phone: selectedAddr.phone,
+                    addressLine1: selectedAddr.addressLine1,
+                    addressLine2: selectedAddr.addressLine2 || "",
+                    landmark: selectedAddr.landmark || "",
+                    city: selectedAddr.city,
+                    state: selectedAddr.state,
+                    pincode: selectedAddr.pincode,
+                };
+            }
+        }
+        return profile;
+    };
+
+    // Fetch payment breakdown from server
     useEffect(() => {
-        setFinalAmount(total - discount);
-    }, [total, discount]);
+        const fetchBreakdown = async () => {
+            if (!user || total === 0) {
+                setPaymentBreakdown(null);
+                return;
+            }
+            
+            setBreakdownLoading(true);
+            try {
+                const token = await user.getIdToken();
+                const res = await fetch("/api/cart/calculate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        subtotal: total,
+                        discount,
+                        isCOD,
+                    }),
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    setPaymentBreakdown(data.data);
+                    setFinalAmount(data.data.total);
+                }
+            } catch (err) {
+                console.error("Error fetching payment breakdown:", err);
+                // Fallback to simple calculation
+                setFinalAmount(total - discount);
+            } finally {
+                setBreakdownLoading(false);
+            }
+        };
+
+        fetchBreakdown();
+    }, [total, discount, isCOD, user]);
 
     useEffect(() => {
         // One-time script loading for optimized performance
@@ -44,6 +127,41 @@ export default function CartPage() {
             // Cleanup NOT recommended here because checkout should persist
         };
     }, []);
+
+    // Fetch saved addresses
+    useEffect(() => {
+        const fetchAddresses = async () => {
+            if (!user) {
+                setAddressesLoading(false);
+                return;
+            }
+            setAddressesLoading(true);
+            try {
+                const token = await user.getIdToken();
+                const res = await fetch("/api/user/addresses", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const addr = data.addresses || [];
+                    setAddresses(addr);
+                    // Select default address or first address
+                    const defaultAddr = addr.find((a: SavedAddress) => a.isDefault);
+                    if (defaultAddr) {
+                        setSelectedAddressId(defaultAddr.id);
+                    } else if (addr.length > 0) {
+                        setSelectedAddressId(addr[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching addresses:", err);
+            } finally {
+                setAddressesLoading(false);
+            }
+        };
+
+        fetchAddresses();
+    }, [user]);
 
     if (loading) {
         return (
@@ -69,7 +187,7 @@ export default function CartPage() {
                                 clearCart();
                                 toast.success("Cart cleared");
                             }}
-                            className="text-neutral-400 hover:text-blush transition-colors text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2"
+                            className="text-neutral-400 hover:text-blush transition-colors text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" />
                             Clear All
@@ -114,7 +232,7 @@ export default function CartPage() {
                                                 {item.name}
                                             </h3>
                                             {item.selectedSize && (
-                                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-3">
+                                                <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
                                                     Size: {item.selectedSize}
                                                 </p>
                                             )}
@@ -176,56 +294,280 @@ export default function CartPage() {
                                 Order <span className="text-blush italic">Summary</span>
                             </h2>
 
-                            <div className="space-y-5 mb-6">
+                            <div className="space-y-4 mb-6">
+                                {/* Subtotal */}
                                 <div className="flex justify-between text-charcoal/60 font-medium">
-                                    <span>Subtotal</span>
+                                    <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
                                     <span>₹{total}</span>
                                 </div>
+
+                                {/* Shipping */}
                                 <div className="flex justify-between text-charcoal/60 font-medium">
-                                    <span>Shipping</span>
-                                    <span className="text-green-600 font-bold uppercase text-[10px] tracking-widest pt-1">Free</span>
+                                    <div className="flex items-center gap-1">
+                                        <Truck className="w-3.5 h-3.5" />
+                                        <span>Shipping</span>
+                                        {paymentBreakdown?.shipping === 0 && total > 0 && (
+                                            <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full ml-1">FREE</span>
+                                        )}
+                                    </div>
+                                    <span className={paymentBreakdown?.shipping === 0 ? "text-green-600 font-bold" : ""}>
+                                        {breakdownLoading ? "..." : paymentBreakdown ? `₹${paymentBreakdown.shipping}` : "₹0"}
+                                    </span>
                                 </div>
+
+                                {/* Handling Fee */}
+                                {paymentBreakdown && paymentBreakdown.handlingFee > 0 && (
+                                    <div className="flex justify-between text-charcoal/60 font-medium text-sm">
+                                        <div className="flex items-center gap-1">
+                                            <Package className="w-3.5 h-3.5" />
+                                            <span>Handling Fee</span>
+                                        </div>
+                                        <span>₹{paymentBreakdown.handlingFee}</span>
+                                    </div>
+                                )}
+
+                                {/* GST Breakdown */}
+                                {paymentBreakdown && paymentBreakdown.gst.total > 0 && (
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-charcoal/60 font-medium text-sm">
+                                            <div className="flex items-center gap-1">
+                                                <span>GST (5%)</span>
+                                                <span className="text-[10px] text-neutral-400">
+                                                    ({paymentBreakdown.gst.cgst > 0 ? "CGST+SGST" : "IGST"})
+                                                </span>
+                                            </div>
+                                            <span>₹{paymentBreakdown.gst.total}</span>
+                                        </div>
+                                        {paymentBreakdown.gst.cgst > 0 && (
+                                            <div className="flex justify-between text-charcoal/40 text-xs pl-4">
+                                                <span>CGST (2.5%)</span>
+                                                <span>₹{paymentBreakdown.gst.cgst}</span>
+                                            </div>
+                                        )}
+                                        {paymentBreakdown.gst.sgst > 0 && (
+                                            <div className="flex justify-between text-charcoal/40 text-xs pl-4">
+                                                <span>SGST (2.5%)</span>
+                                                <span>₹{paymentBreakdown.gst.sgst}</span>
+                                            </div>
+                                        )}
+                                        {paymentBreakdown.gst.igst > 0 && (
+                                            <div className="flex justify-between text-charcoal/40 text-xs pl-4">
+                                                <span>IGST (5%)</span>
+                                                <span>₹{paymentBreakdown.gst.igst}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* COD Charge */}
+                                {isCOD && paymentBreakdown && paymentBreakdown.codCharge > 0 && (
+                                    <div className="flex justify-between text-charcoal/60 font-medium text-sm">
+                                        <div className="flex items-center gap-1">
+                                            <CreditCard className="w-3.5 h-3.5" />
+                                            <span>COD Fee</span>
+                                        </div>
+                                        <span>₹{paymentBreakdown.codCharge}</span>
+                                    </div>
+                                )}
                                 
                                 {/* Coupon Applied Section */}
                                 {discount > 0 && (
                                     <>
+                                        <div className="h-px bg-neutral-200 my-2" />
                                         <div className="flex justify-between text-green-700 font-semibold">
                                             <span>Coupon Discount</span>
                                             <span>-₹{discount}</span>
                                         </div>
-                                        <div className="h-px bg-green-200 my-2" />
                                     </>
                                 )}
                                 
+                                {/* Total Savings */}
+                                {discount > 0 || (paymentBreakdown && paymentBreakdown.shipping === 0 && total < 999) && (
+                                    <div className="bg-green-50 rounded-xl p-3 text-center">
+                                        <span className="text-green-700 font-semibold text-sm">
+                                            You saved ₹{(discount || 0) + (paymentBreakdown?.shipping === 0 ? 100 : 0)}!
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                <div className="h-px bg-neutral-200 my-2" />
+                                
                                 <div className="flex justify-between items-center pt-2">
                                     <span className="text-xl font-bold text-charcoal">Total</span>
-                                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{finalAmount}</span>
+                                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">
+                                        ₹{breakdownLoading ? "..." : finalAmount}
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Coupon Application Component */}
-                            <div className="mb-8">
+                            <div className="mb-6">
                                 <ApplyCoupon
                                     orderAmount={total}
                                     onCouponApplied={(discountAmt, final, couponData) => {
                                         setDiscount(discountAmt);
-                                        setFinalAmount(final);
                                     }}
                                     onCouponRemoved={() => {
                                         setDiscount(0);
-                                        setFinalAmount(total);
                                     }}
                                 />
                             </div>
 
-                            {/* Check if profile has required delivery info */}
-                            {user && (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) && (
+                            {/* Payment Method Selection */}
+                            <div className="mb-8">
+                                <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-4">Payment Method</p>
+                                <div className="space-y-3">
+                                    {/* Online Payment */}
+                                    <label className={`block p-4 rounded-2xl cursor-pointer transition-all border-2 ${
+                                        !isCOD ? 'bg-blush/5 border-blush' : 'bg-neutral-50 border-transparent hover:border-neutral-200'
+                                    }`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                                !isCOD ? 'border-blush bg-blush' : 'border-neutral-300'
+                                            }`}>
+                                                {!isCOD && <Check className="w-3 h-3 text-white" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <CreditCard className="w-4 h-4 text-charcoal" />
+                                                    <span className="font-bold text-charcoal">Pay Online</span>
+                                                </div>
+                                                <p className="text-xs text-neutral-500 mt-0.5">UPI, Cards, Net Banking</p>
+                                            </div>
+                                            <span className="text-sm font-bold text-green-600">No extra fee</span>
+                                        </div>
+                                        <input 
+                                            type="radio" 
+                                            name="paymentMethod" 
+                                            checked={!isCOD}
+                                            onChange={() => setIsCOD(false)}
+                                            className="hidden"
+                                        />
+                                    </label>
+
+                                    {/* COD */}
+                                    <label className={`block p-4 rounded-2xl cursor-pointer transition-all border-2 ${
+                                        isCOD ? 'bg-blush/5 border-blush' : 'bg-neutral-50 border-transparent hover:border-neutral-200'
+                                    }`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                                isCOD ? 'border-blush bg-blush' : 'border-neutral-300'
+                                            }`}>
+                                                {isCOD && <Check className="w-3 h-3 text-white" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Package className="w-4 h-4 text-charcoal" />
+                                                    <span className="font-bold text-charcoal">Cash on Delivery</span>
+                                                </div>
+                                                <p className="text-xs text-neutral-500 mt-0.5">Pay when you receive</p>
+                                            </div>
+                                            <span className="text-sm font-bold text-charcoal/60">+₹50</span>
+                                        </div>
+                                        <input 
+                                            type="radio" 
+                                            name="paymentMethod" 
+                                            checked={isCOD}
+                                            onChange={() => setIsCOD(true)}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Address Selection */}
+                            {user && cart.length > 0 && (
+                                <div className="mb-8">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest">Delivery Address</p>
+                                        <Link href="/profile" className="text-xs font-bold text-blush hover:underline">Manage Addresses</Link>
+                                    </div>
+                                    
+                                    {addressesLoading ? (
+                                        <div className="animate-pulse bg-neutral-100 rounded-2xl p-6">
+                                            <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2"></div>
+                                            <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
+                                        </div>
+                                    ) : addresses.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {addresses.map((addr) => (
+                                                <label 
+                                                    key={addr.id}
+                                                    className={`block p-5 rounded-2xl cursor-pointer transition-all ${
+                                                        selectedAddressId === addr.id 
+                                                            ? 'bg-blush/5 border-2 border-blush' 
+                                                            : 'bg-neutral-50 border-2 border-transparent hover:border-neutral-200'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-4">
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                                                            selectedAddressId === addr.id 
+                                                                ? 'border-blush bg-blush' 
+                                                                : 'border-neutral-300'
+                                                        }`}>
+                                                            {selectedAddressId === addr.id && (
+                                                                <Check className="w-3 h-3 text-white" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-bold text-charcoal">{addr.name}</span>
+                                                                <span className="text-xs px-2 py-0.5 bg-white rounded-full text-neutral-500">{addr.label}</span>
+                                                                {addr.isDefault && (
+                                                                    <span className="text-xs px-2 py-0.5 bg-blush/10 rounded-full text-blush font-bold">Default</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-sm text-neutral-500">+91 {addr.phone}</p>
+                                                            <p className="text-sm text-neutral-600 mt-1">
+                                                                {addr.addressLine1}
+                                                                {addr.addressLine2 && `, ${addr.addressLine2}`}
+                                                                {addr.landmark && ` (Near: ${addr.landmark})`}
+                                                                <br />
+                                                                {addr.city}, {addr.state} - {addr.pincode}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <input 
+                                                        type="radio" 
+                                                        name="address" 
+                                                        value={addr.id}
+                                                        checked={selectedAddressId === addr.id}
+                                                        onChange={() => setSelectedAddressId(addr.id)}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                            ))}
+                                            <Link 
+                                                href="/profile"
+                                                className="flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-500 hover:border-blush hover:text-blush transition-colors"
+                                            >
+                                                <PlusCircle className="w-5 h-5" />
+                                                <span className="font-bold text-sm">Add New Address</span>
+                                            </Link>
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 bg-neutral-50 rounded-2xl text-center">
+                                            <MapPin className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
+                                            <p className="text-sm text-neutral-500 mb-3">No saved addresses</p>
+                                            <Link 
+                                                href="/profile"
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-blush text-white rounded-full text-sm font-bold hover:bg-blush/90 transition-colors"
+                                            >
+                                                <PlusCircle className="w-4 h-4" /> Add Address
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Check if address is selected */}
+                            {user && !hasCompleteAddress && (
                                 <div className="mb-8 p-6 bg-cream/50 rounded-3xl border border-blush/10 flex items-start gap-4">
                                     <Info className="w-6 h-6 text-blush shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Delivery Profile</p>
+                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Delivery Address Required</p>
                                         <p className="text-sm text-charcoal/60 leading-relaxed font-sans">
-                                            Please add your delivery address and phone number to proceed with checkout.
+                                            Please add a delivery address to proceed with checkout.
                                         </p>
                                     </div>
                                 </div>
@@ -239,9 +581,12 @@ export default function CartPage() {
                                         return;
                                     }
 
-                                    // Check if profile has required delivery info
-                                    if (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) {
-                                        toast.warning("Please complete your delivery profile first");
+                                    // Get the delivery profile (selected address or profile)
+                                    const deliveryProfile = getDeliveryProfile();
+
+                                    // Check if delivery info is available
+                                    if (!deliveryProfile?.addressLine1 || !deliveryProfile?.city || !deliveryProfile?.pincode || !deliveryProfile?.phone) {
+                                        toast.warning("Please add a delivery address first");
                                         router.push("/profile?redirect=/cart");
                                         return;
                                     }
@@ -255,9 +600,11 @@ export default function CartPage() {
                                             body: JSON.stringify({ 
                                                 cart, 
                                                 userId: user.uid, 
-                                                profile,
+                                                profile: deliveryProfile,
                                                 discount,
                                                 finalAmount,
+                                                isCOD,
+                                                paymentBreakdown,
                                             }),
                                         });
 
@@ -270,7 +617,15 @@ export default function CartPage() {
                                             throw new Error(data.error || "Order creation failed");
                                         }
 
-                                        // 2. Handle Bypass/Mock Mode
+                                        // 2. Handle COD Orders (Skip Razorpay)
+                                        if (isCOD) {
+                                            toast.success("COD Order placed successfully!");
+                                            clearCart();
+                                            router.push(`/orders/${data.firestoreOrderId}`);
+                                            return;
+                                        }
+
+                                        // 3. Handle Bypass/Mock Mode
                                         if (data.isMock) {
                                             toast.success("Test Mode: Order placed successfully!");
                                             router.push("/orders");
@@ -278,7 +633,7 @@ export default function CartPage() {
                                             return;
                                         }
 
-                                        // 3. Open Razorpay Checkout Modal (Live Mode)
+                                        // 4. Open Razorpay Checkout Modal (Live Mode)
                                         const options = {
                                             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                                             amount: data.amount,
@@ -311,9 +666,9 @@ export default function CartPage() {
                                                 }
                                             },
                                             prefill: {
-                                                name: profile.name,
+                                                name: deliveryProfile?.name || "",
                                                 email: user.email,
-                                                contact: profile.phone,
+                                                contact: deliveryProfile?.phone || "",
                                             },
                                             theme: {
                                                 color: "#F8AFA6", // Blush color
@@ -351,14 +706,21 @@ export default function CartPage() {
                                         setIsCheckingOut(false);
                                     }
                                 }}
-                                disabled={isCheckingOut}
-                                className="w-full bg-blush text-white py-6 rounded-3xl font-bold text-lg hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/20 flex items-center justify-center gap-3 group disabled:opacity-50 active:scale-95 transform hover:-translate-y-1"
+                                disabled={isCheckingOut || !hasCompleteAddress}
+                                className="w-full bg-blush text-white py-6 rounded-3xl font-bold text-lg hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/20 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transform hover:-translate-y-1"
                             >
                                 {isCheckingOut ? (
                                     <div className="h-6 w-6 animate-spin rounded-full border-3 border-solid border-white border-r-transparent" />
                                 ) : (
                                     <>
-                                        {(!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) ? "Complete Profile" : "Secure Checkout"}
+                                        {!user 
+                                            ? "Login to Checkout" 
+                                            : !hasCompleteAddress 
+                                                ? "Add Delivery Address" 
+                                                : isCOD 
+                                                    ? `Place COD Order ₹${finalAmount}` 
+                                                    : "Secure Checkout"
+                                        }
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                                     </>
                                 )}

@@ -84,7 +84,7 @@ function LoginContent() {
             </button>
 
             <div className="mt-12 pt-10 border-t border-[#F3E8E5]">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] leading-relaxed">
+                <p className="text-xs font-bold text-neutral-400 uppercase tracking-[0.2em] leading-relaxed">
                    Fast, Secure & Passwordless.<br/>
                    By continuing, you agree to our <Link href="/terms" className="text-blush hover:underline cursor-pointer">Terms & Conditions</Link>.
                 </p>
