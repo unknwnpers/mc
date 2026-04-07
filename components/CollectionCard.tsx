@@ -21,6 +21,10 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
       // For auto collections, build query from filter
       const params = new URLSearchParams();
       if (collection.filter.category) params.set('category', collection.filter.category);
+      if (collection.filter.isFeatured) params.set('featured', 'true');
+      if (collection.filter.isNew) params.set('new', 'true');
+      if (collection.filter.maxPrice) params.set('maxPrice', collection.filter.maxPrice.toString());
+      if (collection.filter.limit) params.set('limit', collection.filter.limit.toString());
       return `/products?${params.toString()}`;
     }
     return '/products';

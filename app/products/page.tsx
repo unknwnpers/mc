@@ -26,6 +26,12 @@ function ProductsContent() {
   const urlCategory = searchParams.get('category');
   const selectedCategory = urlCategory ? normalizeUrlCategory(urlCategory) : null;
   const collectionId = searchParams.get('collection');
+  
+  // Auto collection filter params
+  const featuredFilter = searchParams.get('featured') === 'true';
+  const newFilter = searchParams.get('new') === 'true';
+  const maxPriceFilter = searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : null;
+  const limitFilter = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : null;
 
   // Use constants for categories to ensure slug consistency with products
   const categories = Object.entries(PRODUCT_CATEGORIES).map(([slug, name]) => ({
@@ -44,7 +50,7 @@ function ProductsContent() {
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, sort, search, collectionId]);
+  }, [selectedCategory, sort, search, collectionId, featuredFilter, newFilter, maxPriceFilter, limitFilter]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -89,7 +95,30 @@ function ProductsContent() {
         }
       }
 
-      // 2. IN-MEMORY PRICE SORT (since price is in variants)
+      // 3. AUTO COLLECTION FILTERS
+      if (featuredFilter) {
+        data = data.filter(p => p.is_featured === true);
+      }
+      if (newFilter) {
+        // Products created in the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        data = data.filter(p => {
+          const createdAt = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
+          return createdAt >= thirtyDaysAgo;
+        });
+      }
+      if (maxPriceFilter) {
+        data = data.filter(p => {
+          const price = p.variants?.[0]?.price || 0;
+          return price <= maxPriceFilter;
+        });
+      }
+      if (limitFilter && limitFilter > 0) {
+        data = data.slice(0, limitFilter);
+      }
+
+      // 4. IN-MEMORY PRICE SORT (since price is in variants)
       if (sort === "price_low") {
         data.sort((a, b) => {
           const priceA = a.variants?.[0]?.price || 0;

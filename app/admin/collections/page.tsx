@@ -67,6 +67,18 @@ export default function AdminCollectionsPage() {
   
   // Categories for filter (for auto type)
   const [categories, setCategories] = useState<{id: string, name: string, slug: string}[]>([]);
+  
+  // Type filter and search
+  const [typeFilter, setTypeFilter] = useState<'all' | 'manual' | 'auto'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Filtered collections
+  const filteredCollections = collections
+    .filter(c => typeFilter === 'all' || c.type === typeFilter)
+    .filter(c => !searchQuery.trim() || 
+      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.subtitle && c.subtitle.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchCollections = useCallback(async () => {
@@ -361,9 +373,58 @@ export default function AdminCollectionsPage() {
           </button>
         </div>
 
+        {/* Filters Row */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          {/* Type Filter Tabs */}
+          <div className="flex gap-2">
+            {(['all', 'manual', 'auto'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setTypeFilter(type)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                  typeFilter === type
+                    ? "bg-white text-slate-950"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                )}
+              >
+                {type === 'all' ? 'All' : type === 'manual' ? 'Manual' : 'Auto'}
+                {type !== 'all' && (
+                  <span className="ml-1.5 text-xs opacity-60">
+                    ({collections.filter(c => c.type === type).length})
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search collections..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 text-sm"
+            />
+          </div>
+        </div>
+
         {/* Collections List */}
         <div className="space-y-4">
-          {collections.map((collection, index) => (
+          {filteredCollections.length === 0 && collections.length > 0 && (
+            <div className="text-center py-12">
+              <p className="text-white/50">No collections match your filters</p>
+              <button
+                onClick={() => { setTypeFilter('all'); setSearchQuery(''); }}
+                className="mt-2 text-sm text-white/70 hover:text-white underline"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+          {filteredCollections.map((collection, index) => (
             <div
               key={collection.id}
               className={cn(
@@ -418,16 +479,25 @@ export default function AdminCollectionsPage() {
                   )}>
                     {collection.isActive ? "Active" : "Inactive"}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-white/10 text-white/60">
-                    {collection.type}
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                    collection.type === "manual" 
+                      ? "bg-blue-500/20 text-blue-400"
+                      : "bg-purple-500/20 text-purple-400"
+                  )}>
+                    {collection.type === "manual" ? "Manual" : "Auto"}
                   </span>
                 </div>
                 <p className="text-white/50 text-sm truncate">{collection.subtitle}</p>
                 <div className="flex items-center gap-4 mt-2 text-xs text-white/40">
                   <span>Style: {collection.cardStyle}</span>
                   <span>Order: {collection.displayOrder}</span>
-                  {collection.type === "manual" && (
-                    <span>{collection.products?.length || 0} products</span>
+                  {collection.type === "manual" ? (
+                    <span className="text-blue-400/60">{collection.products?.length || 0} products</span>
+                  ) : (
+                    <span className="text-purple-400/60">
+                      {collection.filter?.category || 'All cats'} • Limit: {collection.filter?.limit || 4}
+                    </span>
                   )}
                 </div>
               </div>
