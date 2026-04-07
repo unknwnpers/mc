@@ -75,6 +75,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // ✅ STRICT config validation
 const firebaseConfig = {
@@ -100,3 +101,4 @@ const app = isConfigValid
 
 export const db = app ? getFirestore(app) : null as any;
 export const auth = app ? getAuth(app) : null as any;
+export const storage = app ? getStorage(app) : null as any;

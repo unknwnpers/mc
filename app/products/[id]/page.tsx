@@ -187,7 +187,7 @@ export default function ProductDetailsPage() {
             // Get price/image from variants array or fallback
             const variants = (product as any).variants as any[] | undefined;
             const price = variants?.[0]?.price ?? 0;
-            const image = (product as any).images?.[0] || '/placeholder.jpg';
+            const image = (product as any).images?.[0] || '/placeholder.svg';
 
             await setDoc(ref, {
                 productId: id,
@@ -276,7 +276,7 @@ export default function ProductDetailsPage() {
       sku: variant?.sku || "ONE-SIZE",
       selectedSize: selectedSize || "Free Size",
       price: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
-      image: (product as any).images?.[0] || '/placeholder.jpg',
+      image: (product as any).images?.[0] || '/placeholder.svg',
       quantity: 1,
     });
 
@@ -335,12 +335,12 @@ export default function ProductDetailsPage() {
           <div className="relative aspect-square rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10">
             {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
             <img
-              src={(product as any).images?.[0] || '/placeholder.jpg'}
+              src={(product as any).images?.[0] || '/placeholder.svg'}
               alt={product.name}
               onLoad={() => setImgLoading(false)}
               onError={(e) => {
                 console.log("Image load failed, using placeholder");
-                e.currentTarget.src = '/placeholder.jpg';
+                e.currentTarget.src = '/placeholder.svg';
                 setImgLoading(false);
               }}
               className={cn(

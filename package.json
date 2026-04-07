@@ -76,5 +76,8 @@
     "vaul": "^0.9.9",
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.2"
   }
 }

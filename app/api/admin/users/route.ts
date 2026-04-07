@@ -4,14 +4,26 @@ import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyAdmin } from "@/lib/admin-auth";
 
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
+
 // ── GET /api/admin/users ─────────────────────────────────────────────────────
 export async function GET(req: Request) {
   try {
     await verifyAdmin(req);
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "100", 10);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || String(DEFAULT_PAGE_SIZE), 10),
+      MAX_PAGE_SIZE
+    );
+    const offset = (page - 1) * limit;
 
-    const snap = await adminDb.collection("users").orderBy("created_at", "desc").limit(limit).get();
+    // Get total count
+    const countSnapshot = await adminDb.collection("users").count().get();
+    const totalCount = countSnapshot.data().count;
+
+    const snap = await adminDb.collection("users").orderBy("created_at", "desc").limit(limit).offset(offset).get();
     const users = snap.docs.map(doc => {
       const data = doc.data();
       return { 
@@ -22,7 +34,17 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ success: true, users });
+    return NextResponse.json({ 
+      success: true, 
+      users,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasMore: offset + users.length < totalCount,
+      }
+    });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }

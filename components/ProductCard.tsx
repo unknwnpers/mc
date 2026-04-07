@@ -10,6 +10,24 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
+/**
+ * Get thumbnail URL from original image URL
+ * Converts: .../original/123-image.jpg → .../thumbnail/123-image.jpg
+ */
+function getThumbnailUrl(originalUrl: string): string {
+  if (!originalUrl || originalUrl === '/placeholder.svg') {
+    return '/placeholder.svg';
+  }
+  
+  // If URL contains '/original/', replace with '/thumbnail/'
+  if (originalUrl.includes('/original/')) {
+    return originalUrl.replace('/original/', '/thumbnail/');
+  }
+  
+  // For non-storage URLs (external), return as-is
+  return originalUrl;
+}
+
 interface ProductCardProps {
   product: Product;
 }
@@ -21,7 +39,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [imgLoading, setImgLoading] = useState(true);
 
   // Get image from images array (first image) or fallback
-  const displayImage = product.images?.[0] || '/placeholder.jpg';
+  const originalImage = product.images?.[0] || '/placeholder.svg';
+  // Use thumbnail for faster loading in card view
+  const displayImage = getThumbnailUrl(originalImage);
 
   // Get price from first variant or fallback to 0
   const displayPrice = product.variants?.[0]?.price ?? 0;
@@ -97,6 +117,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         <img
           src={displayImage}
           alt={product.name}
+          loading="lazy"
+          decoding="async"
           onLoad={() => setImgLoading(false)}
           className={cn(
             "w-full h-full object-cover group-hover:scale-105 transition duration-500",

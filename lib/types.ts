@@ -126,3 +126,26 @@ export interface AdminLog {
   details?: string;
   createdAt: any;
 }
+
+// ── Curated Collections ──────────────────────────────────────────────────────
+
+export interface CuratedCollection {
+  id: string;
+  title: string;                    // "New Arrivals", "Summer Collection"
+  subtitle?: string;                // "Discover the latest..."
+  type: "manual" | "auto";          // manual: specific products, auto: by filter
+  products?: string[];              // product IDs (for manual type)
+  filter?: {                        // (for auto type)
+    category?: string;
+    isNew?: boolean;
+    isFeatured?: boolean;
+    maxPrice?: number;
+    limit: number;
+  };
+  displayOrder: number;             // sort order on homepage
+  isActive: boolean;
+  cardStyle: "large" | "compact" | "banner";
+  backgroundImage?: string;         // URL for banner style
+  createdAt: any;
+  updatedAt: any;
+}

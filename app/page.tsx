@@ -3,9 +3,13 @@ import { ArrowRight, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import CollectionCard from '@/components/CollectionCard';
 import { db } from '@/lib/firebase';
-import type { Product, Category } from '@/lib/types';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import type { Product, Category, CuratedCollection } from '@/lib/types';
+import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
+
+// ISR: Revalidate every 60 seconds
+export const revalidate = 60;
 
 async function getFeaturedProducts() {
   if (!db) return [];
@@ -13,7 +17,8 @@ async function getFeaturedProducts() {
     const q = query(
       collection(db, 'products'),
       where('is_featured', '==', true),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(8) // Limit to 8 featured products
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
@@ -28,7 +33,8 @@ async function getCategories() {
   try {
     const q = query(
       collection(db, 'categories'),
-      orderBy('created_at', 'asc')
+      orderBy('created_at', 'asc'),
+      limit(20) // Limit categories
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[];
@@ -38,9 +44,27 @@ async function getCategories() {
   }
 }
 
+async function getCuratedCollections() {
+  try {
+    // During static generation, use absolute URL with localhost
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
+      (typeof window === 'undefined' ? 'http://localhost:3000' : '');
+    const res = await fetch(`${baseUrl}/api/collections?limit=6`, {
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.collections || [];
+  } catch (error) {
+    console.error('Error fetching curated collections:', error);
+    return [];
+  }
+}
+
 export default async function Home() {
   const featuredProducts = await getFeaturedProducts();
   const categories = await getCategories();
+  const curatedCollections = await getCuratedCollections();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-rose-50/20 to-amber-50/20">
@@ -113,7 +137,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* CATEGORY */}
+      {/* CURATED COLLECTIONS */}
       <section className="py-24 bg-white rounded-[60px] my-12 mx-4 shadow-sm border border-[#F3E8E5]">
         <div className="max-w-7xl mx-auto px-6 md:px-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
@@ -130,36 +154,47 @@ export default async function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/products?category=${category.slug}`}
-                className="group relative isolate overflow-hidden rounded-[40px] h-[400px] backdrop-blur-sm bg-cream border border-blush/10 hover:shadow-2xl hover:shadow-blush/20 transition-all duration-700"
-              >
-                <img
-                  src={category.image_url}
-                  alt={category.name}
-                  className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0"
-                />
+          {curatedCollections.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+              {curatedCollections.map((collection: CuratedCollection) => (
+                <CollectionCard key={collection.id} collection={collection} />
+              ))}
+            </div>
+          ) : (
+            // Fallback to categories if no curated collections
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+              {categories.slice(0, 4).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/products?category=${category.slug}`}
+                  className="group relative isolate overflow-hidden rounded-[40px] h-[400px] backdrop-blur-sm bg-cream border border-blush/10 hover:shadow-2xl hover:shadow-blush/20 transition-all duration-700"
+                >
+                  <img
+                    src={category.image_url}
+                    alt={category.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0"
+                  />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
-                <div className="absolute bottom-0 left-0 right-0 p-8 space-y-2">
-                  <h3 className="text-3xl font-serif font-bold text-white tracking-tight">
-                    {category.name}
-                  </h3>
-                  <p className="text-white/80 text-sm line-clamp-2 font-medium">
-                    {category.description}
-                  </p>
-                  <div className="pt-4 flex items-center space-x-3 text-white font-black text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-4 transition-all duration-500">
-                    <span>Discover</span>
-                    <ArrowRight className="h-3 w-3" />
+                  <div className="absolute bottom-0 left-0 right-0 p-8 space-y-2">
+                    <h3 className="text-3xl font-serif font-bold text-white tracking-tight">
+                      {category.name}
+                    </h3>
+                    <p className="text-white/80 text-sm line-clamp-2 font-medium">
+                      {category.description}
+                    </p>
+                    <div className="pt-4 flex items-center space-x-3 text-white font-black text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-4 transition-all duration-500">
+                      <span>Discover</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
         </div>
       </section>

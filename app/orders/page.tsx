@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import { Package, ChevronRight, Clock, CheckCircle2, Truck, Box, ShoppingBag, MapPin } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 
 const statusConfig: any = {
     created: { label: "Order Placed", color: "bg-neutral-100 text-neutral-600", icon: Clock },

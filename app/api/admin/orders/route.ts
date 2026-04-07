@@ -6,18 +6,33 @@ import { verifyAdmin } from "@/lib/admin-auth";
 
 const VALID_STATUSES = ["pending_payment", "paid", "created", "processing", "shipped", "delivered", "cancelled", "failed"];
 
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
+
 // ── GET /api/admin/orders ────────────────────────────────────────────────────
 export async function GET(req: Request) {
   try {
     await verifyAdmin(req);
 
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "100", 10);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || String(DEFAULT_PAGE_SIZE), 10),
+      MAX_PAGE_SIZE
+    );
+    const offset = (page - 1) * limit;
     const status = searchParams.get("status");
 
-    let query: FirebaseFirestore.Query = adminDb.collection("orders").orderBy("createdAt", "desc").limit(limit);
+    // Get total count for pagination
+    let countQuery = status && VALID_STATUSES.includes(status)
+      ? adminDb.collection("orders").where("status", "==", status).count()
+      : adminDb.collection("orders").count();
+    const countSnapshot = await countQuery.get();
+    const totalCount = countSnapshot.data().count;
+
+    let query: FirebaseFirestore.Query = adminDb.collection("orders").orderBy("createdAt", "desc").limit(limit).offset(offset);
     if (status && VALID_STATUSES.includes(status)) {
-      query = adminDb.collection("orders").where("status", "==", status).orderBy("createdAt", "desc").limit(limit);
+      query = adminDb.collection("orders").where("status", "==", status).orderBy("createdAt", "desc").limit(limit).offset(offset);
     }
 
     const snapshot = await query.get();
@@ -49,7 +64,17 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ success: true, orders });
+    return NextResponse.json({ 
+      success: true, 
+      orders,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasMore: offset + orders.length < totalCount,
+      }
+    });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }

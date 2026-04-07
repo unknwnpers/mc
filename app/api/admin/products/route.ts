@@ -4,6 +4,9 @@ import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { verifyAdmin } from "@/lib/admin-auth";
 
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
+
 // ── GET /api/admin/products ─────────────────────────────────────────────────
 export async function GET(req: Request) {
   try {
@@ -11,21 +14,36 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const includeArchived = searchParams.get("includeArchived") === "true";
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") || String(DEFAULT_PAGE_SIZE), 10),
+      MAX_PAGE_SIZE
+    );
+    const offset = (page - 1) * limit;
 
     let snapshot;
+    let totalCount = 0;
+    
     try {
-      const q = adminDb.collection("products").orderBy("createdAt", "desc");
+      // Get total count for pagination
+      const countQuery = includeArchived 
+        ? adminDb.collection("products").count()
+        : adminDb.collection("products").where("isActive", "==", true).count();
+      const countSnapshot = await countQuery.get();
+      totalCount = countSnapshot.data().count;
+
+      // Get paginated results
+      let q = adminDb.collection("products").orderBy("createdAt", "desc");
       if (!includeArchived) {
-        snapshot = await q.where("isActive", "==", true).get();
-      } else {
-        snapshot = await q.get();
+        q = q.where("isActive", "==", true);
       }
+      snapshot = await q.limit(limit).offset(offset).get();
     } catch (firebaseErr: any) {
       // Fallback for missing composite index (FAILED_PRECONDITION)
       console.warn("Falling back to in-memory filter due to missing index:", firebaseErr.message);
-      snapshot = await adminDb.collection("products").get();
+      const allSnapshot = await adminDb.collection("products").get();
       
-      let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let docs = allSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
       if (!includeArchived) {
         docs = docs.filter((d: any) => d.isActive === true);
@@ -37,13 +55,38 @@ export async function GET(req: Request) {
         const tB = b.createdAt?.seconds || 0;
         return tB - tA;
       });
+
+      totalCount = docs.length;
       
-      return NextResponse.json({ success: true, products: docs });
+      // Apply pagination in-memory
+      docs = docs.slice(offset, offset + limit);
+      
+      return NextResponse.json({ 
+        success: true, 
+        products: docs,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasMore: offset + docs.length < totalCount,
+        }
+      });
     }
 
     const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json({ 
+      success: true, 
+      products,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasMore: offset + products.length < totalCount,
+      }
+    });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }

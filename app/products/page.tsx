@@ -25,6 +25,7 @@ function ProductsContent() {
   const [sort, setSort] = useState("latest");
   const urlCategory = searchParams.get('category');
   const selectedCategory = urlCategory ? normalizeUrlCategory(urlCategory) : null;
+  const collectionId = searchParams.get('collection');
 
   // Use constants for categories to ensure slug consistency with products
   const categories = Object.entries(PRODUCT_CATEGORIES).map(([slug, name]) => ({
@@ -43,7 +44,7 @@ function ProductsContent() {
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, sort, search]);
+  }, [selectedCategory, sort, search, collectionId]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -66,6 +67,26 @@ function ProductsContent() {
       // 1. CATEGORY FILTER (in-memory to avoid index issues)
       if (selectedCategory) {
         data = data.filter(p => p.category_slug === selectedCategory);
+      }
+
+      // 2. COLLECTION FILTER (if collection ID is provided)
+      if (collectionId) {
+        try {
+          const collectionRes = await fetch(`/api/collections/${collectionId}`);
+          // Check if response is JSON before parsing
+          const contentType = collectionRes.headers.get("content-type");
+          if (collectionRes.ok && contentType?.includes("application/json")) {
+            const collectionData = await collectionRes.json();
+            if (collectionData.success && collectionData.collection?.type === "manual") {
+              const productIds = collectionData.collection.products || [];
+              data = data.filter(p => productIds.includes(p.id));
+            }
+          } else {
+            console.warn("Collection API returned non-JSON response");
+          }
+        } catch (e) {
+          console.error("Failed to fetch collection:", e);
+        }
       }
 
       // 2. IN-MEMORY PRICE SORT (since price is in variants)

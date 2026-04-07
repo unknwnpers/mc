@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { uploadImageWithVariants, validateImageFile, UploadOptions } from "@/lib/storage";
 import {
   Package, Plus, Pencil, Archive, RefreshCw, X, Save,
   Check, Loader2, Image as ImageIcon, Trash2, GripVertical, ChevronRight,
@@ -123,6 +124,15 @@ export default function AdminProductsPage() {
     setFetching(true);
     try {
       const res = await adminFetch("/api/admin/products?includeArchived=true");
+      
+      // Check if response is JSON before parsing
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("Non-JSON response:", text.substring(0, 200));
+        throw new Error("Server returned invalid response. Please check API endpoint.");
+      }
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setProducts(data.products || []);
@@ -250,30 +260,75 @@ export default function AdminProductsPage() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const newPreviews: ImageUploadPreview[] = files.map(file => ({
+    // Validate files before adding to previews
+    const validFiles: File[] = [];
+    for (const file of files) {
+      const validation = validateImageFile(file);
+      if (validation.valid) {
+        validFiles.push(file);
+      } else {
+        toast.error(`${file.name}: ${validation.error}`);
+      }
+    }
+
+    if (validFiles.length === 0) return;
+
+    const newPreviews: ImageUploadPreview[] = validFiles.map(file => ({
       id: Math.random().toString(36).slice(2),
       file,
       preview: URL.createObjectURL(file),
     }));
 
     setImagePreviews(prev => [...prev, ...newPreviews]);
-    toast.info(`${files.length} image${files.length > 1 ? 's' : ''} selected for upload`);
+    toast.info(`${validFiles.length} image${validFiles.length > 1 ? 's' : ''} selected for upload`);
 
     // Reset file input so same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function removePreview(id: string) {
-    setImagePreviews(prev => prev.filter(p => p.id !== id));
+    setImagePreviews(prev => {
+      const preview = prev.find(p => p.id === id);
+      if (preview) {
+        URL.revokeObjectURL(preview.preview);
+      }
+      return prev.filter(p => p.id !== id);
+    });
   }
 
   async function uploadImages(): Promise<string[]> {
-    // TODO: Implement Firebase Storage upload here
-    // For now, just return existing URLs - file uploads are preview-only
-    if (imagePreviews.length > 0) {
-      toast.warning('Image upload coming soon. Use URL method for now.');
+    if (imagePreviews.length === 0) {
+      return form.images;
     }
-    return form.images;
+
+    const uploadedUrls: string[] = [];
+    const total = imagePreviews.length;
+    
+    // Use temp ID for new products, or existing product ID
+    const productId = editing?.id || `temp_${Date.now()}`;
+
+    for (let i = 0; i < imagePreviews.length; i++) {
+      const preview = imagePreviews[i];
+      try {
+        toast.info(`Uploading image ${i + 1} of ${total}...`);
+        const options: UploadOptions = {
+          entityType: "products",
+          entityId: productId,
+          variant: "original",
+        };
+        const url = await uploadImageWithVariants(preview.file, options);
+        uploadedUrls.push(url.original); // Use original size URL
+        URL.revokeObjectURL(preview.preview);
+      } catch (error: any) {
+        toast.error(`Failed to upload ${preview.file.name}: ${error.message}`);
+      }
+    }
+
+    // Clear previews after upload
+    setImagePreviews([]);
+
+    // Combine existing URL images with newly uploaded ones
+    return [...form.images, ...uploadedUrls];
   }
 
   // ── Image helpers ─────────────────────────────────────────────────────────
@@ -1657,7 +1712,7 @@ Type "DELETE" to confirm (press OK).`
                       <ImageIcon className="w-4 h-4" />
                       Choose Files
                     </label>
-                    <p className="text-white/30 text-[10px] mt-1.5">Preview only — upload will be enabled soon</p>
+                    <p className="text-white/30 text-[10px] mt-1.5">JPEG, PNG, WebP up to 5MB each</p>
                   </div>
 
                   {/* Committed Images */}
