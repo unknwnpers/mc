@@ -100,14 +100,25 @@ export default function EditProductPage() {
     }
   }
 
-  function hydrateForm(p: Product) {
+  function hydrateForm(p: any) {
     setName(p.name || "");
     setDescription(p.description || "");
     setImages((p.images || []).join(", "));
     setCategorySlug(p.category_slug || "");
     setIsFeatured(p.is_featured || false);
     setIsActive(p.isActive ?? true);
-    setVariants({ ...(p.variants || {}) });
+    
+    // Handle variants - convert array to object for form
+    if (Array.isArray(p.variants)) {
+      const variantsObj: Variants = {};
+      p.variants.forEach((v: any) => {
+        const size = v.options?.Size || v.sku;
+        variantsObj[size] = { price: v.price, stock: v.stock };
+      });
+      setVariants(variantsObj);
+    } else {
+      setVariants({ ...(p.variants || {}) });
+    }
   }
 
   // ── Image file handling ───────────────────────────────────────────────────
@@ -199,6 +210,14 @@ export default function EditProductPage() {
 
     setSaving(true);
     try {
+      // Convert variants object to array format expected by API
+      const variantsArray = Object.entries(variants).map(([size, v]) => ({
+        sku: size,
+        options: { Size: size },
+        price: v.price,
+        stock: v.stock,
+      }));
+
       const body = {
         name:          name.trim(),
         description,
@@ -206,7 +225,7 @@ export default function EditProductPage() {
         category_slug: categorySlug,
         is_featured:   isFeatured,
         isActive,
-        variants,
+        variants:      variantsArray,
       };
       const res  = await adminFetch(`/api/admin/products/${id}`, { method: "PATCH", body: JSON.stringify(body) });
       const data = await res.json();
@@ -532,12 +551,6 @@ export default function EditProductPage() {
               )}
             </section>
 
-            {/* Save CTA repeated for convenience */}
-            <button onClick={saveProduct} disabled={saving}
-              className="w-full flex items-center justify-center gap-2 bg-neutral-900 text-white font-bold py-4 rounded-2xl hover:bg-rose-500 transition-all shadow-lg disabled:opacity-50">
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-              Save Changes
-            </button>
           </div>
 
         </div>
