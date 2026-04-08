@@ -51,8 +51,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${cormorant.variable} font-sans`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
         <AuthProvider>
           <CartProvider>
             {children}

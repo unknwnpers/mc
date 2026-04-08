@@ -274,7 +274,7 @@ export default function ProductDetailsPage() {
       id: product.id,
       name: product.name,
       sku: variant?.sku || "ONE-SIZE",
-      selectedSize: selectedSize || "Free Size",
+      selectedSize: variant?.options?.Size || selectedSize || "Free Size",  // Use Size from options, not SKU
       price: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
       image: (product as any).images?.[0] || '/placeholder.svg',
       quantity: 1,

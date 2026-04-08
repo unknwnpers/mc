@@ -3,6 +3,14 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { verifyAdmin } from "@/lib/admin-auth";
 
+// Helper to safely convert Firestore timestamp to Date
+function toDate(timestamp: any): Date | null {
+  if (!timestamp) return null;
+  if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+  if (timestamp._seconds) return new Date(timestamp._seconds * 1000);
+  return new Date(timestamp);
+}
+
 export async function GET(req: Request) {
   try {
     await verifyAdmin(req);
@@ -33,36 +41,51 @@ export async function GET(req: Request) {
         startDate = null;
     }
 
-    // Build order queries based on date range
-    let ordersQuery = adminDb.collection("orders").where("status", "in", ["paid", "processing", "shipped", "delivered"]);
-    let pendingQuery = adminDb.collection("orders").where("status", "==", "pending_payment");
+    // Fetch all orders and filter in-memory to avoid composite index requirements
+    const validStatuses = ["paid", "processing", "shipped", "delivered"];
     
-    if (startDate) {
-      ordersQuery = ordersQuery.where("createdAt", ">=", startDate);
-      ordersQuery = ordersQuery.where("createdAt", "<=", endDate);
-      pendingQuery = pendingQuery.where("createdAt", ">=", startDate);
-      pendingQuery = pendingQuery.where("createdAt", "<=", endDate);
-    }
-
-    const lowStockQuery = adminDb.collection("products")
-      .where("isActive", "==", true)
-      .where("stock", "<=", 10)
-      .orderBy("stock", "asc")
-      .limit(5);
-
-    const [ordersSnap, productsSnap, usersSnap, pendingSnap, recentSnap, lowStockSnap] = await Promise.all([
-      ordersQuery.get(),
+    const [ordersSnap, productsSnap, usersSnap, allOrdersSnap, recentSnap] = await Promise.all([
+      adminDb.collection("orders").get(),
       adminDb.collection("products").where("isActive", "==", true).count().get(),
-      adminDb.collection("users").where("role", "==", "customer").count().get(),
-      pendingQuery.count().get(),
+      adminDb.collection("users").get(),
+      adminDb.collection("orders").orderBy("createdAt", "desc").limit(100).get(),
       adminDb.collection("orders").orderBy("createdAt", "desc").limit(8).get(),
-      lowStockQuery.get(),
     ]);
 
-    const lowStockProducts = lowStockSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Filter orders in-memory
+    const validOrders = ordersSnap.docs.filter(doc => {
+      const d = doc.data();
+      if (!validStatuses.includes(d.status)) return false;
+      if (startDate) {
+        const orderDate = toDate(d.createdAt);
+        if (!orderDate) return false;
+        if (orderDate < startDate || orderDate > endDate) return false;
+      }
+      return true;
+    });
+
+    const pendingOrders = ordersSnap.docs.filter(doc => {
+      const d = doc.data();
+      if (d.status !== "pending_payment") return false;
+      if (startDate) {
+        const orderDate = toDate(d.createdAt);
+        if (!orderDate) return false;
+        if (orderDate < startDate || orderDate > endDate) return false;
+      }
+      return true;
+    });
+
+    // Fetch products for low stock - simplified query without composite index
+    const productsForStockSnap = await adminDb.collection("products").where("isActive", "==", true).limit(100).get();
+    const lowStockProducts = productsForStockSnap.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter((p: any) => {
+        // Check stock across all variants
+        const variants = p.variants || [];
+        const minStock = Math.min(...variants.map((v: any) => v.stock ?? Infinity));
+        return minStock <= 10;
+      })
+      .slice(0, 5);
 
     let totalRevenue = 0;
     let codRevenue = 0;
@@ -71,7 +94,7 @@ export async function GET(req: Request) {
     const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {};
     const statusCounts: Record<string, number> = {};
     
-    ordersSnap.docs.forEach(doc => {
+    validOrders.forEach(doc => {
       const d = doc.data();
       const amount = d.total || d.totalAmount || 0;
       totalRevenue += amount;
@@ -83,9 +106,11 @@ export async function GET(req: Request) {
       }
       
       // Group by date for chart
-      const date = d.createdAt?.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
-      const dateKey = date.toISOString().split('T')[0];
-      dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + amount;
+      const date = toDate(d.createdAt);
+      if (date) {
+        const dateKey = date.toISOString().split('T')[0];
+        dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + amount;
+      }
 
       // Count by status
       statusCounts[d.status] = (statusCounts[d.status] || 0) + 1;
@@ -102,6 +127,27 @@ export async function GET(req: Request) {
             productSales[productId].revenue += (item.price || 0) * (item.quantity || 1);
           }
         });
+      }
+    });
+
+    // Count customers
+    const allUsers = usersSnap.docs;
+    let newCustomersCount = 0;
+    
+    // Get customer count from all users snapshot
+    const customerCount = allUsers.filter((doc: any) => doc.data()?.role === 'customer').length;
+    
+    // Count new customers in period
+    allUsers.forEach((doc: any) => {
+      const d = doc.data();
+      if (d.role !== 'customer') return;
+      if (startDate) {
+        const created = toDate(d.createdAt);
+        if (created && created >= startDate) {
+          newCustomersCount++;
+        }
+      } else {
+        newCustomersCount++;
       }
     });
 
@@ -125,38 +171,32 @@ export async function GET(req: Request) {
     const recentOrders = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     // Calculate performance metrics
-    const averageOrderValue = ordersSnap.size > 0 ? totalRevenue / ordersSnap.size : 0;
-    
-    // Get new customers in selected period
-    let newCustomersQuery = adminDb.collection("users").where("role", "==", "customer");
-    if (startDate) {
-      newCustomersQuery = newCustomersQuery.where("createdAt", ">=", startDate);
-    }
-    const newCustomersSnap = await newCustomersQuery.count().get();
+    const averageOrderValue = validOrders.length > 0 ? totalRevenue / validOrders.length : 0;
 
     return NextResponse.json({
       success: true,
       data: {
         totalRevenue,
-        totalOrders:    ordersSnap.size,
+        totalOrders:    validOrders.length,
         activeProducts: productsSnap.data().count,
-        totalCustomers: usersSnap.data().count,
-        pendingOrders:  pendingSnap.data().count,
+        totalCustomers: customerCount,
+        pendingOrders:  pendingOrders.length,
         recentOrders,
         revenueChart,
         topProducts,
         statusBreakdown,
         lowStockProducts,
         averageOrderValue,
-        newCustomers: newCustomersSnap.data().count,
+        newCustomers: newCustomersCount,
         codRevenue,
         codOrderCount,
         onlineRevenue: totalRevenue - codRevenue,
-        onlineOrderCount: ordersSnap.size - codOrderCount,
+        onlineOrderCount: validOrders.length - codOrderCount,
         range,
       }
     });
   } catch (err: any) {
+    console.error("Analytics API error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }
 }

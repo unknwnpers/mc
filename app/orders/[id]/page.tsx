@@ -18,7 +18,7 @@ const statusConfig: any = {
     processing: { label: "Processing", color: "bg-amber-100 text-amber-600", icon: Box, desc: "We are preparing your items for shipment." },
     shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-600", icon: Truck, desc: "Your order is on its way!" },
     delivered: { label: "Delivered", color: "bg-green-100 text-green-600", icon: CheckCircle2, desc: "Order has been successfully delivered. Hope you love it!" },
-    cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600", icon: ArrowLeft, desc: "This order has been cancelled and stock has been restored." },
+    cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600", icon: ArrowLeft, desc: "Your order has been cancelled." },
 };
 
 const getOrderDate = (createdAt: any) => {
@@ -60,18 +60,22 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isCancelling, setIsCancelling] = useState(false);
+    
+    // Normalize orderId - handle array or string from useParams
+    const orderId = Array.isArray(id) ? id[0] : id;
 
     useEffect(() => {
-        if (user && id) {
+        if (user && orderId) {
             fetchOrder();
         } else if (!user && !loading) {
             router.push("/login");
         }
-    }, [user, id]);
+    }, [user, orderId]);
 
     const fetchOrder = async () => {
+        if (!orderId || typeof orderId !== 'string') return;
         try {
-            const snap = await getDoc(doc(db, "orders", id as string));
+            const snap = await getDoc(doc(db, "orders", orderId));
             if (snap.exists()) {
                 const data = snap.data();
                 if (data.userId === user?.uid) {
@@ -91,18 +95,30 @@ export default function OrderDetailPage() {
 
     const handleCancel = async () => {
         if (!window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) return;
+        if (!user || !orderId || typeof orderId !== 'string') return;
         
         setIsCancelling(true);
         try {
+            // Get the ID token for authentication
+            const idToken = await user.getIdToken();
+            
             const res = await fetch("/api/order/cancel", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId: id, userId: user?.uid }),
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ orderId }),
             });
             
             const data = await res.json();
             if (res.ok) {
-                toast.success("Order cancelled successfully");
+                // Show refund info in toast if available
+                if (data.refund) {
+                    toast.success(`Order cancelled. Refund of ₹${data.refund.amount} will be processed within 5-7 business days.`);
+                } else {
+                    toast.success("Order cancelled successfully");
+                }
                 fetchOrder();
             } else {
                 toast.error(data.error || "Failed to cancel order");
@@ -183,7 +199,7 @@ export default function OrderDetailPage() {
                                     </div>
 
                                     <div className="p-10 bg-cream/30 rounded-[32px] border border-blush/10 flex items-start gap-8">
-                                        <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-blush/5 text-blush shrink-0 border border-blush/10">
+                                        <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0 border", order.status === 'cancelled' ? "bg-red-50 text-red-500 border-red-100 shadow-red-100/20" : "bg-white text-blush border-blush/10 shadow-blush/5")}>
                                             <StatusIcon className="w-7 h-7" />
                                         </div>
                                         <div className="pt-1">
@@ -191,6 +207,29 @@ export default function OrderDetailPage() {
                                             <p className="text-neutral-500 font-sans leading-relaxed text-sm">
                                                 {status.desc}
                                             </p>
+                                            {/* Refund Info for cancelled orders */}
+                                            {order.status === 'cancelled' && order.refund && (
+                                                <div className="mt-4 p-4 bg-green-50 rounded-2xl border border-green-100">
+                                                    <p className="text-green-700 font-bold text-sm flex items-center gap-2">
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        Refund of ₹{order.refund.amount} has been processed
+                                                    </p>
+                                                    <p className="text-green-600 text-xs mt-1">
+                                                        Refund ID: {order.refund.id}
+                                                    </p>
+                                                    <p className="text-green-500 text-xs mt-1">
+                                                        Amount will be credited to your original payment method within 5-7 business days.
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {/* No refund info for cancelled COD orders */}
+                                            {order.status === 'cancelled' && order.isCOD && !order.refund && (
+                                                <div className="mt-4 p-4 bg-neutral-100 rounded-2xl border border-neutral-200">
+                                                    <p className="text-neutral-600 font-medium text-sm">
+                                                        Since this was a Cash on Delivery order, no refund is applicable.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -202,7 +241,26 @@ export default function OrderDetailPage() {
                                     </h2>
                                     
                                     <div className="space-y-8">
-                                        {order.items.map((item: any, i: number) => (
+                                        {order.items.map((item: any, i: number) => {
+                                            // Extract size from selectedSize and convert old format
+                                            let displaySize = item.selectedSize;
+                                            
+                                            // Convert old format sizes like "12Y" to "1-2Y"
+                                            if (displaySize) {
+                                                // Check if it's in format like "KIDSHOOD-12Y" - extract and convert
+                                                const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
+                                                if (skuMatch) {
+                                                    const num = skuMatch[1];
+                                                    // Convert "12Y" -> "1-2Y", "23Y" -> "2-3Y", etc.
+                                                    if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
+                                                        displaySize = `${num[0]}-${num.slice(1)}Y`;
+                                                    } else {
+                                                        displaySize = `${num}Y`;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            return (
                                             <div key={i} className="flex gap-8 items-center group">
                                                 <div className="h-24 w-24 bg-cream rounded-3xl overflow-hidden border border-[#F3E8E5] shrink-0">
                                                     <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -211,10 +269,10 @@ export default function OrderDetailPage() {
                                                     <p className="font-serif font-bold text-xl text-charcoal mb-0.5 truncate">{item.name}</p>
                                                     <div className="flex flex-wrap items-center gap-3">
                                                         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Quantity: {item.quantity}</p>
-                                                        {item.selectedSize && (
+                                                        {displaySize && (
                                                             <>
                                                                 <span className="w-1 h-1 rounded-full bg-neutral-200" />
-                                                                <p className="text-[10px] text-blush font-bold uppercase tracking-widest">Size: {item.selectedSize}</p>
+                                                                <p className="text-[10px] text-blush font-bold uppercase tracking-widest">Size: {displaySize}</p>
                                                             </>
                                                         )}
                                                     </div>
@@ -224,7 +282,8 @@ export default function OrderDetailPage() {
                                                     <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">₹{item.price} ea</p>
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
 
                                     <div className="mt-12 pt-12 border-t border-[#F3E8E5] space-y-6">

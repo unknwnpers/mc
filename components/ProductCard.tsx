@@ -86,7 +86,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         quantity: 1,
         stock: variant.stock,
         sku: variant.sku,
-        selectedSize: variant.sku,  // Use actual SKU as size label
+        selectedSize: variant.options?.Size || variant.sku,  // Use Size from options, fallback to SKU
       });
       
       toast.success(`${product.name} added to cart!`);

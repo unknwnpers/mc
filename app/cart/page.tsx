@@ -231,11 +231,31 @@ export default function CartPage() {
                                             <h3 className="font-serif font-bold text-2xl text-charcoal mb-0.5 truncate">
                                                 {item.name}
                                             </h3>
-                                            {item.selectedSize && (
-                                                <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
-                                                    Size: {item.selectedSize}
-                                                </p>
-                                            )}
+                                            {(() => {
+                                                // Extract size from selectedSize and convert old format
+                                                let displaySize = item.selectedSize;
+                                                
+                                                // Convert old format sizes like "12Y" to "1-2Y"
+                                                if (displaySize) {
+                                                    // Check if it's in format like "KIDSHOOD-12Y" - extract and convert
+                                                    const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
+                                                    if (skuMatch) {
+                                                        const num = skuMatch[1];
+                                                        // Convert "12Y" -> "1-2Y", "23Y" -> "2-3Y", etc.
+                                                        if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
+                                                            displaySize = `${num[0]}-${num.slice(1)}Y`;
+                                                        } else {
+                                                            displaySize = `${num}Y`;
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                return displaySize ? (
+                                                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
+                                                        Size: {displaySize}
+                                                    </p>
+                                                ) : null;
+                                            })()}
                                             <p className="text-blush font-bold text-xl mb-4">
                                                 ₹{item.price}
                                             </p>

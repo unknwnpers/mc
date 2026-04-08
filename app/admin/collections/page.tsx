@@ -65,6 +65,9 @@ export default function AdminCollectionsPage() {
   const [searching, setSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Selected products with metadata (name, image) for display
+  const [selectedProductDetails, setSelectedProductDetails] = useState<Map<string, {name: string, image: string}>>(new Map());
+  
   // Categories for filter (for auto type)
   const [categories, setCategories] = useState<{id: string, name: string, slug: string}[]>([]);
   
@@ -158,7 +161,7 @@ export default function AdminCollectionsPage() {
     setShowForm(true);
   }
 
-  function openEdit(collection: CuratedCollection) {
+  async function openEdit(collection: CuratedCollection) {
     setEditing(collection);
     setForm({
       title: collection.title,
@@ -171,6 +174,24 @@ export default function AdminCollectionsPage() {
       cardStyle: collection.cardStyle,
       backgroundImage: collection.backgroundImage || "",
     });
+    
+    // Load product details for existing products in manual collections
+    if (collection.type === "manual" && collection.products?.length) {
+      try {
+        const res = await adminFetch(`/api/admin/products?ids=${collection.products.join(",")}`);
+        const data = await res.json();
+        if (data.success && data.products) {
+          const detailsMap = new Map<string, {name: string, image: string}>();
+          data.products.forEach((p: any) => {
+            detailsMap.set(p.id, { name: p.name, image: p.images?.[0] || '' });
+          });
+          setSelectedProductDetails(detailsMap);
+        }
+      } catch (e) {
+        console.error("Failed to load product details", e);
+      }
+    }
+    
     setShowForm(true);
   }
 
@@ -181,13 +202,20 @@ export default function AdminCollectionsPage() {
     setImageInputMode("upload");
     setProductSearch("");
     setSearchResults([]);
+    setSelectedProductDetails(new Map());
   }
 
   // ── Product Selection Helpers ───────────────────────────────────────────────
-  function addProduct(productId: string) {
+  function addProduct(product: { id: string; name: string; images?: string[] }) {
     setForm({
       ...form,
-      products: [...(form.products || []), productId],
+      products: [...(form.products || []), product.id],
+    });
+    // Store product details for display
+    setSelectedProductDetails(prev => {
+      const next = new Map(prev);
+      next.set(product.id, { name: product.name, image: product.images?.[0] || '' });
+      return next;
     });
     setProductSearch("");
     setSearchResults([]);
@@ -197,6 +225,12 @@ export default function AdminCollectionsPage() {
     setForm({
       ...form,
       products: (form.products || []).filter(id => id !== productId),
+    });
+    // Remove from details map
+    setSelectedProductDetails(prev => {
+      const next = new Map(prev);
+      next.delete(productId);
+      return next;
     });
   }
 
@@ -602,33 +636,41 @@ export default function AdminCollectionsPage() {
               {form.type === "manual" && (
                 <div className="space-y-4">
                   <label className="block text-sm font-medium text-white/70">Selected Products</label>
-                  
+                                
                   {/* Selected Products List */}
                   <div className="space-y-2">
-                    {form.products?.map((productId) => (
-                      <div
-                        key={productId}
-                        className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                          <ImageIcon className="h-5 w-5 text-white/40" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm truncate">{productId}</p>
-                        </div>
-                        <button
-                          onClick={() => removeProduct(productId)}
-                          className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors"
+                    {form.products?.map((productId) => {
+                      const details = selectedProductDetails.get(productId);
+                      return (
+                        <div
+                          key={productId}
+                          className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3"
                         >
-                          <Minus className="h-4 w-4 text-red-400" />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+                            {details?.image ? (
+                              <img src={details.image} alt={details.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-white/40" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm truncate">{details?.name || productId}</p>
+                            <p className="text-white/40 text-xs truncate">{productId}</p>
+                          </div>
+                          <button
+                            onClick={() => removeProduct(productId)}
+                            className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors"
+                          >
+                            <Minus className="h-4 w-4 text-red-400" />
+                          </button>
+                        </div>
+                      );
+                    })}
                     {(!form.products || form.products.length === 0) && (
                       <p className="text-white/40 text-sm italic">No products selected</p>
                     )}
                   </div>
-
+              
                   {/* Product Search */}
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -643,14 +685,14 @@ export default function AdminCollectionsPage() {
                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 animate-spin" />
                     )}
                   </div>
-
+              
                   {/* Search Results */}
-                  {searchResults.length > 0 && (
+                  {searchResults.length > 0 ? (
                     <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                       {searchResults.map((product) => (
                         <button
                           key={product.id}
-                          onClick={() => addProduct(product.id)}
+                          onClick={() => addProduct(product)}
                           className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
                         >
                           {product.images?.[0] ? (
@@ -672,7 +714,11 @@ export default function AdminCollectionsPage() {
                         </button>
                       ))}
                     </div>
-                  )}
+                  ) : productSearch.trim().length >= 2 && !searching ? (
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                      <p className="text-white/50 text-sm">No products found for "{productSearch}"</p>
+                    </div>
+                  ) : null}
                 </div>
               )}
 

@@ -45,16 +45,25 @@ async function getCategories() {
 }
 
 async function getCuratedCollections() {
+  if (!db) return [];
   try {
-    // During static generation, use absolute URL with localhost
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
-      (typeof window === 'undefined' ? 'http://localhost:3000' : '');
-    const res = await fetch(`${baseUrl}/api/collections?limit=6`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.collections || [];
+    const q = query(
+      collection(db, 'curated_collections'),
+      where('isActive', '==', true),
+      orderBy('displayOrder', 'asc'),
+      limit(6)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Serialize Firestore Timestamps to plain objects
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+      };
+    }) as CuratedCollection[];
   } catch (error) {
     console.error('Error fetching curated collections:', error);
     return [];

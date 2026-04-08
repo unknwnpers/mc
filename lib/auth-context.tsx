@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
+import { toast } from "sonner";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { getCurrentSessionId } from "@/lib/session-manager";
@@ -103,6 +104,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const data = profileSnap.data() as UserProfile;
           const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
 
+          if (data.blocked) {
+            toast.error("Your account has been blocked. Contact support.");
+            await auth.signOut();
+            setUser(null);
+            setProfile(null);
+            router.push("/login");
+            return;
+          }
+
           // Auto-upgrade existing admin email accounts that weren't promoted yet
           const needsRoleUpgrade = u.email === ADMIN_EMAIL && data.role !== "superadmin" && data.role !== "admin";
           const needsFieldFill   = !data.addressLine1 || !data.phone;
@@ -134,6 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             role,
             addressLine1: "",
             phone: "",
+            blocked: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };

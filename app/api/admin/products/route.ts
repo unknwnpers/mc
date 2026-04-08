@@ -13,6 +13,43 @@ export async function GET(req: Request) {
     await verifyAdmin(req);
 
     const { searchParams } = new URL(req.url);
+    const action = searchParams.get("action");
+    
+    // Handle categories fetch
+    if (action === "categories") {
+      const snapshot = await adminDb.collection("categories").orderBy("name", "asc").get();
+      const categories = snapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name,
+        slug: doc.data().slug,
+      }));
+      return NextResponse.json({ success: true, categories });
+    }
+    
+    // Handle fetch by IDs (for collection editing)
+    const idsParam = searchParams.get("ids");
+    if (idsParam) {
+      const ids = idsParam.split(",").filter(Boolean);
+      if (ids.length === 0) {
+        return NextResponse.json({ success: true, products: [] });
+      }
+      
+      const products = await Promise.all(
+        ids.map(id => adminDb.collection("products").doc(id).get())
+      );
+      
+      const results = products
+        .filter(doc => doc.exists)
+        .map(doc => ({
+          id: doc.id,
+          name: doc.data()?.name,
+          images: doc.data()?.images || [],
+          category_slug: doc.data()?.category_slug,
+        }));
+      
+      return NextResponse.json({ success: true, products: results });
+    }
+    
     const includeArchived = searchParams.get("includeArchived") === "true";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = Math.min(

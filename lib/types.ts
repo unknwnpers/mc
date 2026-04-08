@@ -54,6 +54,7 @@ export interface UserProfile {
   state?: string;           // State (default: Kerala)
   pincode?: string;         // 6-digit PIN code
   phone?: string;           // 10-digit Indian phone
+  blocked?: boolean;        // Security/Access flag
   created_at: any;
   updated_at?: any;
 }

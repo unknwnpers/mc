@@ -9,29 +9,33 @@ export async function GET(req: Request) {
     await verifyAdmin(req);
 
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get("q")?.trim().toLowerCase();
+    const query = searchParams.get("q")?.trim();
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
-    if (!query) {
-      return NextResponse.json({ success: false, error: "Query parameter required" }, { status: 400 });
+    if (!query || query.length < 2) {
+      return NextResponse.json({ success: true, products: [] });
     }
 
-    // Search by name (case-insensitive)
+    // Fetch all active products and filter in-memory for case-insensitive substring search
+    // This avoids Firestore index requirements and enables true "contains" search
     const snapshot = await adminDb
       .collection("products")
-      .orderBy("name")
-      .startAt(query)
-      .endAt(query + "\uf8ff")
-      .limit(limit)
+      .where("isActive", "==", true)
+      .limit(500) // Fetch reasonable batch for in-memory filtering
       .get();
 
-    const products = snapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      images: doc.data().images || [],
-      category_slug: doc.data().category_slug,
-      isActive: doc.data().isActive,
-    }));
+    const queryLower = query.toLowerCase();
+    
+    const products = snapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        name: doc.data().name,
+        images: doc.data().images || [],
+        category_slug: doc.data().category_slug,
+        isActive: doc.data().isActive,
+      }))
+      .filter(p => p.name?.toLowerCase().includes(queryLower))
+      .slice(0, limit);
 
     return NextResponse.json({ success: true, products });
   } catch (err: any) {

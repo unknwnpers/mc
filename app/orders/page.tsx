@@ -6,16 +6,19 @@ import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { useAuth } from "@/lib/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Package, ChevronRight, Clock, CheckCircle2, Truck, Box, ShoppingBag, MapPin } from "lucide-react";
+import { Package, ChevronRight, Clock, CheckCircle2, Truck, Box, ShoppingBag, MapPin, XCircle, Ban } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 
 const statusConfig: any = {
-    created: { label: "Order Placed", color: "bg-neutral-100 text-neutral-600", icon: Clock },
-    processing: { label: "Processing", color: "bg-amber-100 text-amber-600", icon: Box },
-    shipped: { label: "Shipped", color: "bg-blue-100 text-blue-600", icon: Truck },
-    delivered: { label: "Delivered", color: "bg-green-100 text-green-600", icon: CheckCircle2 },
+    pending_payment: { label: "Pending Payment", color: "bg-neutral-100 text-neutral-600", icon: Clock, isCancelled: false },
+    created: { label: "Order Placed", color: "bg-neutral-100 text-neutral-600", icon: Clock, isCancelled: false },
+    paid: { label: "Paid", color: "bg-blue-100 text-blue-600", icon: CheckCircle2, isCancelled: false },
+    processing: { label: "Processing", color: "bg-amber-100 text-amber-600", icon: Box, isCancelled: false },
+    shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-600", icon: Truck, isCancelled: false },
+    delivered: { label: "Delivered", color: "bg-green-100 text-green-600", icon: CheckCircle2, isCancelled: false },
+    cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600", icon: XCircle, isCancelled: true },
 };
 
 const formatDate = (dateStr: string) => {
@@ -43,8 +46,11 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
-    const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-    const totalOrders = orders.length;
+    // Calculate stats excluding cancelled orders
+    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    const totalSpent = activeOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalOrders = activeOrders.length;
+    const cancelledCount = orders.filter(o => o.status === 'cancelled').length;
 
     useEffect(() => {
         if (user === null) {
@@ -200,9 +206,16 @@ export default function OrdersPage() {
                                             const orderDate = order.createdAt?.seconds
                                                 ? new Date(order.createdAt.seconds * 1000)
                                                 : new Date();
+                                            const isCancelled = status.isCancelled || order.status === 'cancelled';
 
                                             return (
-                                                <div key={order.id} className="group bg-white rounded-[40px] border border-[#F3E8E5] shadow-sm hover:shadow-2xl hover:shadow-blush/10 transition-all duration-700 overflow-hidden relative">
+                                                <div key={order.id} className={cn(
+                                                    "group rounded-[40px] border shadow-sm hover:shadow-2xl transition-all duration-700 overflow-hidden relative",
+                                                    isCancelled 
+                                                        ? "bg-neutral-50 border-neutral-200 hover:shadow-neutral-200/20 opacity-90"
+                                                        : "bg-white border-[#F3E8E5] hover:shadow-blush/10"
+                                                )}>
+                                                    {/* CANCELLED OVERLAY BADGE REMOVED (Redundant & Overlapping) */}
                                                     {/* PREMIUM TIMESTAMP BADGE */}
                                                     <div className="absolute top-0 right-10 bg-cream px-6 py-2 rounded-b-2xl border-x border-b border-blush/10 text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                                                         <Clock className="w-3 h-3 text-blush/40" />
@@ -235,13 +248,26 @@ export default function OrdersPage() {
                                                                 <StatusIcon className="w-4 h-4" />
                                                                 {status.label}
                                                             </div>
-                                                            <Link
-                                                                href={`/orders/${order.id}`}
-                                                                className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-cream text-charcoal text-xs font-bold uppercase tracking-widest hover:bg-blush hover:text-white transition-all group/btn shadow-sm"
-                                                            >
-                                                                View Tracking
-                                                                <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                                                            </Link>
+                                                            {/* Hide View Tracking for cancelled orders */}
+                                                            {!isCancelled && (
+                                                                <Link
+                                                                    href={`/orders/${order.id}`}
+                                                                    className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-cream text-charcoal text-xs font-bold uppercase tracking-widest hover:bg-blush hover:text-white transition-all group/btn shadow-sm"
+                                                                >
+                                                                    View Tracking
+                                                                    <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                                                                </Link>
+                                                            )}
+                                                            {/* Show View Details for cancelled orders */}
+                                                            {isCancelled && (
+                                                                <Link
+                                                                    href={`/orders/${order.id}`}
+                                                                    className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest hover:bg-neutral-200 transition-all group/btn shadow-sm"
+                                                                >
+                                                                    View Details
+                                                                    <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                                                                </Link>
+                                                            )}
                                                         </div>
                                                     </div>
 
@@ -260,12 +286,34 @@ export default function OrdersPage() {
                                                                     )}
                                                                 </div>
                                                                 <div className="min-w-0 flex flex-col gap-1">
-                                                                    <p className="text-sm font-bold text-charcoal truncate tracking-tight">
-                                                                        {order.items[0]?.name}
-                                                                        {order.items[0]?.selectedSize && (
-                                                                            <span className="text-blush ml-2">({order.items[0].selectedSize})</span>
-                                                                        )}
-                                                                    </p>
+                                                                    {(() => {
+                                                                        // Extract size from selectedSize or derive from SKU for display
+                                                                        let displaySize = order.items[0]?.selectedSize;
+                                                                        
+                                                                        // Convert old format sizes like "12Y" to "1-2Y"
+                                                                        if (displaySize) {
+                                                                            // Check if it's in format like "KIDSHOOD-12Y" - extract and convert
+                                                                            const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
+                                                                            if (skuMatch) {
+                                                                                const num = skuMatch[1];
+                                                                                // Convert "12Y" -> "1-2Y", "23Y" -> "2-3Y", etc.
+                                                                                if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
+                                                                                    displaySize = `${num[0]}-${num.slice(1)}Y`;
+                                                                                } else {
+                                                                                    displaySize = `${num}Y`;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        return (
+                                                                            <p className="text-sm font-bold text-charcoal truncate tracking-tight">
+                                                                                {order.items[0]?.name}
+                                                                                {displaySize && (
+                                                                                    <span className="text-blush ml-2">({displaySize})</span>
+                                                                                )}
+                                                                            </p>
+                                                                        );
+                                                                    })()}
                                                                     {order.items.length > 1 && (
                                                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                                                                             And {order.items.length - 1} more items
@@ -281,7 +329,7 @@ export default function OrdersPage() {
                                                                 </div>
                                                                 <div className="min-w-0">
                                                                     <p className="text-[10px] font-bold uppercase tracking-widest text-[#B49474] mb-0.5">Delivering to</p>
-                                                                    <p className="text-xs font-bold text-[#5C4033] truncate leading-tight">{order.shippingAddress || order.address || "Address missing"}</p>
+                                                                    <p className="text-xs font-bold text-[#5C4033] truncate leading-tight">{order.shipping?.address || order.shippingAddress || order.address || "Address missing"}</p>
                                                                 </div>
                                                             </div>
                                                         </div>

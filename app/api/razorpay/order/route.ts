@@ -52,9 +52,17 @@ export async function POST(req: Request) {
         if (!variant) {
           return { error: `SKU "${item.sku}" is not available for "${data.name}"`, status: 409 };
         }
+        
+        // Get the correct size from variant options, not from frontend selectedSize
+        const correctSize = variant.options?.Size || item.sku;
+        
         return { 
           success: true, 
-          item: { ...item, price: variant.price },
+          item: { 
+            ...item, 
+            price: variant.price,
+            selectedSize: correctSize  // Override with correct size from backend
+          },
           price: variant.price 
         };
       })
