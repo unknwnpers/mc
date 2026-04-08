@@ -65,8 +65,15 @@ const DEFAULT_LIMIT = 50;
 export default function SecurityDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const [stats, setStats] = useState<SecurityStats | null>(null);
+
+  // Redirect non-superadmin users
+  useEffect(() => {
+    if (!loading && profile?.role !== "superadmin") {
+      router.push("/admin");
+    }
+  }, [loading, profile, router]);
   const [blockedIPs, setBlockedIPs] = useState<BlockedIP[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");

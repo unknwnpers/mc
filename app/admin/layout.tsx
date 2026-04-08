@@ -22,7 +22,7 @@ const NAV = [
   { href: "/admin/users",     label: "Users",       icon: Users },
   { href: "/admin/offers",    label: "Offers",      icon: Percent },
   { href: "/admin/coupons",   label: "Coupons",     icon: Tag },
-  { href: "/admin/security",  label: "Security",    icon: Shield },
+  { href: "/admin/security",  label: "Security",    icon: Shield, superadminOnly: true },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -32,6 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
 
   const isAdmin = profile?.role === "admin" || profile?.role === "superadmin";
+  const isSuperAdmin = profile?.role === "superadmin";
 
   async function handleSignOut() {
     await signOut(auth);
@@ -86,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.filter(item => !item.superadminOnly || isSuperAdmin).map(({ href, label, icon: Icon }) => {
             const exact   = href === "/admin";
             const active  = exact ? pathname === href : pathname.startsWith(href);
             return (
