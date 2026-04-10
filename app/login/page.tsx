@@ -7,24 +7,65 @@ import Footer from "@/components/Footer";
 import PhoneAuth from "@/components/PhoneAuth";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useState, Suspense } from "react";
-import { ShoppingBag, ArrowRight } from "lucide-react";
+import { useState, Suspense, useEffect } from "react";
+import { ShoppingBag, ArrowRight, Phone, Mail, AlertCircle } from "lucide-react";
+import { initAppCheck } from "@/lib/firebase";
 
 function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [authMethod, setAuthMethod] = useState<"choice" | "google" | "phone">("choice");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
 
+  // Initialize App Check on mount
+  useEffect(() => {
+    initAppCheck();
+  }, []);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setError(null);
     try {
-      await loginWithGoogle();
+      const result = await loginWithGoogle();
+      
+      // Save user to Firestore via API (for consistency with phone auth)
+      try {
+        const token = await result.user.getIdToken();
+        await fetch("/api/user/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: result.user.uid,
+            email: result.user.email,
+            name: result.user.displayName,
+            provider: "google",
+          }),
+        });
+      } catch (syncError) {
+        // Non-fatal: profile will be synced by auth-context anyway
+        console.warn("[Login] Profile sync warning:", syncError);
+      }
+      
       toast.success("Welcome to MIKS&CHIKS!");
       router.push(redirectPath);
     } catch (err: any) {
-      toast.error(err.message || "Google login failed");
+      console.error("[Login] Google login error:", err);
+      
+      // Map common Firebase errors to user-friendly messages
+      const errorMessages: Record<string, string> = {
+        "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
+        "auth/popup-blocked": "Pop-up was blocked. Please allow pop-ups and try again.",
+        "auth/network-request-failed": "Network error. Please check your connection.",
+        "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+        "auth/user-disabled": "This account has been disabled. Contact support.",
+        "auth/account-exists-with-different-credential": "An account exists with this email using a different sign-in method.",
+      };
+      
+      const message = errorMessages[err.code] || err.message || "Google login failed. Please try again.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -59,6 +100,14 @@ function LoginContent() {
             {/* Auth Method Selection */}
             {authMethod === "choice" && (
               <div className="space-y-4">
+                {/* Error Display */}
+                {error && (
+                  <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                
                 {/* Google Login Button */}
                 <button
                   onClick={handleGoogleLogin}
@@ -102,14 +151,21 @@ function LoginContent() {
 
                 {/* Phone Login Button */}
                 <button
-                  onClick={() => setAuthMethod("phone")}
+                  onClick={() => {
+                    setError(null);
+                    setAuthMethod("phone");
+                  }}
                   className="w-full flex items-center justify-center gap-3 bg-white text-charcoal py-5 rounded-3xl font-bold text-lg border-2 border-gray-200 hover:border-blush hover:text-blush transition-all"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
+                  <Phone className="w-6 h-6" />
                   <span>Continue with Phone OTP</span>
                 </button>
+                
+                {/* Help text */}
+                <p className="text-center text-sm text-gray-400 mt-4">
+                  <Mail className="w-4 h-4 inline mr-1" />
+                  We'll send a verification code to your phone
+                </p>
               </div>
             )}
 
@@ -117,7 +173,10 @@ function LoginContent() {
             {authMethod === "phone" && (
               <div className="space-y-4">
                 <button
-                  onClick={() => setAuthMethod("choice")}
+                  onClick={() => {
+                    setError(null);
+                    setAuthMethod("choice");
+                  }}
                   className="text-sm text-gray-400 hover:text-blush transition-colors mb-4"
                 >
                   ← Back to all options
