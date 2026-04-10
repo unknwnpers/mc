@@ -3,6 +3,7 @@ import { getFirestore, Firestore } from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken } from "firebase/app-check";
+import { getMessaging, Messaging, isSupported as isMessagingSupported } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -148,9 +149,43 @@ function getStorageInstance(): FirebaseStorage {
   return getStorage(getFirebaseApp());
 }
 
+let messagingInstance: Messaging | null = null;
+
+/**
+ * Get Firebase Cloud Messaging instance
+ * Must be called AFTER getFirebaseApp() is initialized
+ * Returns null if messaging is not supported (e.g., Safari, some browsers)
+ */
+export async function getMessagingInstance(): Promise<Messaging | null> {
+  if (typeof window === "undefined") return null; // SSR guard
+
+  if (messagingInstance) return messagingInstance;
+
+  // Check browser support BEFORE initializing
+  const supported = await isMessagingSupported();
+  if (!supported) {
+    console.warn("[Firebase] Messaging not supported in this browser");
+    return null;
+  }
+
+  // Initialize messaging AFTER app is ready
+  const app = getFirebaseApp();
+  messagingInstance = getMessaging(app);
+  console.log("[Firebase] Messaging initialized");
+  return messagingInstance;
+}
+
 export { getDB, getAuthInstance, getStorageInstance };
 
-// Backward-compatible direct exports
-export const db = getDB();
-export const auth = getAuthInstance();
-export const storage = getStorageInstance();
+// Lazy getters for backward compatibility - only initialize when accessed
+export const db = new Proxy({} as Firestore, {
+  get: (_, prop) => getDB()[prop as keyof Firestore],
+});
+
+export const auth = new Proxy({} as Auth, {
+  get: (_, prop) => getAuthInstance()[prop as keyof Auth],
+});
+
+export const storage = new Proxy({} as FirebaseStorage, {
+  get: (_, prop) => getStorageInstance()[prop as keyof FirebaseStorage],
+});

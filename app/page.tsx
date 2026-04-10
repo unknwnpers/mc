@@ -19,8 +19,11 @@ async function getFeaturedProducts(): Promise<Product[]> {
       .limit(8)
       .get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching products:', error);
+    console.error('Error code:', error.code);
+    console.error('Error details:', error.details);
+    console.error('Error stack:', error.stack);
     return [];
   }
 }
@@ -33,8 +36,10 @@ async function getCategories(): Promise<Category[]> {
       .limit(20)
       .get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching categories:', error);
+    console.error('Error code:', error.code);
+    console.error('Error details:', error.details);
     return [];
   }
 }
@@ -57,8 +62,10 @@ async function getCuratedCollections(): Promise<CuratedCollection[]> {
         updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
       };
     }) as CuratedCollection[];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching curated collections:', error);
+    console.error('Error code:', error.code);
+    console.error('Error details:', error.details);
     return [];
   }
 }
