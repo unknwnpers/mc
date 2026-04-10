@@ -120,8 +120,8 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* MAP CARD */}
-              <div className="bg-white rounded-[40px] overflow-hidden border border-[#F3E8E5] shadow-xl shadow-blush/5 group">
+              {/* MAP CARD - Hidden */}
+              {/* <div className="bg-white rounded-[40px] overflow-hidden border border-[#F3E8E5] shadow-xl shadow-blush/5 group">
                 <div className="p-6 bg-cream/30 border-b border-[#F3E8E5]">
                     <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em]">Find Us on Map</p>
                 </div>
@@ -135,7 +135,7 @@ export default function ContactPage() {
                   referrerPolicy="no-referrer-when-downgrade"
                   className="grayscale hover:grayscale-0 transition-all duration-1000"
                 ></iframe>
-              </div>
+              </div> */}
             </div>
 
             {/* CONTACT FORM */}
