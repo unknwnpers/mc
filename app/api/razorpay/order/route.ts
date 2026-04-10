@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { reserveStock } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
@@ -9,6 +9,15 @@ import { calculatePaymentBreakdown } from "@/lib/payment-calculator";
 
 export async function POST(req: Request) {
   try {
+    // 🔐 Layer 1: App Check verification WITH replay protection - CRITICAL for payment endpoint
+    const appCheckResult = await verifyAppCheckWithReplayProtection(req, 60);
+    if (!appCheckResult.valid) {
+      return NextResponse.json(
+        { error: appCheckResult.error || "App verification failed" },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { cart, userId, profile, couponCode, isCOD = false, paymentBreakdown: clientBreakdown } = body;
 

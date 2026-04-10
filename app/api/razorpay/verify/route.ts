@@ -1,13 +1,22 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { confirmReservation } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
+    // 🔐 Layer 1: App Check verification WITH replay protection - CRITICAL for payment verification
+    const appCheckResult = await verifyAppCheckWithReplayProtection(req, 60);
+    if (!appCheckResult.valid) {
+      return NextResponse.json(
+        { success: false, error: appCheckResult.error || "App verification failed" },
+        { status: 403 }
+      );
+    }
+
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
 
     // ── 1. Input validation ─────────────────────────────────────────────────

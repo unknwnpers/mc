@@ -109,9 +109,10 @@ export default function Footer() {
             © {new Date().getFullYear()} Miks & Chiks. All rights reserved.
           </p>
           <div className="flex items-center gap-8">
-            <a href="/privacy-policy" className="text-xs font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Privacy Policy</a>
+            <a href="/privacy" className="text-xs font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Privacy Policy</a>
             <a href="/terms" className="text-xs font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Terms of Service</a>
             <a href="/refund-policy" className="text-xs font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Refund Policy</a>
+            <a href="/shipping-policy" className="text-xs font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Shipping</a>
           </div>
         </div>
       </div>

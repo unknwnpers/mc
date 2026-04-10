@@ -33,3 +33,27 @@ RAZORPAY_KEY_ID=rzp_test_...
 RAZORPAY_KEY_SECRET=your_secret_key
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_...
 BYPASS_RAZORPAY=true
+
+# ======================================
+# UPSTASH REDIS (Required for Rate Limiting)
+# ======================================
+# Get from https://upstash.com → Your Database → Details
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_token_here
+
+# ======================================
+# SENTRY (Optional - Error Tracking)
+# ======================================
+NEXT_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+SENTRY_AUTH_TOKEN=your_auth_token
+
+# ======================================
+# GOOGLE ANALYTICS (Optional)
+# ======================================
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+
+# ======================================
+# FIREBASE APP CHECK (reCAPTCHA v3)
+# ======================================
+# Get from https://www.google.com/recaptcha/admin → Create Site → reCAPTCHA v3
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_site_key

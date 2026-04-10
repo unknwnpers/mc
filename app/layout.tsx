@@ -4,6 +4,9 @@ import { Inter, Cormorant_Garamond } from 'next/font/google';
 import { CartProvider } from '@/context/cart-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/sonner';
+import { Suspense } from 'react';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
+import WebVitalsReporter from '@/components/WebVitalsReporter';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -53,6 +56,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+          <WebVitalsReporter />
+        </Suspense>
         <AuthProvider>
           <CartProvider>
             {children}

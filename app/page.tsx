@@ -4,23 +4,20 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import CollectionCard from '@/components/CollectionCard';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Product, Category, CuratedCollection } from '@/lib/types';
-import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 
 // ISR: Revalidate every 60 seconds
 export const revalidate = 60;
 
-async function getFeaturedProducts() {
-  if (!db) return [];
+async function getFeaturedProducts(): Promise<Product[]> {
   try {
-    const q = query(
-      collection(db, 'products'),
-      where('is_featured', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(8) // Limit to 8 featured products
-    );
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb
+      .collection('products')
+      .where('is_featured', '==', true)
+      .orderBy('createdAt', 'desc')
+      .limit(8)
+      .get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -28,15 +25,13 @@ async function getFeaturedProducts() {
   }
 }
 
-async function getCategories() {
-  if (!db) return [];
+async function getCategories(): Promise<Category[]> {
   try {
-    const q = query(
-      collection(db, 'categories'),
-      orderBy('created_at', 'asc'),
-      limit(20) // Limit categories
-    );
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb
+      .collection('categories')
+      .orderBy('created_at', 'asc')
+      .limit(20)
+      .get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[];
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -44,16 +39,14 @@ async function getCategories() {
   }
 }
 
-async function getCuratedCollections() {
-  if (!db) return [];
+async function getCuratedCollections(): Promise<CuratedCollection[]> {
   try {
-    const q = query(
-      collection(db, 'curated_collections'),
-      where('isActive', '==', true),
-      orderBy('displayOrder', 'asc'),
-      limit(6)
-    );
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDb
+      .collection('curated_collections')
+      .where('isActive', '==', true)
+      .orderBy('displayOrder', 'asc')
+      .limit(6)
+      .get();
     return snapshot.docs.map(doc => {
       const data = doc.data();
       // Serialize Firestore Timestamps to plain objects

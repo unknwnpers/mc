@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/rbac";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { logSecurityEvent } from "@/lib/logger";
 import { getClientInfo } from "@/lib/logger";
@@ -8,9 +8,20 @@ import { getClientInfo } from "@/lib/logger";
 /**
  * POST /api/coupons/apply
  * Apply coupon code to order
+ * Protected by: Firebase Auth + App Check (high-risk endpoint)
  */
 export async function POST(request: NextRequest) {
   try {
+    // 🔐 Layer 1: App Check verification WITH replay protection (HIGH-RISK endpoint)
+    const appCheckResult = await verifyAppCheckWithReplayProtection(request, 60);
+    if (!appCheckResult.valid) {
+      return NextResponse.json(
+        { success: false, error: appCheckResult.error || "App verification failed" },
+        { status: 403 }
+      );
+    }
+
+    // 🔐 Layer 2: Firebase Auth verification (identity)
     const authHeader = request.headers.get("authorization");
     
     if (!authHeader?.startsWith("Bearer ")) {
@@ -19,7 +30,7 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     const token = authHeader.split(" ")[1];
     const { getAuth } = await import("firebase-admin/auth");
     const decoded = await getAuth().verifyIdToken(token);
