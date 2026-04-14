@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Suspense } from 'react';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WebVitalsReporter from '@/components/WebVitalsReporter';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -66,6 +67,7 @@ export default function RootLayout({
             <Toaster richColors closeButton position="top-center" />
           </CartProvider>
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
