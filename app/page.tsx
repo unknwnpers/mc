@@ -7,6 +7,10 @@ import CollectionCard from '@/components/CollectionCard';
 import { adminDb } from '@/lib/firebase-admin';
 import type { Product, Category, CuratedCollection } from '@/lib/types';
 
+// Force dynamic rendering - Firestore queries run at request time, not build time
+// This avoids PERMISSION_DENIED errors during static generation
+export const dynamic = 'force-dynamic';
+
 // ISR: Revalidate every 60 seconds
 export const revalidate = 60;
 

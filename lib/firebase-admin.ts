@@ -20,13 +20,19 @@ const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIR
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
+console.log("ENV CHECK:", {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  email: process.env.FIREBASE_CLIENT_EMAIL,
+  hasKey: !!process.env.FIREBASE_PRIVATE_KEY,
+});
+
 let app: App;
 
 if (!getApps().length) {
   if (projectId && clientEmail && privateKey) {
-    // Handle escaped newlines in Vercel env vars
-    // Split raw \n and join with actual newlines
-    const formattedPrivateKey = privateKey.split(String.raw`\n`).join('\n');
+    // Handle multiple formats of escaped newlines
+    // Vercel/env files may have \\n or \n depending on how they're stored
+    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
     
     try {
       app = initializeApp({
