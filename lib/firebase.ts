@@ -188,9 +188,13 @@ export { getDB, getAuthInstance, getStorageInstance };
 //   - new RecaptchaVerifier(auth, ...) → runtime failure
 // ──────────────────────────────────────────────────────────────────────────
 
-export const db: Firestore = getDB();
-export const auth: Auth = getAuthInstance();
-export const storage: FirebaseStorage = getStorageInstance();
+// Eagerly initialize Firebase app FIRST, then services
+// This ensures proper initialization order and avoids auth/internal-error
+const firebaseApp = isConfigValid ? getFirebaseApp() : null;
+
+export const db: Firestore = firebaseApp ? getFirestore(firebaseApp) : (null as any);
+export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
+export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
 
 // Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
 export const getFirebaseAuth = (): Auth => auth;
