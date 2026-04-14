@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { auth } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
@@ -56,7 +56,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
   // Setup invisible reCAPTCHA
   const setupRecaptcha = useCallback(async () => {
-    if (!auth) {
+    if (!getFirebaseAuth()) {
       throw new Error("Firebase Auth not initialized");
     }
 
@@ -74,7 +74,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         }
       }
 
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      window.recaptchaVerifier = new RecaptchaVerifier(getFirebaseAuth(), "recaptcha-container", {
         size: "invisible",
         callback: () => {
           // reCAPTCHA solved
@@ -141,7 +141,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
       console.log("[PhoneAuth] Sending OTP to:", formattedPhone);
 
-      const result = await signInWithPhoneNumber(auth!, formattedPhone, verifier);
+      const result = await signInWithPhoneNumber(getFirebaseAuth(), formattedPhone, verifier);
       window.confirmationResult = result;
 
       setStep("otp");

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, getFirebaseAuth } from "@/lib/firebase";
 import { UserProfile } from "@/lib/types";
 import { toast } from "sonner";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (data.blocked) {
             toast.error("Your account has been blocked. Contact support.");
-            await auth.signOut();
+            await getFirebaseAuth().signOut();
             setUser(null);
             setProfile(null);
             router.push("/login");

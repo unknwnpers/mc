@@ -177,15 +177,21 @@ export async function getMessagingInstance(): Promise<Messaging | null> {
 
 export { getDB, getAuthInstance, getStorageInstance };
 
-// Lazy getters for backward compatibility - only initialize when accessed
-export const db = new Proxy({} as Firestore, {
-  get: (_, prop) => getDB()[prop as keyof Firestore],
-});
+// ─── Direct singleton exports ──────────────────────────────────────────────
+// All files that import from firebase.ts are "use client" components, so this
+// module ONLY runs in the browser. We can safely export real instances.
+//
+// NO PROXY for auth or db — Firebase uses instanceof / _delegate / prototype
+// chain checks internally. Any Proxy wrapper silently breaks:
+//   - collection(db, ...) → "Expected first argument to be FirebaseFirestore"
+//   - signInWithPopup(auth, ...) → auth/internal-error
+//   - new RecaptchaVerifier(auth, ...) → runtime failure
+// ──────────────────────────────────────────────────────────────────────────
 
-export const auth = new Proxy({} as Auth, {
-  get: (_, prop) => getAuthInstance()[prop as keyof Auth],
-});
+export const db: Firestore = getDB();
+export const auth: Auth = getAuthInstance();
+export const storage: FirebaseStorage = getStorageInstance();
 
-export const storage = new Proxy({} as FirebaseStorage, {
-  get: (_, prop) => getStorageInstance()[prop as keyof FirebaseStorage],
-});
+// Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
+export const getFirebaseAuth = (): Auth => auth;
+export const getDbInstance = (): Firestore => db;

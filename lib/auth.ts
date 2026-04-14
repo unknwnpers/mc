@@ -3,14 +3,17 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "./firebase";
+import { getFirebaseAuth } from "./firebase";
 
 const provider = new GoogleAuthProvider();
 
+// Use getFirebaseAuth() — the REAL Auth instance — not the `auth` Proxy export.
+// Proxy-wrapped auth breaks signInWithPopup (auth/internal-error) due to
+// Firebase's internal class-instance checks on the auth parameter.
 export const loginWithGoogle = () => {
-  return signInWithPopup(auth, provider);
+  return signInWithPopup(getFirebaseAuth(), provider);
 };
 
 export const logoutUser = () => {
-  return signOut(auth);
+  return signOut(getFirebaseAuth());
 };
