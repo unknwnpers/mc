@@ -20,6 +20,12 @@ const nextConfig = {
       },
     ],
   },
+  // Optimize package imports for tree shaking
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+  // Turbopack configuration
+  turbopack: {},
 };
 
 // Sentry wrapper config

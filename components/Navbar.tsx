@@ -1,17 +1,36 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { logoutUser } from '@/lib/auth';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const { cart } = useCart();
   const { user } = useAuth();
+
+  // Fetch logo from Firebase Storage
+  useEffect(() => {
+    async function fetchLogo() {
+      try {
+        const response = await fetch('/api/images?category=system&subcategory=logo&limit=1');
+        const data = await response.json();
+        if (data.success && data.images.length > 0) {
+          setLogoUrl(data.images[0].url);
+        }
+      } catch (error) {
+        console.error('Error fetching logo:', error);
+        // Keep default logo on error
+      }
+    }
+    fetchLogo();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -32,11 +51,13 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#F3E8E5] shadow-sm">
       <div className="max-w-7xl mx-auto px-6 md:px-10 flex justify-between items-center h-[88px]">
         <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-all group">
-          <div className="relative shrink-0">
-            <img
-              src="/logo.png"
+          <div className="relative shrink-0 w-14 h-14">
+            <Image
+              src={logoUrl}
               alt="Miks & Chiks"
-              className="h-14 w-14 object-contain transition-transform duration-700 group-hover:scale-110"
+              fill
+              className="object-contain transition-transform duration-700 group-hover:scale-110"
+              priority
             />
           </div>
 

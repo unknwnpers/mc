@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
@@ -114,14 +115,15 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link href={`/products/${product.id}`} className="relative overflow-hidden aspect-[4/5] block">
         {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
         
-        <img
+        <Image
           src={displayImage}
           alt={product.name}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           loading="lazy"
-          decoding="async"
           onLoad={() => setImgLoading(false)}
           className={cn(
-            "w-full h-full object-cover group-hover:scale-105 transition duration-500",
+            "object-cover group-hover:scale-105 transition duration-500",
             imgLoading ? "opacity-0" : "opacity-100",
             displayStock <= 0 && "grayscale opacity-50"
           )}

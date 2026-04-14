@@ -4,8 +4,16 @@
  * Includes fuzzy category mapping for production-grade robustness
  */
 
-import * as XLSX from 'xlsx';
 import { PRODUCT_CATEGORIES } from './constants';
+
+// Dynamic import for XLSX to reduce initial bundle size
+let XLSX: typeof import('xlsx') | null = null;
+async function getXLSX() {
+  if (!XLSX) {
+    XLSX = await import('xlsx');
+  }
+  return XLSX;
+}
 
 export interface ExcelRow {
   'Product Name': string;
@@ -367,11 +375,11 @@ function getCategorySuggestions(): string {
 /**
  * Validate and parse Excel file
  */
-export function parseExcelFile(file: File): Promise<ImportResult> {
-  return new Promise((resolve, reject) => {
+export async function parseExcelFile(file: File): Promise<ImportResult> {
+  return new Promise(async (resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result;
         if (!data) {
@@ -379,10 +387,16 @@ export function parseExcelFile(file: File): Promise<ImportResult> {
           return;
         }
 
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const xlsx = await getXLSX();
+        if (!xlsx) {
+          resolve({ success: false, products: [], duplicates: [], sizeIssues: [], errors: ['Failed to load XLSX library'], warnings: [], totalVariants: 0 });
+          return;
+        }
+
+        const workbook = xlsx.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelRow[];
+        const jsonData = xlsx.utils.sheet_to_json(worksheet) as ExcelRow[];
 
         const result = validateAndParse(jsonData);
         resolve(result);

@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.get('role', '') in ['admin', 'superadmin'];
+    }
+
+    /**
+     * SYSTEM IMAGES (logos, placeholders)
+     * Public read, admin write
+     */
+    match /system/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * MARKETING IMAGES (homepage, banners, categories)
+     * Public read, admin write
+     */
+    match /marketing/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * CATEGORY IMAGES
+     * Public read, admin write
+     */
+    match /category/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * PRODUCT IMAGES
+     * Public read, admin write
+     */
+    match /product/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * USER UPLOADS (avatars, etc)
+     * User can read/write their own, admin can read/write all
+     */
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+
+    /**
+     * TEMPORARY UPLOADS
+     * Authenticated users can write, cleanup via backend
+     */
+    match /temp/{allPaths=**} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * DEFAULT DENY
+     */
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

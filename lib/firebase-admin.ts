@@ -1,5 +1,6 @@
 import { initializeApp, cert, getApps, App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { getAppCheck } from "firebase-admin/app-check";
 import { Redis } from "@upstash/redis";
 
@@ -54,6 +55,7 @@ if (!getApps().length) {
 }
 
 export const adminDb = getFirestore(app);
+export const adminStorage = getStorage(app);
 
 /**
  * Verify Firebase App Check token from server-side

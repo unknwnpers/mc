@@ -11,12 +11,16 @@ import WebVitalsReporter from '@/components/WebVitalsReporter';
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+  preload: true,
 });
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-cormorant',
+  display: 'swap',
+  preload: true,
 });
 
 export const metadata: Metadata = {

@@ -6,9 +6,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { db } from '@/lib/firebase';
 import type { Product } from '@/lib/types';
-import { doc, getDoc, collection, query, where, limit, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
@@ -80,9 +78,13 @@ export default function ProductDetailsPage() {
     const checkFav = async () => {
         if (!user || !id) return;
         try {
-            const ref = doc(db, "users", user.uid, "favorites", id);
-            const snap = await getDoc(ref);
-            setIsFav(snap.exists());
+            const response = await fetch(`/api/user/favorites/check?productId=${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${await user.getIdToken()}`
+                }
+            });
+            const data = await response.json();
+            setIsFav(data.isFavorite);
         } catch (err) {
             console.error("Error checking fav:", err);
         }
@@ -93,14 +95,13 @@ export default function ProductDetailsPage() {
   const fetchProduct = async () => {
     setLoading(true);
     try {
-      const docRef = doc(db, 'products', id);
-      const docSnap = await getDoc(docRef);
+      const response = await fetch(`/api/products/${id}`);
+      const result = await response.json();
 
-      if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() } as any as Product;
-        setProduct(data);
-        if (data.category_slug) {
-          fetchRelated(data.category_slug, docSnap.id);
+      if (result.success && result.product) {
+        setProduct(result.product);
+        if (result.product.category_slug) {
+          fetchRelated(result.product.category_slug, result.product.id);
         }
       } else {
         console.log('Product not found');
@@ -176,28 +177,23 @@ export default function ProductDetailsPage() {
     }
 
     try {
-        const ref = doc(db, "users", user.uid, "favorites", id);
-        const snap = await getDoc(ref);
-
-        if (snap.exists()) {
-            await deleteDoc(ref);
-            setIsFav(false);
-            toast.info("Removed from favorites");
+        const token = await user.getIdToken();
+        const response = await fetch('/api/user/favorites/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ productId: id })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            setIsFav(result.isFavorite);
+            toast.success(result.isFavorite ? "Added to favorites" : "Removed from favorites");
         } else {
-            // Get price/image from variants array or fallback
-            const variants = (product as any).variants as any[] | undefined;
-            const price = variants?.[0]?.price ?? 0;
-            const image = (product as any).images?.[0] || '/placeholder.svg';
-
-            await setDoc(ref, {
-                productId: id,
-                name: product.name,
-                price: price,
-                image: image,
-                createdAt: new Date(),
-            });
-            setIsFav(true);
-            toast.success("Added to favorites");
+            throw new Error(result.error);
         }
     } catch (err) {
         console.error("Favorite error:", err);
@@ -219,15 +215,14 @@ export default function ProductDetailsPage() {
 
   const fetchRelated = async (categorySlug: string, currentProductId: string) => {
     try {
-        const q = query(
-            collection(db, "products"),
-            where("category_slug", "==", categorySlug),
-            limit(10) // Fetch more to filter out current
-        );
-        const snapshot = await getDocs(q);
-        const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-        const filtered = all.filter(p => p.id !== currentProductId).slice(0, 4);
-        setRelatedProducts(filtered);
+        const response = await fetch(`/api/products?category=${categorySlug}&limit=10`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const all = result.products as Product[];
+            const filtered = all.filter((p: Product) => p.id !== currentProductId).slice(0, 4);
+            setRelatedProducts(filtered);
+        }
     } catch (err) {
         console.error("Error fetching related:", err);
     }

@@ -5,9 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { db } from '@/lib/firebase';
 import type { Product, Category } from '@/lib/types';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { Search, SlidersHorizontal, ArrowUpDown, Tag, X, IndianRupee, Ruler, ChevronRight, Home, Eye, ShoppingBag, Heart, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -149,83 +147,42 @@ function ProductsContent() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      // SIMPLIFIED QUERY: Fetch all active products, filter in-memory
-      // This avoids Firestore composite index requirements
-      const q = query(
-        collection(db, "products"), 
-        where("isActive", "==", true),
-        orderBy("createdAt", "desc")
-      );
+      // Build query params for API
+      const params = new URLSearchParams();
+      if (selectedCategory) params.set('category', selectedCategory);
+      if (search) params.set('search', search);
+      if (sort) params.set('sort', sort);
+      if (urlPage > 1) params.set('page', urlPage.toString());
+      if (featuredFilter) params.set('featured', 'true');
+      if (newFilter) params.set('new', 'true');
+      if (urlMinPrice !== null) params.set('minPrice', urlMinPrice.toString());
+      if (urlMaxPrice !== null) params.set('maxPrice', urlMaxPrice.toString());
+      if (urlSizes.length > 0) params.set('sizes', urlSizes.join(','));
       
-      const snapshot = await getDocs(q);
+      // Call the API
+      const response = await fetch(`/api/products?${params.toString()}`);
+      const result = await response.json();
       
-      let data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Product[];
-
-      // 1. CATEGORY FILTER (in-memory to avoid index issues)
-      if (selectedCategory) {
-        data = data.filter(p => p.category_slug === selectedCategory);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch products');
       }
-
-      // 2. COLLECTION FILTER (if collection ID is provided)
-      if (collectionId) {
-        try {
-          const collectionRes = await fetch(`/api/collections/${collectionId}`);
-          // Check if response is JSON before parsing
-          const contentType = collectionRes.headers.get("content-type");
-          if (collectionRes.ok && contentType?.includes("application/json")) {
-            const collectionData = await collectionRes.json();
-            if (collectionData.success && collectionData.collection?.type === "manual") {
-              const productIds = collectionData.collection.products || [];
-              data = data.filter(p => productIds.includes(p.id));
-            }
-          } else {
-            console.warn("Collection API returned non-JSON response");
-          }
-        } catch (e) {
-          console.error("Failed to fetch collection:", e);
-        }
-      }
-
-      // 3. AUTO COLLECTION FILTERS
-      if (featuredFilter) {
-        data = data.filter(p => p.is_featured === true);
-      }
-      if (newFilter) {
-        // Products created in the last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        data = data.filter(p => {
-          const createdAt = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
-          return createdAt >= thirtyDaysAgo;
-        });
-      }
-      // Price Range Filter (min and max)
-      if (urlMinPrice !== null) {
-        data = data.filter(p => {
-          const price = p.variants?.[0]?.price || 0;
-          return price >= urlMinPrice;
-        });
-      }
-      if (urlMaxPrice !== null) {
-        data = data.filter(p => {
-          const price = p.variants?.[0]?.price || 0;
-          return price <= urlMaxPrice;
-        });
-      }
-      // Size Filter - extract all unique sizes first
+      
+      setProducts(result.products);
+      setPaginatedProducts(result.products);
+      setTotalProducts(result.total);
+      setCurrentPage(result.page);
+      
+      // Extract available sizes from all products
       const allSizes = new Set<string>();
-      data.forEach(product => {
+      result.products.forEach((product: Product) => {
         product.variants?.forEach(variant => {
           const size = variant.options?.Size;
           if (size) allSizes.add(size);
         });
       });
+      
       // Sort sizes in logical order
       const sortedSizes = Array.from(allSizes).sort((a, b) => {
-        // Try to extract numbers for numeric comparison
         const numA = parseFloat(a.replace(/[^0-9.-]/g, ''));
         const numB = parseFloat(b.replace(/[^0-9.-]/g, ''));
         if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -233,62 +190,14 @@ function ProductsContent() {
       });
       setAvailableSizes(sortedSizes);
       
-      // Apply size filter
-      if (urlSizes.length > 0) {
-        data = data.filter(p => 
-          p.variants?.some(v => urlSizes.includes(v.options?.Size || ''))
-        );
-      }
-      if (limitFilter && limitFilter > 0) {
-        data = data.slice(0, limitFilter);
-      }
-
-      // 4. IN-MEMORY PRICE SORT (since price is in variants)
-      if (sort === "price_low") {
-        data.sort((a, b) => {
-          const priceA = a.variants?.[0]?.price || 0;
-          const priceB = b.variants?.[0]?.price || 0;
-          return priceA - priceB;
-        });
-      } else if (sort === "price_high") {
-        data.sort((a, b) => {
-          const priceA = a.variants?.[0]?.price || 0;
-          const priceB = b.variants?.[0]?.price || 0;
-          return priceB - priceA;
-        });
-      }
-      // else: already sorted by createdAt desc
-
-      // 3. SEARCH (Client-side)
-      if (search) {
-        const term = search.toLowerCase();
-        data = data.filter(p => 
-          p.name.toLowerCase().includes(term) || 
-          p.description?.toLowerCase().includes(term)
-        );
-      }
-
-      // Store total count before pagination
-      setTotalProducts(data.length);
-
-      // Apply pagination
-      const startIndex = (urlPage - 1) * ITEMS_PER_PAGE;
-      const endIndex = startIndex + ITEMS_PER_PAGE;
-      const paginatedData = data.slice(startIndex, endIndex);
-      
-      setProducts(data);
-      setPaginatedProducts(paginatedData);
-      setCurrentPage(urlPage);
-
       // Load recently viewed products
       const savedRecent = localStorage.getItem('miks-chiks-recently-viewed');
       if (savedRecent) {
         try {
           const recentIds = JSON.parse(savedRecent) as string[];
-          const recentProducts = data.filter(p => recentIds.includes(p.id));
-          // Sort by the order in recentIds
+          const recentProducts = result.products.filter((p: Product) => recentIds.includes(p.id));
           const sortedRecent = recentIds
-            .map(id => recentProducts.find(p => p.id === id))
+            .map(id => recentProducts.find((p: Product) => p.id === id))
             .filter((p): p is Product => p !== undefined);
           setRecentlyViewed(sortedRecent);
         } catch (e) {
@@ -296,55 +205,10 @@ function ProductsContent() {
         }
       }
     } catch (error) {
-      console.error('Filtering Query Error:', error);
-      
-      // Fallback: If query fails, fetch all and filter in memory
-      try {
-        const snapshot = await getDocs(collection(db, "products"));
-        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
-        
-        // Manual filter - ACTIVE + CATEGORY
-        data = data.filter(p => p.isActive !== false);
-        if (selectedCategory) {
-          data = data.filter(p => p.category_slug === selectedCategory);
-        }
-        
-        // Manual sort
-        if (sort === "price_low") {
-          data.sort((a, b) => {
-            const priceA = a.variants?.[0]?.price || 0;
-            const priceB = b.variants?.[0]?.price || 0;
-            return priceA - priceB;
-          });
-        } else if (sort === "price_high") {
-          data.sort((a, b) => {
-            const priceA = a.variants?.[0]?.price || 0;
-            const priceB = b.variants?.[0]?.price || 0;
-            return priceB - priceA;
-          });
-        } else {
-          data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        }
-
-        // Manual search
-        if (search) {
-          const term = search.toLowerCase();
-          data = data.filter(p => p.name.toLowerCase().includes(term));
-        }
-        
-        // Apply pagination to fallback
-        setTotalProducts(data.length);
-        const startIndex = (urlPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        setProducts(data);
-        setPaginatedProducts(data.slice(startIndex, endIndex));
-        setCurrentPage(urlPage);
-      } catch (fallbackErr) {
-        console.error('Critical Fetch Failure:', fallbackErr);
-        setProducts([]);
-        setPaginatedProducts([]);
-        setTotalProducts(0);
-      }
+      console.error('Products API Error:', error);
+      setProducts([]);
+      setPaginatedProducts([]);
+      setTotalProducts(0);
     } finally {
       setLoading(false);
     }

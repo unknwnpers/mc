@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -74,10 +75,38 @@ async function getCuratedCollections(): Promise<CuratedCollection[]> {
   }
 }
 
+async function getHeroImage(): Promise<{ url: string; id: string } | null> {
+  try {
+    const snapshot = await adminDb
+      .collection('image_metadata')
+      .where('isActive', '==', true)
+      .where('category', '==', 'marketing')
+      .where('subcategory', '==', 'homepage')
+      .orderBy('uploadedAt', 'desc')
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+    return {
+      id: doc.id,
+      url: data.variants?.original?.url || '',
+    };
+  } catch (error: any) {
+    console.error('Error fetching hero image:', error);
+    return null;
+  }
+}
+
 export default async function Home() {
   const featuredProducts = await getFeaturedProducts();
   const categories = await getCategories();
   const curatedCollections = await getCuratedCollections();
+  const heroImage = await getHeroImage();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-rose-50/20 to-amber-50/20">
@@ -139,9 +168,12 @@ export default async function Home() {
             {/* IMAGE */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-blush/20 to-gold/20 rounded-[40px] blur-3xl" />
-              <img
-                src="/mother-baby.jpg"
+              <Image
+                src={heroImage?.url || '/mother-baby.jpg'}
                 alt="Maternity Fashion"
+                width={512}
+                height={640}
+                priority
                 className="relative rounded-[40px] shadow-2xl w-full max-w-md mx-auto aspect-[4/5] object-cover object-top"
               />
             </div>
