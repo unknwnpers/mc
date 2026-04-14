@@ -20,12 +20,6 @@ const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIR
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-console.log("ENV CHECK:", {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  email: process.env.FIREBASE_CLIENT_EMAIL,
-  hasKey: !!process.env.FIREBASE_PRIVATE_KEY,
-});
-
 let app: App;
 
 if (!getApps().length) {
@@ -33,7 +27,7 @@ if (!getApps().length) {
     // Handle multiple formats of escaped newlines
     // Vercel/env files may have \\n or \n depending on how they're stored
     const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
-    
+
     try {
       app = initializeApp({
         credential: cert({
@@ -76,7 +70,7 @@ export async function verifyAppCheckToken(token: string): Promise<{ valid: boole
     return { valid: true, appId: claims.appId };
   } catch (error: any) {
     console.error("[AppCheck] Token verification failed:", error.message);
-    
+
     // Map common errors to user-friendly messages
     if (error.code === "app-check/invalid-token") {
       return { valid: false, error: "Invalid App Check token" };
@@ -84,7 +78,7 @@ export async function verifyAppCheckToken(token: string): Promise<{ valid: boole
     if (error.code === "app-check/token-expired") {
       return { valid: false, error: "App Check token expired" };
     }
-    
+
     return { valid: false, error: "App Check verification failed" };
   }
 }
@@ -97,11 +91,11 @@ export async function verifyAppCheckFromRequest(
   request: Request
 ): Promise<{ valid: boolean; appId?: string; error?: string }> {
   const token = request.headers.get("X-Firebase-AppCheck");
-  
+
   if (!token) {
     return { valid: false, error: "Missing App Check token" };
   }
-  
+
   return verifyAppCheckToken(token);
 }
 
@@ -115,7 +109,7 @@ export async function verifyAppCheckWithReplayProtection(
   ttlSeconds: number = 60
 ): Promise<{ valid: boolean; appId?: string; error?: string }> {
   const token = request.headers.get("X-Firebase-AppCheck");
-  
+
   if (!token) {
     return { valid: false, error: "Missing App Check token" };
   }
@@ -133,14 +127,14 @@ export async function verifyAppCheckWithReplayProtection(
       const crypto = await import("crypto");
       const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
       const key = `appcheck:${tokenHash}`;
-      
+
       // Check if token was already used
       const exists = await redis.get(key);
       if (exists) {
         console.warn("[App Check] Replay attack detected - token already used");
         return { valid: false, error: "Token replay detected" };
       }
-      
+
       // Mark token as used with TTL
       await redis.set(key, "1", { ex: ttlSeconds });
     } catch (error) {
@@ -148,6 +142,6 @@ export async function verifyAppCheckWithReplayProtection(
       // Continue without replay protection if Redis fails
     }
   }
-  
+
   return verification;
 }
