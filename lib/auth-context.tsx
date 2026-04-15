@@ -113,18 +113,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
+          // Check if we need to sync email from Firebase Auth
+          const needsEmailSync = u.email && !data.email;
+          const needsNameSync = u.displayName && !data.name;
+          
           // Auto-upgrade existing admin email accounts that weren't promoted yet
           const needsRoleUpgrade = u.email === ADMIN_EMAIL && data.role !== "superadmin" && data.role !== "admin";
           const needsFieldFill   = !data.addressLine1 || !data.phone;
 
-          if (needsRoleUpgrade || needsFieldFill) {
+          if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync) {
             const updated: UserProfile = {
               ...data,
+              email: u.email || data.email,
+              name: u.displayName || data.name || "",
               addressLine1: data.addressLine1 || "",
               phone:   data.phone   || "",
               role:    needsRoleUpgrade ? "superadmin" : data.role,
               updated_at: new Date().toISOString(),
             };
+            console.log("[AuthContext] Syncing profile:", updated);
             await setDoc(profileRef, updated, { merge: true });
             setProfile(updated);
             userRole = updated.role;

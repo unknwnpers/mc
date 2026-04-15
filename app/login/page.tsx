@@ -30,22 +30,44 @@ function LoginContent() {
     try {
       const result = await loginWithGoogle();
       
+      // Debug: Log user data from Firebase Auth
+      console.log("[Login] Google Auth user:", {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        provider: "google",
+      });
+      
       // Save user to Firestore via API (for consistency with phone auth)
       try {
         const token = await result.user.getIdToken();
-        await fetch("/api/user/create", {
+        const requestBody = {
+          uid: result.user.uid,
+          email: result.user.email,
+          name: result.user.displayName,
+          provider: "google",
+        };
+        
+        console.log("[Login] Sending to API:", requestBody);
+        
+        const response = await fetch("/api/user/create", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            uid: result.user.uid,
-            email: result.user.email,
-            name: result.user.displayName,
-            provider: "google",
-          }),
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestBody),
         });
+        
+        const responseData = await response.json();
+        console.log("[Login] API response:", responseData);
+        
+        if (!response.ok) {
+          console.error("[Login] API error:", responseData);
+        }
       } catch (syncError) {
         // Non-fatal: profile will be synced by auth-context anyway
-        console.warn("[Login] Profile sync warning:", syncError);
+        console.error("[Login] Profile sync error:", syncError);
       }
       
       toast.success("Welcome to MIKS&CHIKS!");

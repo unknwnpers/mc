@@ -7,6 +7,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { uid, phone, email, name, provider } = body;
 
+    // Debug logging
+    console.log("[API User Create] Received:", { uid, email, name, provider, phone });
+
     if (!uid) {
       return NextResponse.json(
         { error: "User ID is required" },
@@ -77,7 +80,11 @@ export async function POST(req: NextRequest) {
       loginCount: 1,
     };
 
+    console.log("[API User Create] Creating user with data:", userData);
+
     await userRef.set(userData);
+    
+    console.log("[API User Create] User created successfully");
 
     return NextResponse.json({
       success: true,
