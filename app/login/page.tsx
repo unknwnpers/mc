@@ -1,6 +1,6 @@
 "use client";
 
-import { loginWithGoogle } from "@/lib/auth";
+import { loginWithGoogle, logoutUser } from "@/lib/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -24,9 +24,44 @@ function LoginContent() {
     initAppCheck();
   }, []);
 
+  const forceClearAndLogout = async () => {
+    try {
+      // Clear all Firebase auth storage
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.startsWith('firebase:') || key.includes('firebase')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        // Clear sessionStorage
+        sessionStorage.clear();
+        
+        // Clear cookies
+        document.cookie.split(';').forEach(cookie => {
+          const [name] = cookie.split('=');
+          document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+        
+        console.log("[Login] Cleared all auth storage");
+      }
+      
+      // Sign out from Firebase
+      await logoutUser();
+    } catch (e) {
+      console.log("[Login] Logout error (expected if not logged in):", e);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
+    
+    // Step 1: Force clear any cached bad session
+    await forceClearAndLogout();
+    
     try {
       const result = await loginWithGoogle();
       
@@ -46,16 +81,21 @@ function LoginContent() {
       }
       
       // Debug: Log user data from Firebase Auth
-      console.log("[Login] Google Auth user:", {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName,
-        provider: "google",
-      });
+      console.log("[Login] === FULL USER OBJECT ===");
+      console.log("[Login] result.user:", result.user);
+      console.log("[Login] result.user.email:", result.user.email);
+      console.log("[Login] result.user.providerData:", result.user.providerData);
+      
+      // Check provider data for email
+      const googleProvider = result.user.providerData.find(p => p.providerId === 'google.com');
+      console.log("[Login] Google provider data:", googleProvider);
+      console.log("[Login] Provider email:", googleProvider?.email);
+      console.log("[Login] ========================");
       
       // Save user to Firestore via API (for consistency with phone auth)
       try {
-        const token = await result.user.getIdToken();
+        // Force token refresh to ensure it's valid
+        const token = await result.user.getIdToken(true);
         const requestBody = {
           uid: result.user.uid,
           email: result.user.email,
@@ -79,7 +119,12 @@ function LoginContent() {
         
         if (!response.ok) {
           console.error("[Login] API error:", responseData);
-          toast.error("Failed to sync profile. Please try again.");
+          // Check for token-related errors
+          if (response.status === 401) {
+            toast.error("Session expired. Please sign in again.");
+          } else {
+            toast.error("Failed to sync profile. Please try again.");
+          }
           setLoading(false);
           return;
         }
