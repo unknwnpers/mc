@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { getAuth, Auth } from "firebase/auth";
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken } from "firebase/app-check";
 import { getMessaging, Messaging, isSupported as isMessagingSupported } from "firebase/messaging";
@@ -21,6 +21,14 @@ function validateConfig() {
 
   if (missing.length > 0) {
     console.warn("⚠️ Missing Firebase config:", missing.join(", "));
+    console.warn("Current values:", {
+      apiKey: firebaseConfig.apiKey ? "✓ set" : "✗ missing",
+      authDomain: firebaseConfig.authDomain ? "✓ set" : "✗ missing",
+      projectId: firebaseConfig.projectId ? "✓ set" : "✗ missing",
+      storageBucket: firebaseConfig.storageBucket ? "✓ set" : "✗ missing",
+      messagingSenderId: firebaseConfig.messagingSenderId ? "✓ set" : "✗ missing",
+      appId: firebaseConfig.appId ? "✓ set" : "✗ missing",
+    });
     return false;
   }
 
@@ -197,6 +205,22 @@ const firebaseApp = isConfigValid ? getFirebaseApp() : null;
 export const db: Firestore = firebaseApp ? getFirestore(firebaseApp) : (null as any);
 export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
 export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
+
+// Set auth persistence to local (survives page refresh)
+// This must be called before any auth operations
+async function initializeAuthPersistence() {
+  if (typeof window === "undefined" || !auth) return;
+  
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log("[Firebase] Auth persistence set to local");
+  } catch (err) {
+    console.error("[Firebase] Failed to set auth persistence:", err);
+  }
+}
+
+// Initialize persistence immediately
+initializeAuthPersistence();
 
 // Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
 export const getFirebaseAuth = (): Auth => auth;

@@ -90,7 +90,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log("[AuthContext] Setting up auth state listener...");
+    
+    // Check if auth is properly initialized
+    if (!auth) {
+      console.error("[AuthContext] Firebase Auth not initialized!");
+      setLoading(false);
+      return;
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      console.log("[AuthContext] Auth state changed:", u ? `User ${u.uid}` : "No user");
+      
+      // Log auth persistence type for debugging
+      if (typeof window !== "undefined") {
+        try {
+          const db = await window.indexedDB?.open("firebaseLocalStorageDb");
+          console.log("[AuthContext] IndexedDB (auth persistence) available:", !!db);
+        } catch (e) {
+          console.warn("[AuthContext] IndexedDB not available:", e);
+        }
+      }
+      
       setUser(u);
       
       if (u) {
@@ -223,10 +244,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setPasswordStatus(null);
       }
       
+      // Only set loading to false after auth state is determined
+      // This prevents flash of logged-out state on refresh
       setLoading(false);
+      console.log("[AuthContext] Auth state determined, loading complete");
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log("[AuthContext] Cleaning up auth state listener");
+      unsubscribe();
+    };
   }, []);
 
   return (
