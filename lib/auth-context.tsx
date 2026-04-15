@@ -90,28 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log("[AuthContext] Setting up auth state listener...");
-    
-    // Check if auth is properly initialized
-    if (!auth) {
-      console.error("[AuthContext] Firebase Auth not initialized!");
-      setLoading(false);
-      return;
-    }
-    
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      console.log("[AuthContext] Auth state changed:", u ? `User ${u.uid}` : "No user");
-      
-      // Log auth persistence type for debugging
-      if (typeof window !== "undefined") {
-        try {
-          const db = await window.indexedDB?.open("firebaseLocalStorageDb");
-          console.log("[AuthContext] IndexedDB (auth persistence) available:", !!db);
-        } catch (e) {
-          console.warn("[AuthContext] IndexedDB not available:", e);
-        }
-      }
-      
       setUser(u);
       
       if (u) {
@@ -154,7 +133,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               role:    (needsRoleUpgrade && u.email) ? "superadmin" : data.role,
               updated_at: new Date().toISOString(),
             };
-            console.log("[AuthContext] Syncing profile:", updated);
             await setDoc(profileRef, updated, { merge: true });
             setProfile(updated);
             userRole = updated.role;
@@ -171,7 +149,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           // SECURITY: Reject users without email
           if (!u.email) {
-            console.error("[AuthContext] Rejecting user without email:", u.uid);
             toast.error("Authentication failed: No email provided");
             await getFirebaseAuth().signOut();
             setUser(null);
@@ -261,13 +238,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Only set loading to false after auth state is determined
       // This prevents flash of logged-out state on refresh
       setLoading(false);
-      console.log("[AuthContext] Auth state determined, loading complete");
     });
 
-    return () => {
-      console.log("[AuthContext] Cleaning up auth state listener");
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   return (

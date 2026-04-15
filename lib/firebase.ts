@@ -20,15 +20,6 @@ function validateConfig() {
     .map(([key]) => key);
 
   if (missing.length > 0) {
-    console.warn("⚠️ Missing Firebase config:", missing.join(", "));
-    console.warn("Current values:", {
-      apiKey: firebaseConfig.apiKey ? "✓ set" : "✗ missing",
-      authDomain: firebaseConfig.authDomain ? "✓ set" : "✗ missing",
-      projectId: firebaseConfig.projectId ? "✓ set" : "✗ missing",
-      storageBucket: firebaseConfig.storageBucket ? "✓ set" : "✗ missing",
-      messagingSenderId: firebaseConfig.messagingSenderId ? "✓ set" : "✗ missing",
-      appId: firebaseConfig.appId ? "✓ set" : "✗ missing",
-    });
     return false;
   }
 
@@ -47,7 +38,6 @@ export function getFirebaseApp(): FirebaseApp {
 
   if (!app) {
     app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    console.log("[Firebase] App initialized:", app.name);
   }
 
   return app;
@@ -57,17 +47,12 @@ export function getFirebaseApp(): FirebaseApp {
 let appCheckInstance: AppCheck | null = null;
 
 export function initAppCheck() {
-  if (typeof window === "undefined") return; // SSR guard
+  if (typeof window === "undefined") return;
 
   if (appCheckInstance) return appCheckInstance;
 
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-
-  // Skip App Check if no site key is configured
-  if (!siteKey) {
-    console.warn("[Firebase] App Check skipped: NEXT_PUBLIC_RECAPTCHA_SITE_KEY not set");
-    return null;
-  }
+  if (!siteKey) return null;
 
   const app = getFirebaseApp();
 
@@ -76,21 +61,15 @@ export function initAppCheck() {
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
 
-    // Skip App Check on localhost to avoid 403 errors during development
-    if (isLocalhost) {
-      console.log("[Firebase] App Check skipped on localhost");
-      return null;
-    }
+    if (isLocalhost) return null;
 
     appCheckInstance = initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
 
-    console.log("[Firebase] App Check initialized");
     return appCheckInstance;
   } catch (err) {
-    console.warn("[Firebase] App Check failed:", err);
     return null;
   }
 }
@@ -207,20 +186,11 @@ export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
 export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
 
 // Set auth persistence to local (survives page refresh)
-// This must be called before any auth operations
-async function initializeAuthPersistence() {
-  if (typeof window === "undefined" || !auth) return;
-  
-  try {
-    await setPersistence(auth, browserLocalPersistence);
-    console.log("[Firebase] Auth persistence set to local");
-  } catch (err) {
-    console.error("[Firebase] Failed to set auth persistence:", err);
-  }
+if (typeof window !== "undefined" && auth) {
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    // Silent fail - Firebase will use default persistence
+  });
 }
-
-// Initialize persistence immediately
-initializeAuthPersistence();
 
 // Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
 export const getFirebaseAuth = (): Auth => auth;

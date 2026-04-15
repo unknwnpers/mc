@@ -1,6 +1,6 @@
 "use client";
 
-import { loginWithGoogle, logoutUser } from "@/lib/auth";
+import { loginWithGoogle } from "@/lib/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -24,75 +24,26 @@ function LoginContent() {
     initAppCheck();
   }, []);
 
-  const forceClearAndLogout = async () => {
-    try {
-      // Clear all Firebase auth storage
-      if (typeof window !== 'undefined') {
-        // Clear localStorage
-        const keys = Object.keys(localStorage);
-        keys.forEach(key => {
-          if (key.startsWith('firebase:') || key.includes('firebase')) {
-            localStorage.removeItem(key);
-          }
-        });
-        
-        // Clear sessionStorage
-        sessionStorage.clear();
-        
-        // Clear cookies
-        document.cookie.split(';').forEach(cookie => {
-          const [name] = cookie.split('=');
-          document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-        });
-        
-        console.log("[Login] Cleared all auth storage");
-      }
-      
-      // Sign out from Firebase
-      await logoutUser();
-    } catch (e) {
-      console.log("[Login] Logout error (expected if not logged in):", e);
-    }
-  };
-
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
     
-    // Step 1: Force clear any cached bad session
-    await forceClearAndLogout();
-    
     try {
       const result = await loginWithGoogle();
       
-      // Debug: Log FULL user data FIRST (before any validation)
-      console.log("[Login] === FULL USER OBJECT ===");
-      console.log("[Login] USER OBJECT:", result.user);
-      console.log("[Login] PROVIDER DATA:", result.user.providerData);
-      console.log("[Login] EMAIL DIRECT:", result.user.email);
-      
-      // Check provider data for email
-      const googleProvider = result.user.providerData.find(p => p.providerId === 'google.com');
-      console.log("[Login] EMAIL FROM PROVIDER:", googleProvider?.email);
-      console.log("[Login] ========================");
-      
       // Extract email from either location (Firebase sometimes puts it in providerData only)
+      const googleProvider = result.user.providerData.find(p => p.providerId === 'google.com');
       const userEmail = result.user.email || googleProvider?.email || null;
       const userDisplayName = result.user.displayName || googleProvider?.displayName || null;
       
-      console.log("[Login] Extracted email:", userEmail);
-      console.log("[Login] Extracted displayName:", userDisplayName);
-      
       // Validate Google auth response - email is required
       if (!userEmail) {
-        console.error("[Login] Google auth returned no email (checked both user.email and providerData)");
         toast.error("Unable to retrieve email from Google. Please ensure your Google account has a verified email.");
         setLoading(false);
         return;
       }
       
       if (!userDisplayName || userDisplayName.trim().length < 2) {
-        console.error("[Login] Google auth returned invalid name:", userDisplayName);
         toast.error("Unable to retrieve valid name from Google. Please check your Google profile.");
         setLoading(false);
         return;
