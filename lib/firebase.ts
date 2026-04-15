@@ -55,6 +55,7 @@ export function initAppCheck() {
 
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
+  // Skip App Check if no site key is configured
   if (!siteKey) {
     console.warn("[Firebase] App Check skipped: NEXT_PUBLIC_RECAPTCHA_SITE_KEY not set");
     return null;
@@ -67,9 +68,10 @@ export function initAppCheck() {
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
 
+    // Skip App Check on localhost to avoid 403 errors during development
     if (isLocalhost) {
-      (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-      console.log("[Firebase] App Check DEBUG MODE enabled");
+      console.log("[Firebase] App Check skipped on localhost");
+      return null;
     }
 
     appCheckInstance = initializeAppCheck(app, {

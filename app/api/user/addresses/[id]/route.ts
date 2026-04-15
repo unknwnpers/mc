@@ -65,6 +65,17 @@ export async function PATCH(
 
     await addressRef.update(updateData);
 
+    // If setting as default, update user document
+    if (isDefault) {
+      await adminDb
+        .collection("users")
+        .doc(auth.uid)
+        .update({
+          defaultAddressId: id,
+          updatedAt: new Date(),
+        });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Failed to update address:", error);
@@ -118,7 +129,26 @@ export async function DELETE(
         .get();
 
       if (!snapshot.empty) {
+        const newDefaultId = snapshot.docs[0].id;
         await snapshot.docs[0].ref.update({ isDefault: true });
+        
+        // Update user document with new default
+        await adminDb
+          .collection("users")
+          .doc(auth.uid)
+          .update({
+            defaultAddressId: newDefaultId,
+            updatedAt: new Date(),
+          });
+      } else {
+        // No addresses left, clear default
+        await adminDb
+          .collection("users")
+          .doc(auth.uid)
+          .update({
+            defaultAddressId: null,
+            updatedAt: new Date(),
+          });
       }
     }
 

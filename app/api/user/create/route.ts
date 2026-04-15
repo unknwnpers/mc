@@ -19,11 +19,39 @@ export async function POST(req: NextRequest) {
     const userSnap = await userRef.get();
 
     if (userSnap.exists) {
-      // Update last login
-      await userRef.update({
+      const existingData = userSnap.data() || {};
+      
+      // Build update data - sync missing fields from auth provider
+      const updateData: Record<string, any> = {
         lastLogin: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
-      });
+        loginCount: FieldValue.increment(1),
+      };
+      
+      // Sync email if missing or changed
+      if (email && !existingData?.email) {
+        updateData.email = email;
+      }
+      
+      // Sync phone if missing
+      if (phone && !existingData?.phone) {
+        updateData.phone = phone;
+      }
+      
+      // Sync name if missing
+      if (name && !existingData?.name) {
+        updateData.name = name;
+      }
+      
+      // Ensure new fields exist for older users
+      if (existingData?.isActive === undefined) {
+        updateData.isActive = true;
+      }
+      if (existingData?.defaultAddressId === undefined) {
+        updateData.defaultAddressId = null;
+      }
+
+      await userRef.update(updateData);
 
       return NextResponse.json({
         success: true,
@@ -32,19 +60,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create new user
+    // Create new user with complete profile
     const userData: Record<string, any> = {
       uid,
+      email: email || null,
+      phone: phone || null,
+      name: name || "",
+      authProvider: provider || "unknown",
+      role: "user",
+      isActive: true,
+      emailVerified: false,
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      role: "user",
+      defaultAddressId: null,
+      loginCount: 1,
     };
-
-    if (phone) userData.phone = phone;
-    if (email) userData.email = email;
-    if (name) userData.name = name;
-    if (provider) userData.authProvider = provider;
 
     await userRef.set(userData);
 

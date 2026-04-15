@@ -115,6 +115,17 @@ export async function POST(request: NextRequest) {
       .collection("addresses")
       .add(addressData);
 
+    // If this is the default address, update user document
+    if (shouldSetDefault) {
+      await adminDb
+        .collection("users")
+        .doc(auth.uid)
+        .update({
+          defaultAddressId: docRef.id,
+          updatedAt: new Date(),
+        });
+    }
+
     return NextResponse.json({
       success: true,
       address: {
