@@ -30,6 +30,21 @@ function LoginContent() {
     try {
       const result = await loginWithGoogle();
       
+      // Validate Google auth response - email is required
+      if (!result.user.email) {
+        console.error("[Login] Google auth returned no email");
+        toast.error("Unable to retrieve email from Google. Please ensure your Google account has a verified email.");
+        setLoading(false);
+        return;
+      }
+      
+      if (!result.user.displayName || result.user.displayName.trim().length < 2) {
+        console.error("[Login] Google auth returned invalid name:", result.user.displayName);
+        toast.error("Unable to retrieve valid name from Google. Please check your Google profile.");
+        setLoading(false);
+        return;
+      }
+      
       // Debug: Log user data from Firebase Auth
       console.log("[Login] Google Auth user:", {
         uid: result.user.uid,
@@ -64,10 +79,15 @@ function LoginContent() {
         
         if (!response.ok) {
           console.error("[Login] API error:", responseData);
+          toast.error("Failed to sync profile. Please try again.");
+          setLoading(false);
+          return;
         }
       } catch (syncError) {
-        // Non-fatal: profile will be synced by auth-context anyway
         console.error("[Login] Profile sync error:", syncError);
+        toast.error("Profile sync failed. Please try again.");
+        setLoading(false);
+        return;
       }
       
       toast.success("Welcome to MIKS&CHIKS!");

@@ -26,6 +26,20 @@ const nextConfig = {
   },
   // Turbopack configuration
   turbopack: {},
+  // Security headers - fix COOP for OAuth popup
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 // Sentry wrapper config

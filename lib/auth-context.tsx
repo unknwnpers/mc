@@ -138,8 +138,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const needsEmailSync = u.email && !data.email;
           const needsNameSync = u.displayName && !data.name;
           
-          // Auto-upgrade existing admin email accounts that weren't promoted yet
-          const needsRoleUpgrade = u.email === ADMIN_EMAIL && data.role !== "superadmin" && data.role !== "admin";
+          // SECURITY: Only auto-promote to superadmin if email matches AND user has valid email
+          const isValidAdminEmail = u.email && u.email === ADMIN_EMAIL;
+          const needsRoleUpgrade = isValidAdminEmail && data.role !== "superadmin" && data.role !== "admin";
           const needsFieldFill   = !data.addressLine1 || !data.phone;
 
           if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync) {
@@ -149,7 +150,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               name: u.displayName || data.name || "",
               addressLine1: data.addressLine1 || "",
               phone:   data.phone   || "",
-              role:    needsRoleUpgrade ? "superadmin" : data.role,
+              // SECURITY: Never upgrade role if email is missing or doesn't match
+              role:    (needsRoleUpgrade && u.email) ? "superadmin" : data.role,
               updated_at: new Date().toISOString(),
             };
             console.log("[AuthContext] Syncing profile:", updated);
@@ -161,13 +163,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             userRole = data.role;
           }
         } else {
-          // Auto-promote known admin email to superadmin
+          // SECURITY: Only auto-promote known admin email to superadmin if email is valid
           const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
-          const role = u.email === ADMIN_EMAIL ? "superadmin" : "customer";
+          const isValidAdminEmail = u.email && u.email === ADMIN_EMAIL;
+          // SECURITY: Default to customer unless email explicitly matches admin email
+          const role = isValidAdminEmail ? "superadmin" : "customer";
+
+          // SECURITY: Reject users without email
+          if (!u.email) {
+            console.error("[AuthContext] Rejecting user without email:", u.uid);
+            toast.error("Authentication failed: No email provided");
+            await getFirebaseAuth().signOut();
+            setUser(null);
+            setLoading(false);
+            return;
+          }
 
           const newProfile: UserProfile = {
             uid: u.uid,
-            name: u.displayName,
+            name: u.displayName || "",
             email: u.email,
             role,
             addressLine1: "",
