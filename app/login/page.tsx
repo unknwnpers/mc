@@ -65,32 +65,38 @@ function LoginContent() {
     try {
       const result = await loginWithGoogle();
       
+      // Debug: Log FULL user data FIRST (before any validation)
+      console.log("[Login] === FULL USER OBJECT ===");
+      console.log("[Login] USER OBJECT:", result.user);
+      console.log("[Login] PROVIDER DATA:", result.user.providerData);
+      console.log("[Login] EMAIL DIRECT:", result.user.email);
+      
+      // Check provider data for email
+      const googleProvider = result.user.providerData.find(p => p.providerId === 'google.com');
+      console.log("[Login] EMAIL FROM PROVIDER:", googleProvider?.email);
+      console.log("[Login] ========================");
+      
+      // Extract email from either location (Firebase sometimes puts it in providerData only)
+      const userEmail = result.user.email || googleProvider?.email || null;
+      const userDisplayName = result.user.displayName || googleProvider?.displayName || null;
+      
+      console.log("[Login] Extracted email:", userEmail);
+      console.log("[Login] Extracted displayName:", userDisplayName);
+      
       // Validate Google auth response - email is required
-      if (!result.user.email) {
-        console.error("[Login] Google auth returned no email");
+      if (!userEmail) {
+        console.error("[Login] Google auth returned no email (checked both user.email and providerData)");
         toast.error("Unable to retrieve email from Google. Please ensure your Google account has a verified email.");
         setLoading(false);
         return;
       }
       
-      if (!result.user.displayName || result.user.displayName.trim().length < 2) {
-        console.error("[Login] Google auth returned invalid name:", result.user.displayName);
+      if (!userDisplayName || userDisplayName.trim().length < 2) {
+        console.error("[Login] Google auth returned invalid name:", userDisplayName);
         toast.error("Unable to retrieve valid name from Google. Please check your Google profile.");
         setLoading(false);
         return;
       }
-      
-      // Debug: Log user data from Firebase Auth
-      console.log("[Login] === FULL USER OBJECT ===");
-      console.log("[Login] result.user:", result.user);
-      console.log("[Login] result.user.email:", result.user.email);
-      console.log("[Login] result.user.providerData:", result.user.providerData);
-      
-      // Check provider data for email
-      const googleProvider = result.user.providerData.find(p => p.providerId === 'google.com');
-      console.log("[Login] Google provider data:", googleProvider);
-      console.log("[Login] Provider email:", googleProvider?.email);
-      console.log("[Login] ========================");
       
       // Save user to Firestore via API (for consistency with phone auth)
       try {
@@ -98,8 +104,8 @@ function LoginContent() {
         const token = await result.user.getIdToken(true);
         const requestBody = {
           uid: result.user.uid,
-          email: result.user.email,
-          name: result.user.displayName,
+          email: userEmail,
+          name: userDisplayName,
           provider: "google",
         };
         
