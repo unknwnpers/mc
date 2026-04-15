@@ -26,11 +26,11 @@ const nextConfig = {
   },
   // Turbopack configuration
   turbopack: {},
-  // Security headers - fix COOP for OAuth popup
+  // Security headers - fix COOP/COEP for OAuth popup on login page only
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: '/login',
         headers: [
           {
             key: 'Cross-Origin-Opener-Policy',
@@ -38,7 +38,7 @@ const nextConfig = {
           },
           {
             key: 'Cross-Origin-Embedder-Policy',
-            value: 'credentialless',
+            value: 'unsafe-none',
           },
         ],
       },
