@@ -7,6 +7,15 @@ import { getFirebaseAuth } from "./firebase";
 
 const provider = new GoogleAuthProvider();
 
+// Add scopes to request email and profile information
+provider.addScope('email');
+provider.addScope('profile');
+
+// Set custom parameters to ensure we get all user data
+provider.setCustomParameters({
+  prompt: 'select_account',
+});
+
 // Use getFirebaseAuth() — the REAL Auth instance — not the `auth` Proxy export.
 // Proxy-wrapped auth breaks signInWithPopup (auth/internal-error) due to
 // Firebase's internal class-instance checks on the auth parameter.
