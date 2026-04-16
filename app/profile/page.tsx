@@ -308,7 +308,7 @@ function ProfileContent() {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
                     <input 
                       type="email" 
-                      value={user.email || ""}
+                      value={profile?.email || user?.email || ""}
                       disabled
                       className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
                     />

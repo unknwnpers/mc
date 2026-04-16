@@ -28,11 +28,11 @@ const nextConfig = {
   transpilePackages: ['@upstash/redis'],
   // Turbopack configuration
   turbopack: {},
-  // Security headers - fix COOP/COEP for OAuth popup on login page only
+  // Security headers - fix COOP/COEP for OAuth popup on all pages
   async headers() {
     return [
       {
-        source: '/login',
+        source: '/:path*',
         headers: [
           {
             key: 'Cross-Origin-Opener-Policy',

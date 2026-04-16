@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       phone: phone || null,
       name: name || "",
       authProvider: provider || "unknown",
-      role: "user",
+      role: "customer",
       isActive: true,
       emailVerified: false,
       createdAt: FieldValue.serverTimestamp(),
