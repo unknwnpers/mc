@@ -1,4 +1,5 @@
 import { Heart, MapPin, Star, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -50,10 +51,14 @@ export default function AboutPage() {
             <div className="relative group">
               <div className="absolute -inset-4 bg-cream rounded-[48px] -rotate-3 transition-transform group-hover:rotate-0 duration-700" />
               <div className="relative overflow-hidden rounded-[40px] shadow-2xl shadow-blush/10 border border-[#F3E8E5]">
-                <img
+                <Image
                   src="/pregnant-lady.jpg"
                   alt="Our Story"
+                  width={600}
+                  height={500}
                   className="w-full h-[500px] object-cover object-top transform hover:scale-105 transition-transform duration-1000"
+                  priority={false}
+                  loading="lazy"
                 />
               </div>
             </div>

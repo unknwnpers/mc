@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 // ISR: Revalidate every 60 seconds
 export const revalidate = 60;
 
-// Preload critical images
+// Preload critical images used above the fold
 export const preloadImages = [
   '/logo.png',
   '/hero-banner.jpg',
