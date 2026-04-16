@@ -28,15 +28,10 @@ function validateConfig() {
 
 const isConfigValid = validateConfig();
 
-// SSR-safe Firebase initialization
+
 let app: FirebaseApp | null = null;
 
 export function getFirebaseApp(): FirebaseApp {
-  // Prevent SSR initialization
-  if (typeof window === "undefined") {
-    throw new Error("Firebase can only be initialized on the client side");
-  }
-  
   if (!isConfigValid) {
     throw new Error("Firebase config is invalid. Check env variables.");
   }
@@ -229,102 +224,21 @@ export { getDB, getAuthInstance, getStorageInstance };
 //   - new RecaptchaVerifier(auth, ...) → runtime failure
 // ──────────────────────────────────────────────────────────────────────────
 
-// Only initialize Firebase on the client side
-// During SSR/static generation, these will be null
-let firebaseApp: FirebaseApp | null = null;
-let dbInstance: Firestore | null = null;
-let authInstance: Auth | null = null;
-let storageInstance: FirebaseStorage | null = null;
-let persistenceSet = false;
+// Eagerly initialize Firebase app FIRST, then services
+// This ensures proper initialization order and avoids auth/internal-error
+const firebaseApp = isConfigValid ? getFirebaseApp() : null;
 
-// Initialize Firebase services lazily on first access
-// Returns null during SSR to prevent "Service firestore is not available" errors
-function ensureFirebaseApp(): FirebaseApp | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  if (!firebaseApp) {
-    firebaseApp = getFirebaseApp();
-  }
-  return firebaseApp;
-}
+export const db: Firestore = firebaseApp ? getFirestore(firebaseApp) : (null as any);
+export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
+export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
 
-function ensureDb(): Firestore | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  if (!dbInstance) {
-    const app = ensureFirebaseApp();
-    if (!app) return null;
-    dbInstance = getFirestore(app);
-  }
-  return dbInstance;
-}
-
-function ensureAuth(): Auth | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  if (!authInstance) {
-    const app = ensureFirebaseApp();
-    if (!app) return null;
-    authInstance = getAuth(app);
-    if (!persistenceSet) {
-      persistenceSet = true;
-      setPersistence(authInstance, browserLocalPersistence).catch(() => {
-        // Silent fail
-      });
-    }
-  }
-  return authInstance;
-}
-
-function ensureStorage(): FirebaseStorage | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  if (!storageInstance) {
-    const app = ensureFirebaseApp();
-    if (!app) return null;
-    storageInstance = getStorage(app);
-  }
-  return storageInstance;
-}
-
-// Export getter functions for safe access
-export const getDb = ensureDb;
-export const getAuthClient = ensureAuth;
-export const getStorageClient = ensureStorage;
-
-// Backward-compatible direct exports - these use Proxies to lazy-init
-// During SSR, they return empty objects that will be populated on client
-// This allows existing code like `import { db } from '@/lib/firebase'` to work
-const createServiceProxy = <T extends object>(
-  getter: () => T | null,
-  name: string
-): T => {
-  return new Proxy({} as T, {
-    get(_, prop) {
-      if (typeof window === "undefined") {
-        // Return noop functions during SSR for common Firebase methods
-        if (prop === 'collection' || prop === 'doc') return () => ({}) as any;
-        if (prop === 'onAuthStateChanged') return () => () => {};
-        if (prop === 'currentUser') return null;
-        return undefined;
-      }
-      const instance = getter();
-      if (!instance) {
-        throw new Error(`${name} is not available`);
-      }
-      return (instance as any)[prop];
-    }
+// Set auth persistence to local (survives page refresh)
+if (typeof window !== "undefined" && auth) {
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    // Silent fail - Firebase will use default persistence
   });
-};
-
-export const db: Firestore = createServiceProxy(ensureDb, 'Firestore');
-export const auth: Auth = createServiceProxy(ensureAuth, 'Auth');
-export const storage: FirebaseStorage = createServiceProxy(ensureStorage, 'Storage');
+}
 
 // Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
-export const getFirebaseAuth = ensureAuth;
-export const getDbInstance = ensureDb;
+export const getFirebaseAuth = (): Auth => auth;
+export const getDbInstance = (): Firestore => db;
