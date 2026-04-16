@@ -61,7 +61,11 @@ export function initAppCheck() {
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
 
-    if (isLocalhost) return null;
+    // Enable debug token for local development
+    if (isLocalhost) {
+      // @ts-ignore
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
 
     appCheckInstance = initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider(siteKey),
@@ -70,13 +74,17 @@ export function initAppCheck() {
 
     return appCheckInstance;
   } catch (err) {
+    console.error("[AppCheck] Init failed:", err);
     return null;
   }
 }
 
+// Track first token fetch per session
+let firstTokenFetch = true;
+
 /**
  * Get App Check token for API requests
- * Call this before making sensitive API calls
+ * First call forces refresh, subsequent calls use cache
  */
 export async function getAppCheckToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
@@ -88,12 +96,35 @@ export async function getAppCheckToken(): Promise<string | null> {
   }
 
   try {
-    const tokenResult = await getToken(appCheck, false); // false = use cached token if available
+    // 🔥 First call after refresh → FORCE refresh
+    // Subsequent calls → allow cached
+    const forceRefresh = firstTokenFetch;
+    firstTokenFetch = false;
+    
+    const tokenResult = await getToken(appCheck, forceRefresh);
     return tokenResult.token;
   } catch (err) {
-    console.error("[Firebase] Failed to get App Check token:", err);
-    return null;
+    console.warn("[Firebase] Token fetch failed, retrying with force...", err);
+    
+    // Retry once with force refresh
+    try {
+      const retryResult = await getToken(appCheck, true);
+      firstTokenFetch = false;
+      return retryResult.token;
+    } catch (retryErr) {
+      console.error("[Firebase] Token fetch failed completely:", retryErr);
+      return null;
+    }
   }
+}
+
+/**
+ * Ensure App Check is ready before making API calls
+ * Use this before critical API calls on app load
+ */
+export async function ensureAppCheckReady(): Promise<boolean> {
+  const token = await getAppCheckToken();
+  return !!token;
 }
 
 /**
@@ -122,6 +153,22 @@ export async function withAppCheckHeaders(headers: HeadersInit = {}): Promise<He
   }
 
   return result;
+}
+
+/**
+ * API fetch helper with automatic App Check token
+ * Use this instead of raw fetch for all API calls
+ */
+export async function apiFetch(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const headers = await withAppCheckHeaders(options.headers);
+  
+  return fetch(url, {
+    ...options,
+    headers,
+  });
 }
 
 

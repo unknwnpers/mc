@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Suspense } from 'react';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WebVitalsReporter from '@/components/WebVitalsReporter';
+import RootInit from '@/components/RootInit';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -60,6 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
+        <RootInit />
         <Suspense fallback={null}>
           <GoogleAnalytics />
           <WebVitalsReporter />
