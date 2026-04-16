@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import { verifyAdmin } from '@/lib/rbac';
 import { FieldValue } from 'firebase-admin/firestore';
+import { Redis } from '@upstash/redis';
+
+// Initialize Redis for cache invalidation
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
+const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +17,7 @@ interface ImageMetadata {
   originalName: string;
   category: 'system' | 'marketing' | 'category' | 'product';
   subcategory: string;
+  categoryKey: string;
   contentType: string;
   size: number;
   variants: {
@@ -110,14 +117,17 @@ export async function POST(request: NextRequest) {
     width = 0;
     height = 0;
 
-    // Create metadata document
+    // Create metadata document with composite key
     const metadataRef = adminDb.collection('image_metadata').doc();
+    const categoryKey = `${category}_${subcategory}`;
+    
     const metadata: ImageMetadata = {
       id: metadataRef.id,
       fileName,
       originalName: file.name,
       category: category as any,
       subcategory,
+      categoryKey,
       contentType: file.type,
       size: file.size,
       variants: {
@@ -134,6 +144,20 @@ export async function POST(request: NextRequest) {
     };
 
     await metadataRef.set(metadata);
+
+    // Invalidate image list caches
+    if (redis) {
+      try {
+        // Delete all image list cache keys
+        const keys = await redis.keys('images:list:*');
+        if (keys.length > 0) {
+          await redis.del(...keys);
+          console.log(`[Image Upload] Invalidated ${keys.length} cache keys`);
+        }
+      } catch (cacheErr) {
+        console.warn('[Image Upload] Cache invalidation error:', cacheErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -11,13 +11,18 @@ service firebase.storage {
       return isAuthenticated() && request.auth.token.get('role', '') in ['admin', 'superadmin'];
     }
 
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
     /**
      * SYSTEM IMAGES (logos, placeholders)
      * Public read, admin write
      */
     match /system/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isValidImage();
     }
 
     /**
@@ -26,7 +31,7 @@ service firebase.storage {
      */
     match /marketing/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isValidImage();
     }
 
     /**
@@ -35,7 +40,7 @@ service firebase.storage {
      */
     match /category/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isValidImage();
     }
 
     /**
@@ -44,7 +49,7 @@ service firebase.storage {
      */
     match /product/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isValidImage();
     }
 
     /**
@@ -53,7 +58,7 @@ service firebase.storage {
      */
     match /users/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow write: if (isAdmin() || (isAuthenticated() && request.auth.uid == userId)) && isValidImage();
     }
 
     /**
@@ -62,7 +67,7 @@ service firebase.storage {
      */
     match /temp/{allPaths=**} {
       allow read: if isAdmin();
-      allow write: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidImage();
       allow delete: if isAdmin();
     }
 
