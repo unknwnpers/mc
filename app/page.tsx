@@ -109,10 +109,13 @@ async function getHeroImage(): Promise<{ url: string; id: string } | null> {
 }
 
 export default async function Home() {
-  const featuredProducts = await getFeaturedProducts();
-  const categories = await getCategories();
-  const curatedCollections = await getCuratedCollections();
-  const heroImage = await getHeroImage();
+  // Parallelize all data fetching for faster load
+  const [featuredProducts, categories, curatedCollections, heroImage] = await Promise.all([
+    getFeaturedProducts(),
+    getCategories(),
+    getCuratedCollections(),
+    getHeroImage(),
+  ]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-rose-50/20 to-amber-50/20">

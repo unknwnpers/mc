@@ -17,10 +17,24 @@ const nextConfig = {
         hostname: '**.googleusercontent.com',
       },
     ],
+    // Optimized device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    // Optimized image sizes
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Optimize package imports for tree shaking
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      'sonner',
+      'date-fns',
+    ],
   },
   // Transpile packages that may have ESM/CJS issues
   transpilePackages: ['@upstash/redis'],
@@ -39,6 +53,21 @@ const nextConfig = {
           {
             key: 'Cross-Origin-Embedder-Policy',
             value: 'unsafe-none',
+          },
+          // Cache static assets aggressively
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Cache API responses
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=60, stale-while-revalidate=300',
           },
         ],
       },

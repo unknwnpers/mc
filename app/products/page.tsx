@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -126,11 +126,11 @@ function ProductsContent() {
   };
 
   // Use constants for categories to ensure slug consistency with products
-  const categories = Object.entries(PRODUCT_CATEGORIES).map(([slug, name]) => ({
+  const categories = useMemo(() => Object.entries(PRODUCT_CATEGORIES).map(([slug, name]) => ({
     id: slug,
     slug,
     name
-  }));
+  })), []);
 
   // Debounce Search
   useEffect(() => {
@@ -214,7 +214,7 @@ function ProductsContent() {
     }
   };
 
-  const handleCategoryChange = (slug: string | null) => {
+  const handleCategoryChange = useCallback((slug: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     // Reset to page 1 when changing category
     params.delete('page');
@@ -224,10 +224,10 @@ function ProductsContent() {
       params.delete('category');
     }
     router.push(`/products?${params.toString()}`);
-  };
+  }, [searchParams, router]);
 
   // Handle page change
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     if (page === 1) {
       params.delete('page');
@@ -237,10 +237,10 @@ function ProductsContent() {
     router.push(`/products?${params.toString()}`);
     // Scroll to top of products
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [searchParams, router]);
 
   // Helper to remove a filter
-  const removeFilter = (key: string) => {
+  const removeFilter = useCallback((key: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (key === 'priceRange') {
       params.delete('minPrice');
@@ -254,17 +254,17 @@ function ProductsContent() {
       params.delete(key);
     }
     router.push(`/products?${params.toString()}`);
-  };
+  }, [searchParams, router]);
 
   // Helper to clear all filters
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setSearchTerm("");
     setSearch("");
     router.push('/products');
-  };
+  }, [router]);
 
   // Build active filters list
-  const getActiveFilters = () => {
+  const activeFilters = useMemo(() => {
     const filters: { key: string; label: string; value: string }[] = [];
     
     if (selectedCategory) {
@@ -293,13 +293,12 @@ function ProductsContent() {
     }
     
     return filters;
-  };
+  }, [selectedCategory, search, collectionId, featuredFilter, newFilter, urlMinPrice, urlMaxPrice, urlSizes, categories]);
 
-  const activeFilters = getActiveFilters();
   const hasActiveFilters = activeFilters.length > 0 || search;
 
   // Build breadcrumbs
-  const getBreadcrumbs = () => {
+  const breadcrumbs = useMemo(() => {
     const crumbs: { label: string; href?: string; isActive?: boolean }[] = [
       { label: 'Home', href: '/' },
       { label: 'Shop', href: '/products' },
@@ -317,9 +316,7 @@ function ProductsContent() {
     }
 
     return crumbs;
-  };
-
-  const breadcrumbs = getBreadcrumbs();
+  }, [selectedCategory, search, collectionId, categories]);
 
   return (
     <div className="min-h-screen bg-white">

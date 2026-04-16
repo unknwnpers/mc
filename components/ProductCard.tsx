@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/cart-context';
@@ -33,7 +33,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const router = useRouter();
@@ -169,4 +169,6 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
     </div>
   );
-}
+});
+
+export default ProductCard;

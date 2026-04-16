@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Menu, X, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/lib/auth-context';
@@ -9,20 +9,45 @@ import { logoutUser } from '@/lib/auth';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
+// Cache key for logo URL
+const LOGO_CACHE_KEY = 'miks-chiks-logo-url';
+const LOGO_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const { cart } = useCart();
   const { user, profile } = useAuth();
 
-  // Fetch logo from Firebase Storage
+  // Fetch logo with caching
   useEffect(() => {
     async function fetchLogo() {
+      // Check session cache first
+      try {
+        const cached = sessionStorage.getItem(LOGO_CACHE_KEY);
+        if (cached) {
+          const { url, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < LOGO_CACHE_TTL) {
+            setLogoUrl(url);
+            return;
+          }
+        }
+      } catch {
+        // Ignore cache errors
+      }
+
       try {
         const response = await fetch('/api/images?category=system&subcategory=logo&limit=1');
         const data = await response.json();
         if (data.success && data.images.length > 0) {
-          setLogoUrl(data.images[0].url);
+          const url = data.images[0].url;
+          setLogoUrl(url);
+          // Cache in session storage
+          try {
+            sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify({ url, timestamp: Date.now() }));
+          } catch {
+            // Ignore storage errors
+          }
         }
       } catch (error) {
         console.error('Error fetching logo:', error);
@@ -32,7 +57,7 @@ export default function Navbar() {
     fetchLogo();
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logoutUser();
       toast.success("Logged out successfully");
@@ -40,12 +65,14 @@ export default function Navbar() {
       toast.error("Logout failed");
       console.error("Logout failed", err);
     }
-  };
+  }, []);
 
-  const navLinks = [
+  const navLinks = useMemo(() => [
     { name: 'Home', href: '/' },
     { name: 'Shop', href: '/products' },
-  ];
+  ], []);
+
+  const isAdmin = profile?.role === "admin" || profile?.role === "superadmin";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#F3E8E5] shadow-sm">
@@ -83,7 +110,7 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {(profile?.role === "admin" || profile?.role === "superadmin") && (
+          {isAdmin && (
             <Link
               href="/admin/orders"
               className="text-gold hover:text-gold-light transition-colors duration-300 font-black text-xs uppercase tracking-widest bg-cream px-4 py-2.5 rounded-xl border border-gold/10"
@@ -167,7 +194,7 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {(profile?.role === "admin" || profile?.role === "superadmin") && (
+            {isAdmin && (
               <Link
                 href="/admin/orders"
                 onClick={() => setIsOpen(false)}

@@ -3,11 +3,10 @@ import { adminDb } from '@/lib/firebase-admin';
 import { Redis } from '@upstash/redis';
 import type { Product } from '@/lib/types';
 
-// Initialize Redis for caching
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+// Initialize Redis for caching (only if credentials available)
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
+const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
 
 const CACHE_TTL = 300; // 5 minutes cache for product listings
 
@@ -31,21 +30,23 @@ export async function GET(request: NextRequest) {
     const cacheKey = `products:list:${category || 'all'}:${search || 'none'}:${sort}:${page}:${limit}:${featured}:${isNew}:${minPrice}:${maxPrice}:${sizes.join(',')}`;
     
     // Try to get from cache
-    try {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return NextResponse.json({
-          success: true,
-          products: cached,
-          cached: true,
-        }, {
-          headers: {
-            'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-          }
-        });
+    if (redis) {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return NextResponse.json({
+            success: true,
+            products: cached,
+            cached: true,
+          }, {
+            headers: {
+              'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+            }
+          });
+        }
+      } catch (cacheErr) {
+        console.warn('[Products API] Cache error:', cacheErr);
       }
-    } catch (cacheErr) {
-      console.warn('[Products API] Cache error:', cacheErr);
     }
     
     // Build Firestore query
@@ -156,10 +157,12 @@ export async function GET(request: NextRequest) {
     };
     
     // Cache the result
-    try {
-      await redis.setex(cacheKey, CACHE_TTL, result);
-    } catch (cacheErr) {
-      console.warn('[Products API] Cache set error:', cacheErr);
+    if (redis) {
+      try {
+        await redis.setex(cacheKey, CACHE_TTL, result);
+      } catch (cacheErr) {
+        console.warn('[Products API] Cache set error:', cacheErr);
+      }
     }
     
     return NextResponse.json({
