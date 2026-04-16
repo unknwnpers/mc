@@ -13,7 +13,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>('/logo.png');
   const { cart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   // Fetch logo from Firebase Storage
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {user?.email === "admin@miksandchiks.com" && (
+          {(profile?.role === "admin" || profile?.role === "superadmin") && (
             <Link
               href="/admin/orders"
               className="text-gold hover:text-gold-light transition-colors duration-300 font-black text-xs uppercase tracking-widest bg-cream px-4 py-2.5 rounded-xl border border-gold/10"
@@ -167,7 +167,7 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {user?.email === "admin@miksandchiks.com" && (
+            {(profile?.role === "admin" || profile?.role === "superadmin") && (
               <Link
                 href="/admin/orders"
                 onClick={() => setIsOpen(false)}

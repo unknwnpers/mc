@@ -78,6 +78,15 @@ export default function ImageManagerPage() {
     }
   }, [isAdmin, fetchImages]);
 
+  // Wait for auth to resolve before checking access
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <Loader2 className="w-8 h-8 animate-spin text-white/60" />
+      </div>
+    );
+  }
+
   // Redirect if not admin
   if (!user || !isAdmin) {
     return (
