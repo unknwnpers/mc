@@ -24,6 +24,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  // Transpile packages that may have ESM/CJS issues
+  transpilePackages: ['@upstash/redis'],
   // Turbopack configuration
   turbopack: {},
   // Security headers - fix COOP/COEP for OAuth popup on login page only
