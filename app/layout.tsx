@@ -8,6 +8,7 @@ import { Suspense } from 'react';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WebVitalsReporter from '@/components/WebVitalsReporter';
 import RootInit from '@/components/RootInit';
+import ServiceWorker from '@/components/ServiceWorker';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -62,6 +63,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
         <RootInit />
+        <ServiceWorker />
         <Suspense fallback={null}>
           <GoogleAnalytics />
           <WebVitalsReporter />

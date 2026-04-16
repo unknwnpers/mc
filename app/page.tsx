@@ -15,6 +15,12 @@ export const dynamic = 'force-dynamic';
 // ISR: Revalidate every 60 seconds
 export const revalidate = 60;
 
+// Preload critical images
+export const preloadImages = [
+  '/logo.png',
+  '/hero-banner.jpg',
+];
+
 async function getFeaturedProducts(): Promise<Product[]> {
   try {
     const snapshot = await adminDb

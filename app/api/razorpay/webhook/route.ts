@@ -5,6 +5,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { releaseReservation } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
+import { sendOrderNotification } from "@/lib/email-service";
 
 export async function POST(req: Request) {
   try {
@@ -94,6 +95,26 @@ export async function POST(req: Request) {
         orderId,
         details: { paymentId: paymentId || "unknown" },
       });
+
+      // Send order confirmation email
+      const orderSnap = await orderRef.get();
+      const orderData = orderSnap.data();
+      if (orderData?.recipient?.email) {
+        try {
+          await sendOrderNotification({
+            orderId: orderId,
+            userEmail: orderData.recipient.email,
+            userName: orderData.recipient.name || "Customer",
+            items: orderData.items || [],
+            total: orderData.total || 0,
+            status: 'confirmed',
+            shippingAddress: orderData.recipient.address || orderData.shipping,
+          });
+        } catch (emailErr) {
+          console.error("[Webhook] Failed to send confirmation email:", emailErr);
+          // Don't fail the webhook if email fails
+        }
+      }
     }
 
     // ── 4. payment.failed ───────────────────────────────────────────────────

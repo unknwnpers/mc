@@ -12,7 +12,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { User, MapPin, Phone, Info, Loader2 } from "lucide-react";
-import { db } from "@/lib/firebase";
+import { db, apiFetch } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { SavedAddress } from "@/lib/types";
 import { PaymentBreakdown } from "@/lib/payment-calculator";
@@ -614,7 +614,8 @@ export default function CartPage() {
                                     setIsCheckingOut(true);
                                     try {
                                         // 1. Create Server-Validated Razorpay Order (with discount applied)
-                                        const res = await fetch("/api/razorpay/order", {
+                                        // Use apiFetch to include App Check token automatically
+                                        const res = await apiFetch("/api/razorpay/order", {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify({ 
@@ -664,7 +665,7 @@ export default function CartPage() {
                                             handler: async function (response: any) {
                                                 setIsCheckingOut(true);
                                                 try {
-                                                    const verifyRes = await fetch("/api/razorpay/verify", {
+                                                    const verifyRes = await apiFetch("/api/razorpay/verify", {
                                                         method: "POST",
                                                         headers: { "Content-Type": "application/json" },
                                                         body: JSON.stringify(response),
@@ -703,7 +704,7 @@ export default function CartPage() {
                                                 setIsCheckingOut(true);
                                                 try {
                                                     // Immediately release stock if payment fails
-                                                    await fetch("/api/razorpay/cancel", {
+                                                    await apiFetch("/api/razorpay/cancel", {
                                                         method: "POST",
                                                         headers: { "Content-Type": "application/json" },
                                                         body: JSON.stringify({

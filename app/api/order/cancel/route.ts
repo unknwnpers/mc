@@ -3,6 +3,7 @@ import { verifyUser } from "@/lib/server-auth";
 import { NextResponse } from "next/server";
 import { processRefund, getPaymentByOrderId } from "@/lib/razorpay";
 import { auditLog } from "@/lib/logger";
+import { sendOrderNotification } from "@/lib/email-service";
 
 export async function POST(req: Request) {
   try {
@@ -176,6 +177,25 @@ export async function POST(req: Request) {
       
       tx.update(orderRef, orderUpdate);
     });
+
+    // Send cancellation email
+    if (orderData?.recipient?.email) {
+      try {
+        await sendOrderNotification({
+          orderId: trimmedOrderId,
+          userEmail: orderData.recipient.email,
+          userName: orderData.recipient.name || "Customer",
+          items: orderData.items || [],
+          total: orderData.total || 0,
+          status: 'cancelled',
+          shippingAddress: orderData.recipient.address || orderData.shipping,
+          refundAmount: refundInfo?.amount,
+        });
+      } catch (emailErr) {
+        console.error("[Cancel Order] Failed to send cancellation email:", emailErr);
+        // Don't fail the cancellation if email fails
+      }
+    }
 
     // Log successful cancellation
     await auditLog("INFO", {

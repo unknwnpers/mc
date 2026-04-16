@@ -266,6 +266,13 @@ export default function AdminDashboard() {
               >
                 <Download className="w-4 h-4" /> Export Report
               </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-2 border-white/10 hover:bg-white/5 text-emerald-400"
+                onClick={() => router.push("/admin/analytics")}
+              >
+                <TrendingUp className="w-4 h-4" /> Advanced Analytics
+              </Button>
             </div>
           </CardContent>
         </Card>

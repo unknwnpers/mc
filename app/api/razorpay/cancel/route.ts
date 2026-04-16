@@ -1,11 +1,21 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { releaseReservation } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
+    // 🔐 App Check verification for payment cancellation
+    const appCheckResult = await verifyAppCheckWithReplayProtection(req, 60);
+    if (!appCheckResult.valid) {
+      return NextResponse.json(
+        { success: false, error: appCheckResult.error || "App verification failed" },
+        { status: 403 }
+      );
+    }
+
     const { reservationId, razorpayOrderId } = await req.json();
 
     if (!reservationId) {
