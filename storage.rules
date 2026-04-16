@@ -48,7 +48,7 @@ service firebase.storage {
     /**
      * PRODUCT IMAGES
      */
-    match /product/{allPaths=**} {
+    match /products/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin() && isValidImage();
     }

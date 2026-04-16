@@ -122,8 +122,16 @@ export default function ImageManagerPage() {
       return;
     }
 
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
+    }
+
     try {
       setUploading(true);
+
+      // Get Firebase auth token
+      const token = await user.getIdToken();
 
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -132,6 +140,9 @@ export default function ImageManagerPage() {
 
       const response = await fetch('/api/admin/images/upload', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
 
