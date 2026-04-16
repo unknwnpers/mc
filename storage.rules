@@ -8,17 +8,21 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.get('role', '') in ['admin', 'superadmin'];
+      return isAuthenticated() &&
+        request.auth.token.get('role', '') in ['admin', 'superadmin'];
     }
 
     function isValidImage() {
-      return request.resource.contentType.matches('image/.*')
-        && request.resource.size < 5 * 1024 * 1024; // 5MB max
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+
+    function isValidUserFile() {
+      return request.resource.size < 2 * 1024 * 1024; // 2MB
     }
 
     /**
-     * SYSTEM IMAGES (logos, placeholders)
-     * Public read, admin write
+     * SYSTEM IMAGES
      */
     match /system/{allPaths=**} {
       allow read: if true;
@@ -26,8 +30,7 @@ service firebase.storage {
     }
 
     /**
-     * MARKETING IMAGES (homepage, banners, categories)
-     * Public read, admin write
+     * MARKETING IMAGES
      */
     match /marketing/{allPaths=**} {
       allow read: if true;
@@ -36,7 +39,6 @@ service firebase.storage {
 
     /**
      * CATEGORY IMAGES
-     * Public read, admin write
      */
     match /category/{allPaths=**} {
       allow read: if true;
@@ -45,7 +47,6 @@ service firebase.storage {
 
     /**
      * PRODUCT IMAGES
-     * Public read, admin write
      */
     match /product/{allPaths=**} {
       allow read: if true;
@@ -53,22 +54,29 @@ service firebase.storage {
     }
 
     /**
-     * USER UPLOADS (avatars, etc)
-     * User can read/write their own, admin can read/write all
+     * USER FILES (avatars etc)
      */
     match /users/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if (isAdmin() || (isAuthenticated() && request.auth.uid == userId)) && isValidImage();
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow write: if isAdmin() || (
+        isAuthenticated() &&
+        request.auth.uid == userId &&
+        isValidUserFile()
+      );
     }
 
     /**
-     * TEMPORARY UPLOADS
-     * Authenticated users can write, cleanup via backend
+     * TEMP UPLOADS (strict)
      */
-    match /temp/{allPaths=**} {
+    match /temp/{userId}/{allPaths=**} {
       allow read: if isAdmin();
-      allow write: if isAuthenticated() && isValidImage();
-      allow delete: if isAdmin();
+
+      allow write: if isAuthenticated() &&
+        request.auth.uid == userId &&
+        isValidImage();
+
+      allow delete: if isAdmin() ||
+        (isAuthenticated() && request.auth.uid == userId);
     }
 
     /**

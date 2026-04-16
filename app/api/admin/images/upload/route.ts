@@ -74,11 +74,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique filename
+    // Generate unique filename with strict sanitization
     const timestamp = Date.now();
+    const originalExt = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // Whitelist allowed extensions
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    if (!allowedExts.includes(originalExt)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid file type. Allowed: ${allowedExts.join(', ')}` },
+        { status: 400 }
+      );
+    }
+    
+    // Sanitize: remove path traversal, keep only safe chars
     const sanitizedName = file.name
       .toLowerCase()
-      .replace(/[^a-z0-9.]/g, '-');
+      .replace(/[^a-z0-9.]/g, '-')  // replace unsafe chars
+      .replace(/-+/g, '-')           // collapse dashes
+      .replace(/^-+|-+$/g, '');      // trim dashes
+    
     const fileName = `${timestamp}-${sanitizedName}`;
 
     // Storage path: {category}/{subcategory}/original/{filename}
