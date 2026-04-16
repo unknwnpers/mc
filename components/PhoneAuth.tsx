@@ -74,7 +74,11 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         }
       }
 
-      window.recaptchaVerifier = new RecaptchaVerifier(getFirebaseAuth(), "recaptcha-container", {
+      const auth = getFirebaseAuth();
+      if (!auth) {
+        throw new Error("Auth not available");
+      }
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
         callback: () => {
           // reCAPTCHA solved
@@ -141,7 +145,11 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
       console.log("[PhoneAuth] Sending OTP to:", formattedPhone);
 
-      const result = await signInWithPhoneNumber(getFirebaseAuth(), formattedPhone, verifier);
+      const auth = getFirebaseAuth();
+      if (!auth) {
+        throw new Error("Auth not available");
+      }
+      const result = await signInWithPhoneNumber(auth, formattedPhone, verifier);
       window.confirmationResult = result;
 
       setStep("otp");

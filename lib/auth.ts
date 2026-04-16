@@ -20,9 +20,17 @@ provider.setCustomParameters({
 // Proxy-wrapped auth breaks signInWithPopup (auth/internal-error) due to
 // Firebase's internal class-instance checks on the auth parameter.
 export const loginWithGoogle = () => {
-  return signInWithPopup(getFirebaseAuth(), provider);
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    throw new Error("Auth not available");
+  }
+  return signInWithPopup(auth, provider);
 };
 
 export const logoutUser = () => {
-  return signOut(getFirebaseAuth());
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    throw new Error("Auth not available");
+  }
+  return signOut(auth);
 };

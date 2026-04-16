@@ -106,7 +106,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (data.blocked) {
             toast.error("Your account has been blocked. Contact support.");
-            await getFirebaseAuth().signOut();
+            const authInstance = getFirebaseAuth();
+            if (authInstance) {
+              await authInstance.signOut();
+            }
             setUser(null);
             setProfile(null);
             router.push("/login");
@@ -150,7 +153,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // SECURITY: Reject users without email
           if (!u.email) {
             toast.error("Authentication failed: No email provided");
-            await getFirebaseAuth().signOut();
+            const authInstance = getFirebaseAuth();
+            if (authInstance) {
+              await authInstance.signOut();
+            }
             setUser(null);
             setLoading(false);
             return;

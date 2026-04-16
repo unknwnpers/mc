@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to avoid Firebase SSR issues
+export const dynamic = 'force-dynamic';
+
 import { toast } from 'sonner';
 
 import { useState } from 'react';
