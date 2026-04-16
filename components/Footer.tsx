@@ -1,6 +1,9 @@
+import { memo } from 'react';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
-export default function Footer() {
+const Footer = memo(function Footer() {
+  const currentYear = new Date().getFullYear();
+  
   return (
     <footer className="bg-gradient-to-br from-white to-cream border-t border-blush/10 relative overflow-hidden">
       {/* Background Decor */}
@@ -106,7 +109,7 @@ export default function Footer() {
 
         <div className="mt-20 pt-10 border-t border-neutral-100 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-neutral-400 text-xs font-bold uppercase tracking-widest">
-            © {new Date().getFullYear()} Miks & Chiks. All rights reserved.
+            © {currentYear} Miks & Chiks. All rights reserved.
           </p>
           <div className="flex items-center gap-8">
             <a href="/privacy" className="text-xs font-black text-neutral-400 hover:text-blush uppercase tracking-[0.3em] transition-colors">Privacy Policy</a>
@@ -118,4 +121,6 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+});
+
+export default Footer;

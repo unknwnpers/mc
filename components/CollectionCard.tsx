@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { CuratedCollection } from '@/lib/types';
@@ -9,16 +10,14 @@ interface CollectionCardProps {
   collection: CuratedCollection;
 }
 
-export default function CollectionCard({ collection }: CollectionCardProps) {
+const CollectionCard = memo(function CollectionCard({ collection }: CollectionCardProps) {
   const { title, subtitle, cardStyle, backgroundImage } = collection;
 
   // Generate link based on collection type
-  const getCollectionLink = () => {
+  const linkHref = useMemo(() => {
     if (collection.type === "manual" && collection.products && collection.products.length > 0) {
-      // For manual collections, link to products page with specific product filter
       return `/products?collection=${collection.id}`;
     } else if (collection.type === "auto" && collection.filter) {
-      // For auto collections, build query from filter
       const params = new URLSearchParams();
       if (collection.filter.category) params.set('category', collection.filter.category);
       if (collection.filter.isFeatured) params.set('featured', 'true');
@@ -28,23 +27,21 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
       return `/products?${params.toString()}`;
     }
     return '/products';
-  };
+  }, [collection]);
 
   // Card style variants
-  const cardStyles = {
+  const cardStyleClass = {
     large: "col-span-1 sm:col-span-2 lg:col-span-2 h-[400px]",
     compact: "col-span-1 h-[400px]",
     banner: "col-span-1 sm:col-span-2 lg:col-span-4 h-[300px]",
-  };
-
-  const linkHref = getCollectionLink();
+  }[cardStyle];
 
   return (
     <Link
       href={linkHref}
       className={cn(
         "group relative isolate overflow-hidden rounded-[40px] backdrop-blur-sm bg-cream border border-blush/10 hover:shadow-2xl hover:shadow-blush/20 transition-all duration-700 block",
-        cardStyles[cardStyle]
+        cardStyleClass
       )}
     >
       {/* Background Image */}
@@ -80,4 +77,6 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
       </div>
     </Link>
   );
-}
+});
+
+export default CollectionCard;

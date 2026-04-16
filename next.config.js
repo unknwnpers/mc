@@ -73,6 +73,42 @@ const nextConfig = {
       },
     ];
   },
+  // Webpack chunk splitting for better caching
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          // Separate Firebase into its own chunk
+          firebase: {
+            test: /[\\/]node_modules[\\/](firebase|firebase-admin)[\\/]/,
+            name: 'firebase',
+            priority: 20,
+          },
+          // Separate Radix UI into its own chunk
+          radix: {
+            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+            name: 'radix',
+            priority: 15,
+          },
+          // Separate lucide-react icons
+          lucide: {
+            test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+            name: 'lucide',
+            priority: 10,
+          },
+          // Common vendor chunk
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: 5,
+            reuseExistingChunk: true,
+          },
+        },
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = withBundleAnalyzer(nextConfig);
