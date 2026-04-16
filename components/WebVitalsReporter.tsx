@@ -1,7 +1,6 @@
 "use client";
 
 import { useReportWebVitals } from "next/web-vitals";
-import * as Sentry from "@sentry/nextjs";
 
 export default function WebVitalsReporter() {
   useReportWebVitals((metric) => {
@@ -25,18 +24,6 @@ export default function WebVitalsReporter() {
       }
     }
 
-    // Send to Sentry (as breadcrumb for performance tracking)
-    Sentry.addBreadcrumb({
-      category: "web-vital",
-      message: `${metric.name}: ${metric.value.toFixed(2)}`,
-      level: "info",
-      data: {
-        name: metric.name,
-        value: metric.value,
-        id: metric.id,
-      },
-    });
-
     // Alert on poor performance
     const thresholds: Record<string, number> = {
       LCP: 4000, // 4 seconds
@@ -50,11 +37,7 @@ export default function WebVitalsReporter() {
       thresholds[metric.name] &&
       metric.value > thresholds[metric.name]
     ) {
-      Sentry.addBreadcrumb({
-        category: "web-vital",
-        message: `Poor ${metric.name}: ${metric.value}`,
-        level: "warning",
-      });
+      console.warn(`[Web Vitals] Poor ${metric.name}: ${metric.value}`);
     }
   });
 

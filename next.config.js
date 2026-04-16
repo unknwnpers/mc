@@ -2,8 +2,6 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
-const { withSentryConfig } = require('@sentry/nextjs');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -48,19 +46,4 @@ const nextConfig = {
   },
 };
 
-// Sentry wrapper config
-const sentryWebpackPluginOptions = {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
-  silent: true, // Suppresses source map uploading logs during production build
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-};
-
-// Apply Sentry only if DSN is configured
-const moduleExports = withBundleAnalyzer(nextConfig);
-
-// Wrap with Sentry if DSN is available
-module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(moduleExports, sentryWebpackPluginOptions)
-  : moduleExports;
+module.exports = withBundleAnalyzer(nextConfig);
