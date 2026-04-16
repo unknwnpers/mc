@@ -163,12 +163,22 @@ export async function POST(request: NextRequest) {
     // Invalidate image list caches
     if (redis) {
       try {
-        // Delete all image list cache keys
-        const keys = await redis.keys('images:list:*');
-        if (keys.length > 0) {
-          await redis.del(...keys);
-          console.log(`[Image Upload] Invalidated ${keys.length} cache keys`);
+        // Simple approach: delete specific known cache keys
+        // This avoids scan/keys which may not be available on all Redis tiers
+        const cacheKeys = [
+          `images:list:all:all:50:start`,
+          `images:list:${category}:all:50:start`,
+          `images:list:${category}:${subcategory}:50:start`,
+        ];
+        
+        for (const key of cacheKeys) {
+          try {
+            await redis.del(key);
+          } catch {
+            // Ignore individual key errors
+          }
         }
+        console.log('[Image Upload] Cache invalidation attempted');
       } catch (cacheErr) {
         console.warn('[Image Upload] Cache invalidation error:', cacheErr);
       }
