@@ -6,7 +6,8 @@ import { useAuth } from "@/lib/auth-context";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { uploadImageWithVariants, validateImageFile, UploadOptions } from "@/lib/storage";
+import { apiFetch } from "@/lib/firebase";
+import { validateImageFile } from "@/lib/storage";
 import {
   Package, Plus, Pencil, Archive, RefreshCw, X, Save,
   Check, Loader2, Image as ImageIcon, Trash2, GripVertical, ChevronRight,
@@ -311,13 +312,25 @@ export default function AdminProductsPage() {
       const preview = imagePreviews[i];
       try {
         toast.info(`Uploading image ${i + 1} of ${total}...`);
-        const options: UploadOptions = {
-          entityType: "products",
-          entityId: productId,
-          variant: "original",
-        };
-        const url = await uploadImageWithVariants(preview.file, options);
-        uploadedUrls.push(url.original); // Use original size URL
+        
+        // Use server-side API with App Check
+        const formData = new FormData();
+        formData.append('file', preview.file);
+        formData.append('productId', productId);
+        formData.append('variant', 'original');
+
+        const response = await apiFetch('/api/admin/products/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Upload failed');
+        }
+        
+        uploadedUrls.push(data.url);
         URL.revokeObjectURL(preview.preview);
       } catch (error: any) {
         toast.error(`Failed to upload ${preview.file.name}: ${error.message}`);
