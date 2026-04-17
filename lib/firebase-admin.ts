@@ -22,7 +22,8 @@ const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`;
 
-let app: App;
+let app: App | null = null;
+let initError: Error | null = null;
 
 if (!getApps().length) {
   if (projectId && clientEmail && privateKey) {
@@ -42,22 +43,42 @@ if (!getApps().length) {
       console.log('✅ Firebase Admin initialized successfully');
     } catch (error) {
       console.error('❌ Firebase Admin initialization failed:', error);
-      throw error;
+      initError = error instanceof Error ? error : new Error('Firebase Admin initialization failed');
     }
   } else {
+    const missingVars = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']
+      .filter(v => !process.env[v] && !(v === 'FIREBASE_PROJECT_ID' && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID));
     console.warn(
-      '⚠️ Missing Firebase Admin credentials.\n' +
-      'Required env vars: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY\n' +
-      'Check Vercel → Settings → Environment Variables'
+      '⚠️ Missing Firebase Admin credentials: ' + missingVars.join(', ')
     );
-    throw new Error('Firebase Admin credentials not configured');
+    initError = new Error('Firebase Admin credentials not configured');
   }
 } else {
   app = getApps()[0];
 }
 
-export const adminDb = getFirestore(app);
-export const adminStorage = getStorage(app);
+// Helper to ensure app is initialized before use
+function getApp(): App {
+  if (!app) {
+    throw initError || new Error('Firebase Admin not initialized');
+  }
+  return app;
+}
+
+// Lazy getters that throw only when actually used
+export const adminDb = new Proxy({} as ReturnType<typeof getFirestore>, {
+  get(target, prop) {
+    const db = getFirestore(getApp());
+    return (db as any)[prop];
+  }
+});
+
+export const adminStorage = new Proxy({} as ReturnType<typeof getStorage>, {
+  get(target, prop) {
+    const storage = getStorage(getApp());
+    return (storage as any)[prop];
+  }
+});
 
 /**
  * Verify Firebase App Check token from server-side
@@ -69,7 +90,7 @@ export async function verifyAppCheckToken(token: string): Promise<{ valid: boole
   }
 
   try {
-    const appCheck = getAppCheck(app);
+    const appCheck = getAppCheck(getApp());
     const claims = await appCheck.verifyToken(token);
     return { valid: true, appId: claims.appId };
   } catch (error: any) {
