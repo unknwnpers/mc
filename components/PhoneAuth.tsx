@@ -81,16 +81,8 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         throw new Error("Auth not available");
       }
 
-      // Use reCAPTCHA v2 Invisible for Phone Auth (Firebase requirement)
-      const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY_V2;
-      if (!recaptchaSiteKey) {
-        console.error("[PhoneAuth] NEXT_PUBLIC_RECAPTCHA_SITE_KEY_V2 is not set");
-        throw new Error("reCAPTCHA v2 site key not configured");
-      }
-
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
-        sitekey: recaptchaSiteKey,
         callback: () => {
           // reCAPTCHA solved
         },
