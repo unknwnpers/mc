@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminStorage, verifyAppCheckWithReplayProtection } from '@/lib/firebase-admin';
+import { adminDb, adminStorage, verifyAppCheckFromRequest } from '@/lib/firebase-admin';
 import { verifyAdmin } from '@/lib/rbac';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -27,9 +27,10 @@ interface ImageMetadata {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 🔐 Layer 1: App Check verification
-    const appCheckResult = await verifyAppCheckWithReplayProtection(request, 60);
+    // 🔐 Layer 1: App Check verification (without replay protection for uploads)
+    const appCheckResult = await verifyAppCheckFromRequest(request);
     if (!appCheckResult.valid) {
+      console.warn('[Product Image Upload] App Check failed:', appCheckResult.error);
       return NextResponse.json(
         { success: false, error: appCheckResult.error || 'App verification failed' },
         { status: 403 }
