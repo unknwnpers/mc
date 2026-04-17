@@ -12,7 +12,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { User, MapPin, Phone, Info, Loader2 } from "lucide-react";
-import { db, apiFetch } from "@/lib/firebase";
+import { db, apiFetch, ensureAppCheckReady } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { SavedAddress } from "@/lib/types";
 import { PaymentBreakdown } from "@/lib/payment-calculator";
@@ -30,6 +30,11 @@ export default function CartPage() {
     const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown | null>(null);
     const [isCOD, setIsCOD] = useState(false);
     const [breakdownLoading, setBreakdownLoading] = useState(false);
+
+    // Pre-warm App Check token so it's ready when checkout is clicked
+    useEffect(() => {
+        ensureAppCheckReady().catch(() => {});
+    }, []);
 
     const total = cart.reduce(
         (sum, item) => sum + item.price * item.quantity,

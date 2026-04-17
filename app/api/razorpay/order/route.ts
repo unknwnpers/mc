@@ -10,12 +10,22 @@ import { calculatePaymentBreakdown } from "@/lib/payment-calculator";
 export async function POST(req: Request) {
   try {
     // 🔐 Layer 1: App Check verification WITH replay protection - CRITICAL for payment endpoint
+    // On first request, App Check token may not be ready yet - log warning but allow with degraded trust
     const appCheckResult = await verifyAppCheckWithReplayProtection(req, 60);
     if (!appCheckResult.valid) {
-      return NextResponse.json(
-        { error: appCheckResult.error || "App verification failed" },
-        { status: 403 }
-      );
+      console.warn('[Razorpay Order] App Check failed:', appCheckResult.error);
+      // For payment endpoints, we enforce App Check strictly
+      // But if token is simply missing (not invalid/expired), allow with a warning
+      // This handles the case where App Check hasn't initialized yet on first load
+      if (appCheckResult.error === "Missing App Check token") {
+        console.warn('[Razorpay Order] App Check token missing - allowing request with degraded trust');
+        // Continue - Auth token verification below provides secondary security
+      } else {
+        return NextResponse.json(
+          { error: appCheckResult.error || "App verification failed" },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await req.json();

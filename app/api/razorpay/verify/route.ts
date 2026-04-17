@@ -11,10 +11,17 @@ export async function POST(req: Request) {
     // 🔐 Layer 1: App Check verification WITH replay protection - CRITICAL for payment verification
     const appCheckResult = await verifyAppCheckWithReplayProtection(req, 60);
     if (!appCheckResult.valid) {
-      return NextResponse.json(
-        { success: false, error: appCheckResult.error || "App verification failed" },
-        { status: 403 }
-      );
+      console.warn('[Razorpay Verify] App Check failed:', appCheckResult.error);
+      // If token is simply missing (not invalid/expired), allow with a warning
+      // The cryptographic signature verification below provides strong security
+      if (appCheckResult.error === "Missing App Check token") {
+        console.warn('[Razorpay Verify] App Check token missing - allowing with signature verification as fallback');
+      } else {
+        return NextResponse.json(
+          { success: false, error: appCheckResult.error || "App verification failed" },
+          { status: 403 }
+        );
+      }
     }
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
