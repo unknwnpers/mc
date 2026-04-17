@@ -156,7 +156,7 @@ export async function withAppCheckHeaders(headers: HeadersInit = {}): Promise<He
 }
 
 /**
- * API fetch helper with automatic App Check token
+ * API fetch helper with automatic App Check and Auth tokens
  * Use this instead of raw fetch for all API calls
  */
 export async function apiFetch(
@@ -164,6 +164,18 @@ export async function apiFetch(
   options: RequestInit = {}
 ): Promise<Response> {
   const headers = await withAppCheckHeaders(options.headers);
+  
+  // Add Firebase Auth token if user is logged in
+  const { getAuth } = await import("firebase/auth");
+  const auth = getAuth();
+  if (auth.currentUser) {
+    try {
+      const authToken = await auth.currentUser.getIdToken();
+      (headers as Record<string, string>)["Authorization"] = `Bearer ${authToken}`;
+    } catch (e) {
+      // Continue without auth token if failed
+    }
+  }
   
   return fetch(url, {
     ...options,
