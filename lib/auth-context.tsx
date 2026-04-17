@@ -116,24 +116,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
+          // Get email/name from either user object or providerData (Google sometimes only populates providerData)
+          const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
+          const userEmail = u.email || googleProvider?.email || data.email;
+          const userDisplayName = u.displayName || googleProvider?.displayName || data.name;
+          
           // Check if we need to sync email from Firebase Auth
-          const needsEmailSync = u.email && !data.email;
-          const needsNameSync = u.displayName && !data.name;
+          const needsEmailSync = userEmail && !data.email;
+          const needsNameSync = userDisplayName && !data.name;
           
           // SECURITY: Only auto-promote to superadmin if email matches AND user has valid email
-          const isValidAdminEmail = u.email && u.email === ADMIN_EMAIL;
+          const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
           const needsRoleUpgrade = isValidAdminEmail && data.role !== "superadmin" && data.role !== "admin";
           const needsFieldFill   = !data.addressLine1 || !data.phone;
 
           if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync) {
             const updated: UserProfile = {
               ...data,
-              email: u.email || data.email,
-              name: u.displayName || data.name || "",
+              email: userEmail || data.email,
+              name: userDisplayName || data.name || "",
               addressLine1: data.addressLine1 || "",
               phone:   data.phone   || "",
               // SECURITY: Never upgrade role if email is missing or doesn't match
-              role:    (needsRoleUpgrade && u.email) ? "superadmin" : data.role,
+              role:    (needsRoleUpgrade && userEmail) ? "superadmin" : data.role,
               updated_at: new Date().toISOString(),
             };
             await setDoc(profileRef, updated, { merge: true });
@@ -146,12 +151,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           // SECURITY: Only auto-promote known admin email to superadmin if email is valid
           const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
-          const isValidAdminEmail = u.email && u.email === ADMIN_EMAIL;
+          
+          // Get email from either user.email or providerData (Google sometimes only populates providerData)
+          const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
+          const userEmail = u.email || googleProvider?.email || null;
+          const userDisplayName = u.displayName || googleProvider?.displayName || null;
+          
+          const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
           // SECURITY: Default to customer unless email explicitly matches admin email
           const role = isValidAdminEmail ? "superadmin" : "customer";
 
-          // SECURITY: Reject users without email
-          if (!u.email) {
+          // SECURITY: Reject users without email (check both locations)
+          if (!userEmail) {
+            console.error("[Auth] No email found in user object or providerData:", {
+              uid: u.uid,
+              email: u.email,
+              providerData: u.providerData
+            });
             toast.error("Authentication failed: No email provided");
             const authInstance = getFirebaseAuth();
             if (authInstance) {
@@ -164,8 +180,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           const newProfile: UserProfile = {
             uid: u.uid,
-            name: u.displayName || "",
-            email: u.email,
+            name: userDisplayName || "",
+            email: userEmail,
             role,
             addressLine1: "",
             phone: "",
