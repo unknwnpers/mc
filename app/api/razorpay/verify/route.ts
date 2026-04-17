@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { confirmReservation } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 
@@ -77,6 +77,12 @@ export async function POST(req: Request) {
         razorpayPaymentId:  razorpay_payment_id,
         razorpaySignature:  razorpay_signature,
         updatedAt:          FieldValue.serverTimestamp(),
+        timeline: FieldValue.arrayUnion({
+          status: "paid",
+          time: Timestamp.now(),
+          by: "system",
+          note: "Payment verified via Razorpay",
+        }),
       });
 
       // Confirm reservation in the SAME transaction

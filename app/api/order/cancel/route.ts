@@ -1,6 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { verifyUser } from "@/lib/server-auth";
 import { NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 import { processRefund, getPaymentByOrderId } from "@/lib/razorpay";
 import { auditLog } from "@/lib/logger";
 
@@ -163,6 +164,12 @@ export async function POST(req: Request) {
         status: "cancelled",
         cancelledAt: new Date(),
         updated_at: new Date(),
+        timeline: FieldValue.arrayUnion({
+          status: "cancelled",
+          time: new Date(),
+          by: user.uid,
+          note: refundInfo ? `Cancelled. Refund of ₹${refundInfo.amount} processed.` : "Cancelled. No refund applicable.",
+        }),
       };
       
       if (refundInfo) {

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { verifyUser } from "@/lib/server-auth";
 
 export async function POST(req: Request) {
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { orderId, status } = body;
+    const { orderId, status, trackingNumber, trackingUrl, courierName, note } = body;
 
     const validStatuses = ["pending_payment", "paid", "created", "processing", "shipped", "delivered", "cancelled", "failed"];
 
@@ -30,11 +30,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
     }
 
-    // Perform atomic update
-    await orderRef.update({
+    // Build update object
+    const updateData: Record<string, any> = {
       status,
-      updatedAt: FieldValue.serverTimestamp()
-    });
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    // Add timeline entry
+    const timelineEntry: Record<string, any> = {
+      status,
+      time: Timestamp.now(), // Cannot use FieldValue.serverTimestamp() inside arrays
+      by: user.uid,
+      note: note || "",
+    };
+    updateData.timeline = FieldValue.arrayUnion(timelineEntry);
+
+    // Add tracking info when shipped
+    if (status === "shipped" || status === "delivered") {
+      if (trackingNumber) updateData.trackingNumber = trackingNumber;
+      if (trackingUrl) updateData.trackingUrl = trackingUrl;
+      if (courierName) updateData.courierName = courierName;
+    }
+
+    // Perform atomic update
+    await orderRef.update(updateData);
 
     // Log admin action
     await adminDb.collection("admin_logs").add({
@@ -42,7 +61,7 @@ export async function POST(req: Request) {
       action: "update_order_status",
       resource: "orders",
       resourceId: orderId,
-      details: `Status updated to ${status}`,
+      details: `Status updated to ${status}${trackingNumber ? `, tracking: ${trackingNumber}` : ""}`,
       created_at: new Date()
     });
 

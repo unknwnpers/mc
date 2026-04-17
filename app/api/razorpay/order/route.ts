@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/razorpay";
 import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { reserveStock } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
 import { calculatePaymentBreakdown } from "@/lib/payment-calculator";
@@ -242,6 +242,12 @@ export async function POST(req: Request) {
       },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
+      timeline: [{
+        status: isCOD ? "processing" : (isMock ? "paid" : "pending_payment"),
+        time: Timestamp.now(),
+        by: "system",
+        note: isCOD ? "COD order placed" : (isMock ? "Mock order created" : "Order created, awaiting payment"),
+      }],
     };
 
     await adminDb.collection("orders").doc(razorpayOrderId).set(orderDoc);
