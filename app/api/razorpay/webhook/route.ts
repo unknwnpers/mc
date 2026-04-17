@@ -98,7 +98,7 @@ export async function POST(req: Request) {
           tx.set(usageRef, {
             userId: order.userId,
             couponCode: order.couponCode.toUpperCase(),
-            orderId: orderId,
+            orderId: orderRef.id,
             usedAt: FieldValue.serverTimestamp()
           });
         }

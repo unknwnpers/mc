@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { CuratedCollection } from '@/lib/types';
@@ -12,6 +12,7 @@ interface CollectionCardProps {
 
 const CollectionCard = memo(function CollectionCard({ collection }: CollectionCardProps) {
   const { title, subtitle, cardStyle, backgroundImage } = collection;
+  const [imgError, setImgError] = useState(false);
 
   // Generate link based on collection type
   const linkHref = useMemo(() => {
@@ -45,12 +46,13 @@ const CollectionCard = memo(function CollectionCard({ collection }: CollectionCa
       )}
     >
       {/* Background Image */}
-      {backgroundImage ? (
+      {backgroundImage && !imgError ? (
         <img
           src={backgroundImage}
           alt={title}
           loading="lazy"
           decoding="async"
+          onError={() => setImgError(true)}
           className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0"
         />
       ) : (
