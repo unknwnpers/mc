@@ -54,8 +54,6 @@ function LoginContent() {
           provider: "google",
         };
         
-        console.log("[Login] Sending to API:", requestBody);
-        
         const response = await fetch("/api/user/create", {
           method: "POST",
           headers: { 
@@ -66,7 +64,6 @@ function LoginContent() {
         });
         
         const responseData = await response.json();
-        console.log("[Login] API response:", responseData);
         
         if (!response.ok) {
           console.error("[Login] API error:", responseData);
