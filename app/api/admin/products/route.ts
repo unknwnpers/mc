@@ -98,9 +98,16 @@ export async function GET(req: Request) {
       // Apply pagination in-memory
       docs = docs.slice(offset, offset + limit);
       
+      // Convert Firestore Timestamps to ISO strings for serialization
+      const serializedDocs = docs.map((doc: any) => ({
+        ...doc,
+        createdAt: doc.createdAt?.toDate?.().toISOString() || doc.createdAt,
+        updatedAt: doc.updatedAt?.toDate?.().toISOString() || doc.updatedAt,
+      }));
+      
       return NextResponse.json({ 
         success: true, 
-        products: docs,
+        products: serializedDocs,
         pagination: {
           page,
           limit,
@@ -111,7 +118,15 @@ export async function GET(req: Request) {
       });
     }
 
-    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const products = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt,
+      };
+    });
 
     return NextResponse.json({ 
       success: true, 
