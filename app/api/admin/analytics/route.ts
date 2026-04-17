@@ -78,7 +78,15 @@ export async function GET(req: Request) {
     // Fetch products for low stock - simplified query without composite index
     const productsForStockSnap = await adminDb.collection("products").where("isActive", "==", true).limit(100).get();
     const lowStockProducts = productsForStockSnap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt,
+        };
+      })
       .filter((p: any) => {
         // Check stock across all variants
         const variants = p.variants || [];
@@ -168,7 +176,15 @@ export async function GET(req: Request) {
       .map(([status, count]) => ({ status, count }))
       .sort((a, b) => b.count - a.count);
 
-    const recentOrders = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const recentOrders = recentSnap.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt,
+      };
+    });
 
     // Calculate performance metrics
     const averageOrderValue = validOrders.length > 0 ? totalRevenue / validOrders.length : 0;

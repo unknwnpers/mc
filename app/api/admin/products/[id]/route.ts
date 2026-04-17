@@ -11,7 +11,17 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     const { id } = await context.params;
     const snap = await adminDb.collection("products").doc(id).get();
     if (!snap.exists) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
-    return NextResponse.json({ success: true, product: { id: snap.id, ...snap.data() } });
+    
+    const data = snap.data();
+    // Convert Firestore Timestamps to ISO strings for serialization
+    const product = {
+      id: snap.id,
+      ...data,
+      createdAt: data?.createdAt?.toDate?.().toISOString() || data?.createdAt,
+      updatedAt: data?.updatedAt?.toDate?.().toISOString() || data?.updatedAt,
+    };
+    
+    return NextResponse.json({ success: true, product });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: err.status || 500 });
   }
