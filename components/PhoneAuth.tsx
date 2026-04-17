@@ -78,10 +78,11 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       if (!auth) {
         throw new Error("Auth not available");
       }
+
       // Use reCAPTCHA v2 Invisible for Phone Auth (Firebase requirement)
       const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY_V2;
-      
       if (!recaptchaSiteKey) {
+        console.error("[PhoneAuth] NEXT_PUBLIC_RECAPTCHA_SITE_KEY_V2 is not set");
         throw new Error("reCAPTCHA v2 site key not configured");
       }
 
@@ -193,13 +194,9 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const user = result.user;
 
       // Save user to Firestore via API
-      const token = await user.getIdToken();
       await fetch("/api/user/create", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid: user.uid,
           phone: user.phoneNumber,

@@ -161,10 +161,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // SECURITY: Default to customer unless email explicitly matches admin email
           const role = isValidAdminEmail ? "superadmin" : "customer";
 
-          // SECURITY: Reject users without email UNLESS they authenticated via phone
-          const isPhoneUser = u.providerData?.some(p => p.providerId === 'phone');
-          if (!userEmail && !isPhoneUser) {
-            console.error("[Auth] No email found for non-phone user:", {
+          // SECURITY: Reject users without email (check both locations)
+          if (!userEmail) {
+            console.error("[Auth] No email found in user object or providerData:", {
               uid: u.uid,
               email: u.email,
               providerData: u.providerData
