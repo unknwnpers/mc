@@ -162,7 +162,15 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       console.error("[PhoneAuth] Send OTP error:", err);
       handleError(err);
 
-      // Reset reCAPTCHA on failure
+      // Reset reCAPTCHA on failure for retry
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        window.recaptchaVerifier = null;
+      }
       recaptchaInitialized.current = false;
     } finally {
       setLoading(false);
@@ -188,9 +196,13 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const user = result.user;
 
       // Save user to Firestore via API
+      const token = await user.getIdToken();
       await fetch("/api/user/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({
           uid: user.uid,
           phone: user.phoneNumber,
