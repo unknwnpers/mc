@@ -19,7 +19,15 @@ export async function GET(req: Request) {
     }
 
     const snapshot = await query.get();
-    const collections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const collections = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt,
+      };
+    });
 
     return NextResponse.json({ success: true, collections });
   } catch (err: any) {
