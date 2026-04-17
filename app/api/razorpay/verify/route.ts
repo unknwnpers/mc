@@ -52,38 +52,79 @@ export async function POST(req: Request) {
     // ── 3. Idempotent order confirmation (full transaction) ─────────────────
     // IMPORTANT: confirmReservation is called INSIDE the transaction so both
     // the order status update and the reservation confirmation are atomic.
-    const orderRef = adminDb.collection("orders").doc(razorpay_order_id);
+    //
+    // Two paths to find the order:
+    //  a) Direct: razorpay_order_id == Firestore document ID (standard online payment)
+    //  b) COD conversion: find order where codPaymentRazorpayOrderId == razorpay_order_id
+    let orderRef = adminDb.collection("orders").doc(razorpay_order_id);
+    let orderSnap = await orderRef.get();
+    let isCODConversion = false;
 
+    if (!orderSnap.exists) {
+      // Try finding by codPaymentRazorpayOrderId field
+      const codQuery = await adminDb
+        .collection("orders")
+        .where("codPaymentRazorpayOrderId", "==", razorpay_order_id)
+        .limit(1)
+        .get();
+
+      if (codQuery.empty) {
+        return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+      }
+
+      orderRef = codQuery.docs[0].ref;
+      orderSnap = codQuery.docs[0];
+      isCODConversion = true;
+    }
+
+    const existingOrder = orderSnap.data()!;
     let alreadyPaid = false;
 
     await adminDb.runTransaction(async (tx) => {
       const orderSnap = await tx.get(orderRef);
 
       if (!orderSnap.exists) {
-        throw new Error(`Order not found: ${razorpay_order_id}`);
+        throw new Error(`Order not found: ${orderRef.id}`);
       }
 
       const order = orderSnap.data()!;
 
       // Idempotency guard — do nothing if already processed
-      if (order.status === "paid") {
+      if (order.status === "paid" && !order.isCOD) {
         alreadyPaid = true;
         return;
       }
 
-      // Mark order paid
-      tx.update(orderRef, {
-        status:             "paid",
-        razorpayPaymentId:  razorpay_payment_id,
-        razorpaySignature:  razorpay_signature,
-        updatedAt:          FieldValue.serverTimestamp(),
-        timeline: FieldValue.arrayUnion({
-          status: "paid",
-          time: Timestamp.now(),
-          by: "system",
-          note: "Payment verified via Razorpay",
-        }),
-      });
+      if (isCODConversion) {
+        // COD → Online payment conversion
+        tx.update(orderRef, {
+          isCOD:              false,
+          status:             "paid",
+          razorpayPaymentId:  razorpay_payment_id,
+          razorpaySignature:  razorpay_signature,
+          updatedAt:          FieldValue.serverTimestamp(),
+          timeline: FieldValue.arrayUnion({
+            status: "paid",
+            time: Timestamp.now(),
+            by: "system",
+            note: "COD order paid online via Razorpay",
+          }),
+        });
+      } else {
+        // Standard online payment
+        tx.update(orderRef, {
+          status:             "paid",
+          razorpayPaymentId:  razorpay_payment_id,
+          razorpaySignature:  razorpay_signature,
+          updatedAt:          FieldValue.serverTimestamp(),
+          timeline: FieldValue.arrayUnion({
+            status: "paid",
+            time: Timestamp.now(),
+            by: "system",
+            note: "Payment verified via Razorpay",
+          }),
+        });
+      }
 
       // Confirm reservation in the SAME transaction
       // This prevents cleanup cron from restoring stock between the order update
@@ -107,7 +148,7 @@ export async function POST(req: Request) {
         tx.set(usageRef, {
           userId: order.userId,
           couponCode: order.couponCode.toUpperCase(),
-          orderId: razorpay_order_id,
+          orderId: orderRef.id,
           usedAt: FieldValue.serverTimestamp()
         });
       }
@@ -116,18 +157,18 @@ export async function POST(req: Request) {
     if (alreadyPaid) {
       await auditLog("INFO", {
         event:   "PAYMENT_VERIFY_IDEMPOTENT",
-        orderId: razorpay_order_id,
+        orderId: orderRef.id,
         details: { razorpay_payment_id },
       });
     } else {
       await auditLog("INFO", {
-        event:   "PAYMENT_VERIFIED",
-        orderId: razorpay_order_id,
-        details: { razorpay_payment_id, signatureValid: true },
+        event:   isCODConversion ? "COD_PAYMENT_CONVERTED" : "PAYMENT_VERIFIED",
+        orderId: orderRef.id,
+        details: { razorpay_payment_id, signatureValid: true, isCODConversion },
       });
     }
 
-    return NextResponse.json({ success: true, firestoreOrderId: razorpay_order_id });
+    return NextResponse.json({ success: true, firestoreOrderId: orderRef.id });
 
   } catch (err: any) {
     console.error("Payment Verification Error:", err);

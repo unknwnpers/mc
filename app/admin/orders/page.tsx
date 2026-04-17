@@ -37,6 +37,7 @@ const statusStyles: Record<string, string> = {
 const paymentMethodStyles = {
   cod: "bg-orange-100 text-orange-700 border-orange-200",
   online: "bg-blue-100 text-blue-700 border-blue-200",
+  codToOnline: "bg-purple-100 text-purple-700 border-purple-200",
 };
 
 // Helper function to safely format dates
@@ -182,7 +183,8 @@ export default function AdminOrdersPage() {
     if (paymentMethodFilter !== "all") {
       result = result.filter(o => {
         if (paymentMethodFilter === "cod") return o.isCOD === true;
-        if (paymentMethodFilter === "online") return o.isCOD !== true;
+        if (paymentMethodFilter === "online") return o.isCOD !== true && !o.codPaymentRazorpayOrderId;
+        if (paymentMethodFilter === "codToOnline") return !o.isCOD && !!o.codPaymentRazorpayOrderId;
         return true;
       });
     }
@@ -267,7 +269,7 @@ export default function AdminOrdersPage() {
         o.recipient?.email || "",
         o.recipient?.phone || "",
         o.status,
-        o.isCOD ? "COD" : "Online",
+        o.isCOD ? "COD" : (o.codPaymentRazorpayOrderId ? "COD→Online" : "Online"),
         (o.paymentBreakdown?.codCharge || 0).toString(),
         (o.total || 0).toString(),
         (o.items || []).length.toString()
@@ -496,6 +498,7 @@ export default function AdminOrdersPage() {
                 <option value="all">All Methods</option>
                 <option value="cod">Cash on Delivery</option>
                 <option value="online">Online Payment</option>
+                <option value="codToOnline">COD → Online</option>
               </select>
             </div>
 
@@ -571,22 +574,28 @@ export default function AdminOrdersPage() {
                         )}>
                           {order.status?.replace("_", " ")}
                         </Badge>
-                        {order.isCOD && (
+                        {order.isCOD ? (
                           <Badge className={cn(
                             "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
                             paymentMethodStyles.cod
                           )}>
                             COD
                           </Badge>
-                        )}
-                        {!order.isCOD && order.status !== "pending_payment" && (
+                        ) : order.codPaymentRazorpayOrderId ? (
+                          <Badge className={cn(
+                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
+                            paymentMethodStyles.codToOnline
+                          )}>
+                            COD → Online
+                          </Badge>
+                        ) : order.status !== "pending_payment" ? (
                           <Badge className={cn(
                             "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
                             paymentMethodStyles.online
                           )}>
                             Paid Online
                           </Badge>
-                        )}
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell className="py-6 px-8 text-right">
@@ -798,6 +807,15 @@ export default function AdminOrdersPage() {
                       <Badge className={cn("px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border", paymentMethodStyles.cod)}>
                         Cash on Delivery
                       </Badge>
+                    ) : selectedOrder.codPaymentRazorpayOrderId ? (
+                      <div className="space-y-1">
+                        <Badge className={cn("px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border", paymentMethodStyles.codToOnline)}>
+                          Paid Online (converted from COD)
+                        </Badge>
+                        {selectedOrder.razorpayPaymentId && (
+                          <p className="text-[10px] text-purple-600 font-mono">Payment ID: {selectedOrder.razorpayPaymentId}</p>
+                        )}
+                      </div>
                     ) : (
                       <Badge className={cn("px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border", paymentMethodStyles.online)}>
                         Paid Online (Razorpay)
@@ -867,10 +885,24 @@ export default function AdminOrdersPage() {
                         <p className="text-orange-600 font-medium">
                           Payment pending - Collect ₹{selectedOrder.total} on delivery
                         </p>
+                        {selectedOrder.codPaymentRazorpayOrderId && (
+                          <p className="text-amber-600 text-xs mt-1">
+                            Online payment initiated but not completed
+                          </p>
+                        )}
                       </div>
                     )}
-                    
-                    {selectedOrder.razorpayOrderId && !selectedOrder.isCOD && (
+
+                    {/* Converted from COD - show payment confirmation */}
+                    {!selectedOrder.isCOD && selectedOrder.codPaymentRazorpayOrderId && selectedOrder.razorpayPaymentId && (
+                      <div className="pt-2 text-sm">
+                        <p className="text-purple-600 font-medium">
+                          Customer paid online — no cash collection needed
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedOrder.razorpayOrderId && !selectedOrder.isCOD && !selectedOrder.codPaymentRazorpayOrderId && (
                       <div className="pt-2 text-sm text-neutral-500">
                         <p>Payment ID: {selectedOrder.razorpayOrderId}</p>
                       </div>
@@ -882,37 +914,68 @@ export default function AdminOrdersPage() {
                 <div>
                   <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Order Timeline</h3>
                   <div className="space-y-4">
-                    {[
-                      { status: "created", label: "Order Placed", time: selectedOrder.createdAt },
-                      { status: "processing", label: "Processing", time: selectedOrder.processedAt },
-                      { status: "shipped", label: "Shipped", time: selectedOrder.shippedAt },
-                      { status: "delivered", label: "Delivered", time: selectedOrder.deliveredAt },
-                    ].map((step, i) => {
-                      const isCompleted = ["created", "processing", "shipped", "delivered"].indexOf(selectedOrder.status) >= ["created", "processing", "shipped", "delivered"].indexOf(step.status);
-                      const isCurrent = selectedOrder.status === step.status;
-                      return (
-                        <div key={step.status} className="flex items-start gap-4">
+                    {/* Build timeline from the order.timeline array (same as customer page) */}
+                    {selectedOrder.timeline && Array.isArray(selectedOrder.timeline) && selectedOrder.timeline.length > 0 ? (
+                      selectedOrder.timeline.map((entry: any, i: number) => (
+                        <div key={i} className="flex items-start gap-4">
                           <div className={cn(
                             "w-3 h-3 rounded-full mt-1.5",
-                            isCompleted ? "bg-green-500" : "bg-neutral-200",
-                            isCurrent && "ring-4 ring-green-100"
+                            "bg-green-500",
+                            i === selectedOrder.timeline.length - 1 && "ring-4 ring-green-100"
                           )} />
                           <div className="flex-1">
-                            <p className={cn(
-                              "font-bold",
-                              isCompleted ? "text-neutral-900" : "text-neutral-400"
-                            )}>
-                              {step.label}
-                            </p>
-                            {step.time && (
-                              <p className="text-sm text-neutral-500">
-                                {formatDate(step.time)}
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-neutral-900 capitalize">
+                                {entry.status?.replace(/_/g, " ")}
                               </p>
+                              {entry.by && entry.by !== "system" && (
+                                <span className="text-[10px] text-neutral-400">by {entry.by === selectedOrder.userId ? "customer" : entry.by}</span>
+                              )}
+                            </div>
+                            {entry.note && (
+                              <p className="text-sm text-neutral-500">{entry.note}</p>
+                            )}
+                            {entry.time && (
+                              <p className="text-xs text-neutral-400">{formatDate(entry.time)}</p>
                             )}
                           </div>
                         </div>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      /* Fallback: basic timeline from status fields */
+                      [
+                        { status: "created", label: "Order Placed", time: selectedOrder.createdAt },
+                        { status: "processing", label: "Processing", time: selectedOrder.processedAt },
+                        { status: "shipped", label: "Shipped", time: selectedOrder.shippedAt },
+                        { status: "delivered", label: "Delivered", time: selectedOrder.deliveredAt },
+                      ].map((step, i) => {
+                        const statusOrder = ["created", "processing", "shipped", "delivered"];
+                        const isCompleted = statusOrder.indexOf(selectedOrder.status) >= statusOrder.indexOf(step.status);
+                        const isCurrent = selectedOrder.status === step.status;
+                        return (
+                          <div key={step.status} className="flex items-start gap-4">
+                            <div className={cn(
+                              "w-3 h-3 rounded-full mt-1.5",
+                              isCompleted ? "bg-green-500" : "bg-neutral-200",
+                              isCurrent && "ring-4 ring-green-100"
+                            )} />
+                            <div className="flex-1">
+                              <p className={cn(
+                                "font-bold",
+                                isCompleted ? "text-neutral-900" : "text-neutral-400"
+                              )}>
+                                {step.label}
+                              </p>
+                              {step.time && (
+                                <p className="text-sm text-neutral-500">
+                                  {formatDate(step.time)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>

@@ -7,7 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ArrowLeft, Clock, CheckCircle2, Truck, Box, MapPin, Phone, User, Package, CalendarCheck, Clock3, Mail, CreditCard, Banknote, ExternalLink, Hash } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle2, Truck, Box, MapPin, Phone, User, Package, CalendarCheck, Clock3, Mail, CreditCard, Banknote, ExternalLink, Hash, Wallet } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -22,8 +22,14 @@ const statusConfig: any = {
     cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600", icon: ArrowLeft, desc: "Your order has been cancelled." },
 };
 
-// Timeline steps for visual progress tracker
-const TIMELINE_STEPS = ["pending_payment", "paid", "processing", "shipped", "delivered"];
+// Timeline steps for visual progress tracker (different for COD vs Online)
+const ONLINE_STEPS = ["pending_payment", "paid", "processing", "shipped", "delivered"];
+const COD_STEPS = ["processing", "shipped", "delivered"];
+
+// Override labels for COD timeline
+const codStepLabels: Record<string, string> = {
+    processing: "Confirmed",
+};
 
 // ── Helper Functions ───────────────────────────────────────────────────────────
 const parseDate = (val: any): Date | null => {
@@ -70,6 +76,7 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [isPayingOnline, setIsPayingOnline] = useState(false);
     
     const orderId = Array.isArray(id) ? id[0] : id;
 
@@ -133,6 +140,85 @@ export default function OrderDetailPage() {
         }
     };
 
+    // Load Razorpay script once
+    useEffect(() => {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.body.appendChild(script);
+    }, []);
+
+    const handlePayOnline = async () => {
+        if (!user || !orderId || typeof orderId !== 'string') return;
+        if (isPayingOnline) return;
+
+        setIsPayingOnline(true);
+        try {
+            // 1. Create Razorpay order for this COD order
+            const idToken = await user.getIdToken();
+            const res = await fetch("/api/razorpay/pay-cod", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+                body: JSON.stringify({ orderId }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to initiate payment");
+            }
+
+            // 2. Open Razorpay checkout
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: data.amount,
+                currency: data.currency,
+                name: "Miks & Chiks",
+                description: "Pay for your COD order online",
+                order_id: data.razorpayOrderId,
+                handler: async function (response: any) {
+                    try {
+                        const verifyRes = await fetch("/api/razorpay/verify", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+                            body: JSON.stringify(response),
+                        });
+
+                        const verifyData = await verifyRes.json();
+                        if (verifyData.success) {
+                            toast.success("Payment successful! Your order is now paid online.");
+                            fetchOrder(); // Refresh order data
+                        } else {
+                            throw new Error(verifyData.error || "Payment verification failed");
+                        }
+                    } catch (vErr: any) {
+                        console.error("Verification Error:", vErr);
+                        toast.error(vErr.message || "Failed to verify payment");
+                    }
+                },
+                prefill: {
+                    name: order.recipient?.name || "",
+                    email: order.recipient?.email || order.email || "",
+                    contact: order.recipient?.phone || "",
+                },
+                theme: {
+                    color: "#F8AFA6",
+                },
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                console.error("Payment failure:", response.error);
+                toast.error(response.error.description || "Payment failed. You can try again later.");
+            });
+            rzp.open();
+        } catch (error: any) {
+            console.error("Pay Online Error:", error);
+            toast.error(error.message || "Failed to initiate online payment");
+        } finally {
+            setIsPayingOnline(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -148,7 +234,13 @@ export default function OrderDetailPage() {
     const orderTimestamp = order.createdAt || order.updatedAt;
     const formattedDate = getOrderDate(orderTimestamp) || "Recently";
     const isCancelled = order.status === "cancelled";
-    const currentStepIndex = TIMELINE_STEPS.indexOf(order.status);
+    // Timeline steps: COD shows 3 steps, online shows 5 steps
+    // If a COD order was converted to online (isCOD=false but has codPaymentRazorpayOrderId),
+    // show online steps starting from "paid" (skip pending_payment)
+    const timelineSteps = order.isCOD
+        ? COD_STEPS
+        : (order.codPaymentRazorpayOrderId ? ["paid", "processing", "shipped", "delivered"] : ONLINE_STEPS);
+    const currentStepIndex = timelineSteps.indexOf(order.status);
 
     // Build timeline map from order.timeline array
     const timelineMap: Record<string, { time: any; note: string }> = {};
@@ -193,7 +285,18 @@ export default function OrderDetailPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-4 flex-wrap">
+                                            {/* Pay Online button for COD orders (before delivery) */}
+                                            {order.isCOD && !["cancelled", "delivered"].includes(order.status) && !order.razorpayPaymentId && (
+                                                <button 
+                                                    onClick={handlePayOnline}
+                                                    disabled={isPayingOnline}
+                                                    className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-blush text-white text-[10px] font-bold uppercase tracking-widest hover:bg-blush/90 transition-all disabled:opacity-50"
+                                                >
+                                                    <Wallet className="w-4 h-4" />
+                                                    {isPayingOnline ? "Processing..." : "Pay Online"}
+                                                </button>
+                                            )}
                                             {["pending_payment", "paid", "processing"].includes(order.status) && (
                                                 <button 
                                                     onClick={handleCancel}
@@ -215,7 +318,7 @@ export default function OrderDetailPage() {
                                         <div className="mb-8">
                                             {/* Desktop: Horizontal stepper */}
                                             <div className="hidden md:flex items-center justify-between">
-                                                {TIMELINE_STEPS.map((step, idx) => {
+                                                {timelineSteps.map((step, idx) => {
                                                     const stepConfig = statusConfig[step];
                                                     const StepIcon = stepConfig?.icon || Clock;
                                                     const isCompleted = currentStepIndex > idx;
@@ -245,7 +348,7 @@ export default function OrderDetailPage() {
                                                                 "mt-2 text-[10px] font-bold uppercase tracking-widest text-center",
                                                                 isCompleted ? "text-blush" : isCurrent ? "text-charcoal" : "text-neutral-300"
                                                             )}>
-                                                                {stepConfig?.label || step}
+                                                                {(order.isCOD && codStepLabels[step]) || stepConfig?.label || step}
                                                             </p>
                                                             {/* Timestamp */}
                                                             {timelineEntry?.time && (isCompleted || isCurrent) && (
@@ -259,7 +362,7 @@ export default function OrderDetailPage() {
                                             </div>
                                             {/* Mobile: Vertical stepper */}
                                             <div className="md:hidden space-y-0">
-                                                {TIMELINE_STEPS.map((step, idx) => {
+                                                {timelineSteps.map((step, idx) => {
                                                     const stepConfig = statusConfig[step];
                                                     const StepIcon = stepConfig?.icon || Clock;
                                                     const isCompleted = currentStepIndex > idx;
@@ -278,7 +381,7 @@ export default function OrderDetailPage() {
                                                                 )}>
                                                                     {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <StepIcon className="w-3.5 h-3.5" />}
                                                                 </div>
-                                                                {idx < TIMELINE_STEPS.length - 1 && (
+                                                                {idx < timelineSteps.length - 1 && (
                                                                     <div className={cn("w-0.5 h-8", isCompleted ? "bg-blush" : "bg-neutral-200")} />
                                                                 )}
                                                             </div>
@@ -287,7 +390,7 @@ export default function OrderDetailPage() {
                                                                     "text-xs font-bold uppercase tracking-widest",
                                                                     isCompleted ? "text-blush" : isCurrent ? "text-charcoal" : "text-neutral-300"
                                                                 )}>
-                                                                    {stepConfig?.label || step}
+                                                                    {(order.isCOD && codStepLabels[step]) || stepConfig?.label || step}
                                                                 </p>
                                                                 {timelineEntry?.time && (isCompleted || isCurrent) && (
                                                                     <p className="text-[10px] text-neutral-400 mt-0.5">{formatTimelineTime(timelineEntry.time)}</p>
@@ -503,13 +606,16 @@ export default function OrderDetailPage() {
                                         )}
                                         <div className="flex items-center gap-5">
                                             <div className="h-12 w-12 rounded-2xl bg-cream flex items-center justify-center text-blush border border-blush/10">
-                                                {order.isCOD ? <Banknote className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+                                                {order.isCOD ? <Banknote className="w-5 h-5" /> : order.codPaymentRazorpayOrderId ? <Wallet className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Payment</p>
                                                 <p className="font-serif font-bold text-lg text-charcoal">
-                                                    {order.isCOD ? "Cash on Delivery" : "Online Payment"}
+                                                    {order.isCOD ? "Cash on Delivery" : order.codPaymentRazorpayOrderId ? "Paid Online" : "Online Payment"}
                                                 </p>
+                                                {!order.isCOD && order.codPaymentRazorpayOrderId && (
+                                                    <p className="text-[9px] text-blush font-bold uppercase tracking-wider mt-0.5">Converted from COD</p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
