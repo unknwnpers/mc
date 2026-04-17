@@ -29,7 +29,15 @@ async function getFeaturedProducts(): Promise<Product[]> {
       .orderBy('createdAt', 'desc')
       .limit(8)
       .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt,
+      };
+    }) as Product[];
   } catch (error: any) {
     console.error('Error fetching products:', error);
     console.error('Error code:', error.code);
@@ -46,7 +54,15 @@ async function getCategories(): Promise<Category[]> {
       .orderBy('created_at', 'asc')
       .limit(20)
       .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[];
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        created_at: data.created_at?.toDate?.().toISOString() || data.created_at,
+        updated_at: data.updated_at?.toDate?.().toISOString() || data.updated_at,
+      };
+    }) as unknown as Category[];
   } catch (error: any) {
     console.error('Error fetching categories:', error);
     console.error('Error code:', error.code);
