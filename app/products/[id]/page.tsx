@@ -40,6 +40,7 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [imgLoading, setImgLoading] = useState(true);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFav, setIsFav] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -327,22 +328,82 @@ export default function ProductDetailsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-24">
           {/* IMAGE SECTION */}
-          <div className="relative aspect-square rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10">
-            {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
-            <img
-              src={(product as any).images?.[0] || '/placeholder.svg'}
-              alt={product.name}
-              onLoad={() => setImgLoading(false)}
-              onError={(e) => {
-                console.log("Image load failed, using placeholder");
-                e.currentTarget.src = '/placeholder.svg';
-                setImgLoading(false);
-              }}
-              className={cn(
-                "w-full h-full object-cover transition-all duration-700 hover:scale-105",
-                imgLoading ? "opacity-0" : "opacity-100"
+          <div className="space-y-3">
+            {/* Main Image */}
+            <div className="relative aspect-square rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10">
+              {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
+              <img
+                src={(product as any).images?.[selectedImageIndex] || '/placeholder.svg'}
+                alt={`${product.name} - Image ${selectedImageIndex + 1}`}
+                onLoad={() => setImgLoading(false)}
+                onError={(e) => {
+                  console.log("Image load failed, using placeholder");
+                  e.currentTarget.src = '/placeholder.svg';
+                  setImgLoading(false);
+                }}
+                className={cn(
+                  "w-full h-full object-cover transition-all duration-700 hover:scale-105",
+                  imgLoading ? "opacity-0" : "opacity-100"
+                )}
+              />
+              {/* Image Counter */}
+              {((product as any).images?.length || 0) > 1 && (
+                <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                  {selectedImageIndex + 1} / {(product as any).images?.length}
+                </div>
               )}
-            />
+              {/* Navigation Arrows */}
+              {((product as any).images?.length || 0) > 1 && (
+                <>
+                  <button
+                    onClick={() => {
+                      const total = (product as any).images?.length || 1;
+                      setSelectedImageIndex((prev) => (prev - 1 + total) % total);
+                      setImgLoading(true);
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white text-neutral-700 p-2 rounded-full shadow-lg transition-all"
+                    aria-label="Previous image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const total = (product as any).images?.length || 1;
+                      setSelectedImageIndex((prev) => (prev + 1) % total);
+                      setImgLoading(true);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white text-neutral-700 p-2 rounded-full shadow-lg transition-all"
+                    aria-label="Next image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </>
+              )}
+            </div>
+            {/* Thumbnail Strip */}
+            {((product as any).images?.length || 0) > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {((product as any).images || []).map((img: string, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => { setSelectedImageIndex(idx); setImgLoading(true); }}
+                    className={cn(
+                      "relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all",
+                      selectedImageIndex === idx
+                        ? "border-blush shadow-md shadow-rose-200"
+                        : "border-transparent hover:border-neutral-200"
+                    )}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.name} thumbnail ${idx + 1}`}
+                      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CONTENT SECTION */}
