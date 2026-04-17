@@ -330,9 +330,11 @@ export default function AdminProductsPage() {
           throw new Error(data.error || 'Upload failed');
         }
         
+        console.log('[Upload] Image uploaded successfully:', data.url);
         uploadedUrls.push(data.url);
         URL.revokeObjectURL(preview.preview);
       } catch (error: any) {
+        console.error('[Upload] Failed:', error);
         toast.error(`Failed to upload ${preview.file.name}: ${error.message}`);
       }
     }
@@ -340,8 +342,10 @@ export default function AdminProductsPage() {
     // Clear previews after upload
     setImagePreviews([]);
 
+    const finalUrls = [...form.images, ...uploadedUrls];
+    console.log('[Upload] Final images array:', finalUrls);
     // Combine existing URL images with newly uploaded ones
-    return [...form.images, ...uploadedUrls];
+    return finalUrls;
   }
 
   // ── Image helpers ─────────────────────────────────────────────────────────
@@ -486,7 +490,9 @@ export default function AdminProductsPage() {
       toast.info('Uploading images...');
       try {
         finalImages = await uploadImages();
+        console.log('[Save] Images after upload:', finalImages);
       } catch (err) {
+        console.error('[Save] Image upload failed:', err);
         toast.error('Image upload failed. Using URL images only.');
       }
     }
@@ -503,6 +509,7 @@ export default function AdminProductsPage() {
         options: [{ name: "Size", values: form.variants.map(v => v.sku) }],
         variants: form.variants,
       };
+      console.log('[Save] Saving product with body:', body);
 
       const res = editing
         ? await adminFetch("/api/admin/products", { method: "PATCH", body: JSON.stringify({ id: editing.id, data: body }) })
