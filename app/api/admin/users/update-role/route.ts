@@ -1,137 +1,99 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySuperAdmin, verifyAdmin } from "@/lib/rbac";
 import { adminDb } from "@/lib/firebase-admin";
-import { logSecurityEvent } from "@/lib/logger";
-import { getClientInfo } from "@/lib/logger";
+import { FieldValue } from "firebase-admin/firestore";
+import { verifySuperAdmin } from "@/lib/rbac";
+
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/admin/users/update-role
- * Update user role (SUPERADMIN ONLY)
+ * Update user role (superadmin only)
+ * Body: { userId: string, role: "customer" | "admin" | "superadmin" }
  */
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // SUPERADMIN ONLY
-    const superAdmin = await verifySuperAdmin(request);
+    // Only superadmins can update roles
+    const admin = await verifySuperAdmin(req);
     
-    const { userId, role } = await request.json();
-    const { ip, userAgent } = getClientInfo(request);
-    
+    const body = await req.json();
+    const { userId, role } = body;
+
     if (!userId || !role) {
       return NextResponse.json(
         { success: false, error: "userId and role are required" },
         { status: 400 }
       );
     }
-    
+
     // Validate role
     const validRoles = ["customer", "admin", "superadmin"];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
-        { success: false, error: "Invalid role. Must be one of: customer, admin, superadmin" },
+        { success: false, error: `Invalid role. Must be one of: ${validRoles.join(", ")}` },
         { status: 400 }
       );
     }
-    
-    // Prevent self-demotion
-    if (userId === superAdmin.uid && superAdmin.role !== role) {
+
+    // Prevent demoting yourself
+    if (userId === admin.uid && role !== "superadmin") {
       return NextResponse.json(
         { success: false, error: "Cannot change your own role" },
         { status: 403 }
       );
     }
-    
-    // Get current user data
+
     const userRef = adminDb.collection("users").doc(userId);
-    const userDoc = await userRef.get();
-    
-    if (!userDoc.exists) {
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
       return NextResponse.json(
         { success: false, error: "User not found" },
         { status: 404 }
       );
     }
-    
-    const currentRole = userDoc.data()?.role || "customer";
-    
-    // Update role in Firestore
+
+    const userData = userSnap.data();
+    const oldRole = userData?.role || "customer";
+
+    // Update user role
     await userRef.update({
       role,
-      updatedAt: new Date(),
+      updatedAt: FieldValue.serverTimestamp(),
+      roleUpdatedBy: admin.uid,
+      roleUpdatedAt: FieldValue.serverTimestamp(),
     });
-    
-    // Log security event
-    await logSecurityEvent({
-      type: "SECURITY",
-      action: "ROLE_CHANGE",
-      userId: superAdmin.uid,
-      role: superAdmin.role,
-      ip,
-      userAgent,
-      status: "SUCCESS",
-      metadata: {
-        targetUserId: userId,
-        previousRole: currentRole,
+
+    // Log the action
+    await adminDb.collection("admin_logs").add({
+      adminId: admin.uid,
+      action: "update_user_role",
+      resourceId: userId,
+      details: `Changed role from "${oldRole}" to "${role}" for user ${userData?.email || userId}`,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `User role updated to "${role}"`,
+      data: {
+        userId,
+        oldRole,
         newRole: role,
       },
-      timestamp: new Date(),
-    });
-    
-    return NextResponse.json({
-      success: true,
-      message: `User role updated to ${role}`,
     });
   } catch (error: any) {
-    console.error("Failed to update user role:", error);
+    console.error("[Update Role API] Error:", error);
     
-    await logSecurityEvent({
-      type: "SECURITY",
-      action: "ROLE_CHANGE_FAILED",
-      status: "FAILED",
-      metadata: { error: error.message },
-      timestamp: new Date(),
-    });
+    if (error.status) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to update role" },
-      { status: error.status || 500 }
-    );
-  }
-}
-
-/**
- * GET /api/admin/users/list
- * List all users (ADMIN+)
- */
-export async function GET(request: NextRequest) {
-  try {
-    // ADMIN+ required
-    const admin = await verifyAdmin(request);
-    
-    // Fetch users from Firestore
-    const usersSnapshot = await adminDb.collection("users").get();
-    
-    const users = usersSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })).map((user: any) => ({
-      id: user.id,
-      email: user.email || "N/A",
-      name: user.name || "Anonymous",
-      role: user.role || "customer",
-      createdAt: user.createdAt?.toDate ? user.createdAt.toDate() : null,
-      updatedAt: user.updatedAt?.toDate ? user.updatedAt.toDate() : null,
-    }));
-    
-    return NextResponse.json({
-      success: true,
-      users,
-      count: users.length,
-    });
-  } catch (error: any) {
-    console.error("Failed to fetch users:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to fetch users" },
-      { status: error.status || 500 }
+      { success: false, error: "Failed to update role" },
+      { status: 500 }
     );
   }
 }
