@@ -13,19 +13,16 @@ import { cn } from '@/lib/utils';
 
 /**
  * Get thumbnail URL from original image URL
- * Converts: .../original/123-image.jpg → .../thumbnail/123-image.jpg
+ * Since we only upload 'original' variant currently, return the original URL directly.
+ * When thumbnail generation is added, this can convert:
+ *   .../original/123-image.jpg → .../thumbnail/123-image.jpg
  */
 function getThumbnailUrl(originalUrl: string): string {
   if (!originalUrl || originalUrl === '/placeholder.svg') {
     return '/placeholder.svg';
   }
   
-  // If URL contains '/original/', replace with '/thumbnail/'
-  if (originalUrl.includes('/original/')) {
-    return originalUrl.replace('/original/', '/thumbnail/');
-  }
-  
-  // For non-storage URLs (external), return as-is
+  // Return original URL - thumbnails are not currently generated during upload
   return originalUrl;
 }
 
