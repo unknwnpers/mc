@@ -25,9 +25,23 @@ export async function POST(req: Request) {
     // 1. Transactionally Release Stock Reservation
     await releaseReservation(reservationId);
 
-    // 2. Exact Map Update Order Status
+    // 2. Update Order Status (fallback for COD-converted orders)
     if (razorpayOrderId) {
-      const orderRef = adminDb.collection("orders").doc(razorpayOrderId);
+      let orderRef = adminDb.collection("orders").doc(razorpayOrderId);
+      let orderSnap = await orderRef.get();
+
+      // Fallback: COD-converted orders use codPaymentRazorpayOrderId, not doc ID
+      if (!orderSnap.exists) {
+        const codQuery = await adminDb
+          .collection("orders")
+          .where("codPaymentRazorpayOrderId", "==", razorpayOrderId)
+          .limit(1)
+          .get();
+
+        if (!codQuery.empty) {
+          orderRef = codQuery.docs[0].ref;
+        }
+      }
       
       await adminDb.runTransaction(async (tx) => {
           const snap = await tx.get(orderRef);

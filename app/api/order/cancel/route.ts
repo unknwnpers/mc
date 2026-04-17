@@ -59,7 +59,8 @@ export async function POST(req: Request) {
 
     // 🔴 PROCESS REFUND FOR ONLINE PAYMENTS
     // Check if order has Razorpay payment (not COD or mock)
-    const razorpayOrderId = orderData.razorpayOrderId;
+    // For COD-converted orders, use codPaymentRazorpayOrderId instead of razorpayOrderId
+    const razorpayOrderId = orderData.razorpayOrderId || orderData.codPaymentRazorpayOrderId;
     const isCOD = orderData.isCOD === true;
     const isPaid = ["paid", "processing"].includes(orderData.status) || 
                    (orderData.payment?.status === "paid") ||

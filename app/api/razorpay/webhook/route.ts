@@ -43,7 +43,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "No order ID — ignored" });
     }
 
-    const orderRef = adminDb.collection("orders").doc(orderId);
+    let orderRef = adminDb.collection("orders").doc(orderId);
+    let orderSnap = await orderRef.get();
+
+    // Fallback: COD-converted orders use codPaymentRazorpayOrderId, not doc ID
+    if (!orderSnap.exists) {
+      const codQuery = await adminDb
+        .collection("orders")
+        .where("codPaymentRazorpayOrderId", "==", orderId)
+        .limit(1)
+        .get();
+
+      if (!codQuery.empty) {
+        orderRef = codQuery.docs[0].ref;
+        orderSnap = codQuery.docs[0];
+      }
+    }
 
     // ── 3. payment.captured / payment.authorized / order.paid ───────────────
     if (["payment.captured", "payment.authorized", "order.paid"].includes(event)) {

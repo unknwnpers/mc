@@ -7,7 +7,6 @@ import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { CuratedCollection } from "@/lib/types";
-import { uploadImageWithVariants } from "@/lib/storage";
 import {
   Plus, Pencil, Trash2, GripVertical, X, Save, Check,
   Loader2, Image as ImageIcon, ArrowUp, ArrowDown, Upload, Link as LinkIcon,
@@ -247,12 +246,25 @@ export default function AdminCollectionsPage() {
 
     setUploadingImage(true);
     try {
-      const tempId = editing?.id || `temp-${Date.now()}`;
-      const result = await uploadImageWithVariants(file, {
-        entityType: "system",
-        entityId: `collection-${tempId}`,
+      const token = await auth.currentUser?.getIdToken();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "system");
+      formData.append("subcategory", "collection");
+
+      const res = await fetch("/api/admin/images/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
-      setForm({ ...form, backgroundImage: result.original });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to upload image");
+      }
+
+      // Use the public URL from the server response
+      setForm({ ...form, backgroundImage: data.image?.url || data.image?.variants?.original?.url || "" });
       toast.success("Image uploaded successfully");
     } catch (e: any) {
       toast.error(e.message || "Failed to upload image");

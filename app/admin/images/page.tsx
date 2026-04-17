@@ -52,11 +52,17 @@ export default function ImageManagerPage() {
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'superadmin';
 
-  // Fetch images
+  // Fetch images (include inactive for admin)
   const fetchImages = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/images?limit=100');
+      const token = await user?.getIdToken();
+      const response = await fetch('/api/images?limit=100&includeInactive=true', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-admin': 'true',
+        },
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -171,8 +177,12 @@ export default function ImageManagerPage() {
     }
 
     try {
+      const token = await user?.getIdToken();
       const response = await fetch(`/api/images/${imageId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       const data = await response.json();

@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── Build Query (single composite index strategy) ─────────────────────
+    // Admin requests can see inactive images; public requests only see active
+    const includeInactive = isAdminRequest || searchParams.get('includeInactive') === 'true';
     let query: any;
     
     if (category && subcategory) {
@@ -82,6 +84,11 @@ export async function GET(request: NextRequest) {
         .collection('image_metadata')
         .where('isActive', '==', true)
         .where('categoryKey', '==', categoryKey)
+        .orderBy('uploadedAt', 'desc');
+    } else if (includeInactive) {
+      // Admin query: no isActive filter (different index)
+      query = adminDb
+        .collection('image_metadata')
         .orderBy('uploadedAt', 'desc');
     } else {
       // Base query (no category filter)

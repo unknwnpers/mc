@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis for caching
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
+// Initialize Redis for caching (only if credentials available)
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
+const redis = redisUrl && redisToken ? new Redis({ url: redisUrl, token: redisToken }) : null;
 
 const CACHE_TTL = 600; // 10 minutes cache
 
@@ -39,7 +38,7 @@ export async function GET(
 
     // Try to get from cache
     try {
-      const cached = await redis.get(cacheKey);
+      const cached = redis ? await redis.get(cacheKey) : null;
       if (cached) {
         return NextResponse.json(
           {
@@ -102,7 +101,7 @@ export async function GET(
 
     // Cache the result
     try {
-      await redis.setex(cacheKey, CACHE_TTL, image);
+      if (redis) await redis.setex(cacheKey, CACHE_TTL, image);
     } catch (cacheErr) {
       console.warn('[Image Detail API] Cache set error:', cacheErr);
     }
@@ -194,9 +193,11 @@ export async function DELETE(
 
     // Clear cache
     try {
-      await redis.del(`images:detail:${id}:original`);
-      await redis.del(`images:detail:${id}:thumbnail`);
-      await redis.del(`images:detail:${id}:medium`);
+      if (redis) {
+        await redis.del(`images:detail:${id}:original`);
+        await redis.del(`images:detail:${id}:thumbnail`);
+        await redis.del(`images:detail:${id}:medium`);
+      }
     } catch (cacheErr) {
       console.warn('[Image Delete] Cache clear error:', cacheErr);
     }
