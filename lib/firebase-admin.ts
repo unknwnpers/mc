@@ -20,13 +20,14 @@ if (!redis) {
 const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`;
 
 let app: App;
 
 if (!getApps().length) {
   if (projectId && clientEmail && privateKey) {
     // Handle multiple formats of escaped newlines
-    // Vercel/env files may have \\n or \n depending on how they're stored
+    // Vercel/env files may have \n or \n depending on how they're stored
     const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
     try {
@@ -36,6 +37,7 @@ if (!getApps().length) {
           clientEmail,
           privateKey: formattedPrivateKey,
         }),
+        storageBucket,
       });
       console.log('✅ Firebase Admin initialized successfully');
     } catch (error) {
