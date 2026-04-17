@@ -50,6 +50,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         } catch (e) {
           // Ignore cleanup errors
         }
+        window.recaptchaVerifier = null;
       }
     };
   }, []);
@@ -72,6 +73,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         } catch (e) {
           // Ignore
         }
+        window.recaptchaVerifier = null;
       }
 
       const auth = getFirebaseAuth();

@@ -7,9 +7,8 @@ import Footer from "@/components/Footer";
 import PhoneAuth from "@/components/PhoneAuth";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { ShoppingBag, ArrowRight, Phone, Mail, AlertCircle } from "lucide-react";
-import { initAppCheck } from "@/lib/firebase";
 
 function LoginContent() {
   const [loading, setLoading] = useState(false);
@@ -18,11 +17,6 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
-
-  // Initialize App Check on mount
-  useEffect(() => {
-    initAppCheck();
-  }, []);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
