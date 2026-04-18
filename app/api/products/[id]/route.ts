@@ -67,9 +67,17 @@ export async function GET(
       );
     }
     
+    // Calculate available stock for each variant
+    const variants = data?.variants || [];
+    const variantsWithAvailableStock = variants.map((variant: any) => ({
+      ...variant,
+      availableStock: Math.max(0, (variant.stock || 0) - (variant.reservedStock || 0)),
+    }));
+
     const product: Product = {
       id: docSnap.id,
       ...data,
+      variants: variantsWithAvailableStock,
       // Convert Firestore timestamps to ISO strings
       createdAt: data?.createdAt?.toDate?.().toISOString() || data?.createdAt,
       updatedAt: data?.updatedAt?.toDate?.().toISOString() || data?.updatedAt,

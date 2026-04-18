@@ -51,6 +51,8 @@ export default function ProductDetailsPage() {
   const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
   const [showLightbox, setShowLightbox] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['description']);
+  const [stats, setStats] = useState({ viewers: 0, inCart: 0 });
+  const [availableStock, setAvailableStock] = useState<Record<string, number>>({});
   const { addToCart } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -67,7 +69,58 @@ export default function ProductDetailsPage() {
   useEffect(() => {
     fetchProduct();
     fetchReviews();
+    
+    // Track product view and setup stats polling
+    if (id) {
+      trackProductView();
+      fetchProductStats();
+      
+      // Poll stats every 30 seconds
+      const statsInterval = setInterval(fetchProductStats, 30000);
+      
+      return () => {
+        clearInterval(statsInterval);
+      };
+    }
   }, [id]);
+
+  // Track product view
+  const trackProductView = async () => {
+    try {
+      // Get or create session ID
+      let sessionId = localStorage.getItem('product_view_session_id');
+      if (!sessionId) {
+        sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('product_view_session_id', sessionId);
+      }
+      
+      await fetch(`/api/products/${id}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+    } catch (error) {
+      console.error('Error tracking product view:', error);
+    }
+  };
+
+  // Fetch product stats (viewers, in-cart count, available stock)
+  const fetchProductStats = async () => {
+    try {
+      const response = await fetch(`/api/products/${id}/stats`);
+      const result = await response.json();
+      
+      if (result.success && result.stats) {
+        setStats({
+          viewers: result.stats.viewers || 0,
+          inCart: result.stats.inCart || 0,
+        });
+        setAvailableStock(result.stats.availableStock || {});
+      }
+    } catch (error) {
+      console.error('Error fetching product stats:', error);
+    }
+  };
 
   // Fetch offer when product loads or size changes
   useEffect(() => {
@@ -513,16 +566,16 @@ export default function ProductDetailsPage() {
               })()}
             </div>
 
-            {/* Social Proof */}
+            {/* Social Proof - Real-time Stats */}
             <div className="flex items-center gap-4 mb-6 text-sm text-neutral-500">
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5" title="Active viewers in the last 5 minutes">
                 <Eye className="w-4 h-4" />
-                {Math.floor(Math.random() * 50) + 20} people viewing this
+                {stats.viewers} people viewing this
               </span>
               <span className="w-1 h-1 bg-neutral-300 rounded-full" />
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5" title="Users with this product in their cart">
                 <ShoppingCart className="w-4 h-4" />
-                {Math.floor(Math.random() * 15) + 5} in carts
+                {stats.inCart} in carts
               </span>
             </div>
 
@@ -713,35 +766,56 @@ export default function ProductDetailsPage() {
             })()}
 
             <div className="mt-auto space-y-6">
-              {/* Quantity Selector */}
+              {/* Quantity Selector with Available Stock */}
               {(() => {
                 const variants = (product as any).variants;
                 const hasVariants = variants && variants.length > 0;
                 const selectedVariant = hasVariants ? variants.find((v: any) => v.sku === selectedSize) : null;
-                const maxQty = selectedVariant?.stock || 10;
+                // Use availableStock from server (stock - reservedStock), fallback to variant.availableStock or stock
+                const maxQty = selectedSize ? (availableStock[selectedSize] ?? selectedVariant?.availableStock ?? selectedVariant?.stock ?? 10) : 10;
+                const isOutOfStock = maxQty <= 0;
+                const isLowStock = maxQty > 0 && maxQty <= 3;
                 
                 return (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
                     <span className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Quantity</span>
                     <div className="flex items-center border border-neutral-200 rounded-xl overflow-hidden">
                       <button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        disabled={quantity <= 1}
+                        disabled={quantity <= 1 || isOutOfStock}
                         className="px-4 py-2 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="px-4 py-2 font-bold text-neutral-700 min-w-[3rem] text-center">
-                        {quantity}
+                      <span className={`px-4 py-2 font-bold min-w-[3rem] text-center ${isOutOfStock ? 'text-neutral-400' : 'text-neutral-700'}`}>
+                        {isOutOfStock ? 0 : quantity}
                       </span>
                       <button
                         onClick={() => setQuantity(Math.min(maxQty, quantity + 1))}
-                        disabled={quantity >= maxQty}
+                        disabled={quantity >= maxQty || isOutOfStock}
                         className="px-4 py-2 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
+                    
+                    {/* Stock Status Indicator */}
+                    {selectedSize && (
+                      <span className={`text-xs font-medium ${
+                        isOutOfStock 
+                          ? 'text-red-500' 
+                          : isLowStock 
+                            ? 'text-amber-600' 
+                            : 'text-green-600'
+                      }`}>
+                        {isOutOfStock 
+                          ? 'Out of Stock' 
+                          : isLowStock 
+                            ? `Only ${maxQty} left!` 
+                            : `${maxQty} available`
+                        }
+                      </span>
+                    )}
                   </div>
                 );
               })()}
@@ -751,25 +825,30 @@ export default function ProductDetailsPage() {
                   const variants = (product as any).variants;
                   const hasVariants = variants && variants.length > 0;
                   const needsSizeSelection = hasVariants && !selectedSize;
+                  // Check if selected size is out of stock
+                  const maxQty = selectedSize ? (availableStock[selectedSize] ?? variants?.find((v: any) => v.sku === selectedSize)?.availableStock ?? variants?.find((v: any) => v.sku === selectedSize)?.stock ?? 0) : 0;
+                  const isOutOfStock = selectedSize && maxQty <= 0;
                   
                   return (
                     <>
                       <button
                         onClick={handleAddToCart}
-                        disabled={!user || needsSizeSelection}
+                        disabled={!user || needsSizeSelection || isOutOfStock}
                         className={cn(
                           "flex-1 px-8 py-5 rounded-2xl transition-all shadow-xl font-bold text-lg active:scale-95 flex items-center justify-center gap-3 group relative overflow-hidden",
                           !user
                             ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
                             : needsSizeSelection
                               ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
-                              : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
+                              : isOutOfStock
+                                ? "bg-red-50 text-red-400 cursor-not-allowed shadow-none border-2 border-red-100"
+                                : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
                         )}
                       >
-                        <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                        <ShoppingCart className="w-6 h-6 relative z-10 transition-transform group-hover:scale-110" />
+                        {!isOutOfStock && <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />}
+                        <ShoppingCart className={cn("w-6 h-6 relative z-10 transition-transform", !isOutOfStock && "group-hover:scale-110")} />
                         <span className="relative z-10">
-                          {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : `Add ${quantity} to Cart`}
+                          {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : `Add ${quantity} to Cart`}
                         </span>
                       </button>
                       <button 
