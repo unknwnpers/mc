@@ -329,8 +329,8 @@ export default function ProductDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-24">
           {/* IMAGE SECTION */}
           <div className="space-y-3">
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10">
+            {/* Main Image - Reduced height with better hover effect */}
+            <div className="relative aspect-[4/5] max-h-[500px] rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10 group">
               {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
               <img
                 src={(product as any).images?.[selectedImageIndex] || '/placeholder.svg'}
@@ -342,10 +342,18 @@ export default function ProductDetailsPage() {
                   setImgLoading(false);
                 }}
                 className={cn(
-                  "w-full h-full object-cover transition-all duration-700 hover:scale-105",
+                  "w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110",
                   imgLoading ? "opacity-0" : "opacity-100"
                 )}
               />
+              {/* Hover Overlay with Zoom Icon */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                  </svg>
+                </div>
+              </div>
               {/* Image Counter */}
               {((product as any).images?.length || 0) > 1 && (
                 <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full">
@@ -380,18 +388,18 @@ export default function ProductDetailsPage() {
                 </>
               )}
             </div>
-            {/* Thumbnail Strip */}
+            {/* Thumbnail Strip - Improved visibility */}
             {((product as any).images?.length || 0) > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-2 pt-1">
                 {((product as any).images || []).map((img: string, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => { setSelectedImageIndex(idx); setImgLoading(true); }}
                     className={cn(
-                      "relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all",
+                      "relative w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden shrink-0 border-2 transition-all hover:shadow-md",
                       selectedImageIndex === idx
-                        ? "border-blush shadow-md shadow-rose-200"
-                        : "border-transparent hover:border-neutral-200"
+                        ? "border-blush shadow-md shadow-rose-200 ring-2 ring-blush/20"
+                        : "border-neutral-200 hover:border-blush/50"
                     )}
                   >
                     <img
