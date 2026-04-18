@@ -226,9 +226,10 @@ export default function CartPage() {
                                 {cart.map((item) => (
                                     <div
                                         key={item.id}
-                                        className="flex gap-8 items-center bg-white p-6 rounded-[40px] border border-[#F3E8E5] shadow-sm hover:shadow-xl hover:shadow-blush/5 transition-all duration-500 group"
+                                        className="flex gap-4 sm:gap-6 bg-white p-4 sm:p-6 rounded-[32px] border border-[#F3E8E5] shadow-sm hover:shadow-xl hover:shadow-blush/5 transition-all duration-500 group"
                                     >
-                                        <div className="w-32 h-32 bg-cream rounded-[32px] overflow-hidden shrink-0 border border-[#F3E8E5]">
+                                        {/* Product Image */}
+                                        <div className="w-24 h-24 sm:w-32 sm:h-32 bg-cream rounded-[24px] sm:rounded-[32px] overflow-hidden shrink-0 border border-[#F3E8E5]">
                                             <img
                                                 src={item.image}
                                                 alt={item.name}
@@ -236,21 +237,33 @@ export default function CartPage() {
                                             />
                                         </div>
 
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-serif font-bold text-2xl text-charcoal mb-0.5 truncate">
-                                                {item.name}
-                                            </h3>
+                                        {/* Product Info */}
+                                        <div className="flex-1 min-w-0 flex flex-col">
+                                            {/* Header: Title + Delete */}
+                                            <div className="flex items-start justify-between gap-3 mb-1">
+                                                <h3 className="font-serif font-bold text-lg sm:text-2xl text-charcoal truncate leading-tight">
+                                                    {item.name}
+                                                </h3>
+                                                <button
+                                                    onClick={() => {
+                                                        removeFromCart(item.id, item.sku);
+                                                        toast.error(`${item.name} removed`);
+                                                    }}
+                                                    className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all active:scale-90 shrink-0 -mr-2 -mt-2"
+                                                    title="Remove item"
+                                                    aria-label="Remove item from cart"
+                                                >
+                                                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                                </button>
+                                            </div>
+
+                                            {/* Size */}
                                             {(() => {
-                                                // Extract size from selectedSize and convert old format
                                                 let displaySize = item.selectedSize;
-                                                
-                                                // Convert old format sizes like "12Y" to "1-2Y"
                                                 if (displaySize) {
-                                                    // Check if it's in format like "KIDSHOOD-12Y" - extract and convert
                                                     const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
                                                     if (skuMatch) {
                                                         const num = skuMatch[1];
-                                                        // Convert "12Y" -> "1-2Y", "23Y" -> "2-3Y", etc.
                                                         if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
                                                             displaySize = `${num[0]}-${num.slice(1)}Y`;
                                                         } else {
@@ -258,18 +271,20 @@ export default function CartPage() {
                                                         }
                                                     }
                                                 }
-                                                
                                                 return displaySize ? (
-                                                    <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">
+                                                    <p className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">
                                                         Size: {displaySize}
                                                     </p>
                                                 ) : null;
                                             })()}
-                                            <p className="text-blush font-bold text-xl mb-4">
-                                                ₹{item.price}
+
+                                            {/* Price - Single, prominent */}
+                                            <p className="text-blush font-bold text-xl sm:text-2xl mb-3 sm:mb-4">
+                                                ₹{item.price * item.quantity}
                                             </p>
 
-                                            <div className="flex items-center gap-1 bg-white p-1.5 rounded-xl border border-neutral-300 w-fit shadow-sm">
+                                            {/* Quantity Selector - Improved touch targets */}
+                                            <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() =>
                                                         updateQuantity(
@@ -278,13 +293,14 @@ export default function CartPage() {
                                                             item.sku
                                                         )
                                                     }
-                                                    className="w-10 h-10 flex items-center justify-center hover:bg-blush/10 hover:text-blush rounded-lg transition-all active:scale-90 border border-transparent hover:border-blush/20"
+                                                    disabled={item.quantity <= 1}
+                                                    className="w-11 h-11 flex items-center justify-center bg-white border border-neutral-300 rounded-xl hover:border-blush hover:text-blush transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                                                     aria-label="Decrease quantity"
                                                 >
                                                     <Minus className="w-4 h-4" />
                                                 </button>
 
-                                                <span className="w-12 text-center font-bold text-charcoal font-sans text-lg">
+                                                <span className="w-12 h-11 flex items-center justify-center font-bold text-charcoal font-sans text-lg bg-neutral-50 rounded-xl border border-neutral-200">
                                                     {item.quantity}
                                                 </span>
 
@@ -292,29 +308,12 @@ export default function CartPage() {
                                                     onClick={() =>
                                                         updateQuantity(item.id, item.quantity + 1, item.sku)
                                                     }
-                                                    className="w-10 h-10 flex items-center justify-center hover:bg-blush/10 hover:text-blush rounded-lg transition-all active:scale-90 border border-transparent hover:border-blush/20"
+                                                    className="w-11 h-11 flex items-center justify-center bg-white border border-neutral-300 rounded-xl hover:border-blush hover:text-blush transition-all active:scale-90 shadow-sm"
                                                     aria-label="Increase quantity"
                                                 >
                                                     <Plus className="w-4 h-4" />
                                                 </button>
                                             </div>
-                                        </div>
-
-                                        <div className="text-right flex flex-col items-end gap-6 pr-4">
-                                            <p className="font-serif font-bold text-2xl text-charcoal">
-                                                ₹{item.price * item.quantity}
-                                            </p>
-                                            <button
-                                                onClick={() => {
-                                                    removeFromCart(item.id, item.sku);
-                                                    toast.error(`${item.name} removed`);
-                                                }}
-                                                className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-transparent hover:border-red-200"
-                                                title="Remove item"
-                                                aria-label="Remove item from cart"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
                                         </div>
                                     </div>
                                 ))}
