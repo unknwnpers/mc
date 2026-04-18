@@ -32,6 +32,7 @@ const statusStyles: Record<string, string> = {
   delivered:       "bg-green-100 text-green-600 border-green-200",
   cancelled:       "bg-red-100 text-red-600 border-red-200",
   failed:          "bg-red-200 text-red-700 border-red-300",
+  expired:         "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 const paymentMethodStyles = {
@@ -78,7 +79,7 @@ function formatDate(dateValue: any): string {
   }
 }
 
-const ALL_STATUSES = ["all", "pending_payment", "paid", "processing", "shipped", "delivered", "cancelled"];
+const ALL_STATUSES = ["all", "pending_payment", "paid", "processing", "shipped", "delivered", "cancelled", "expired"];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders]               = useState<any[]>([]);

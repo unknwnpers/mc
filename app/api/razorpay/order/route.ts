@@ -202,6 +202,9 @@ export async function POST(req: Request) {
     }
 
     // ── 5. Persist order (keyed by Razorpay order ID for webhook correlation) ──
+    // Calculate payment expiration time (30 minutes from now)
+    const paymentExpiresAt = Timestamp.fromMillis(Date.now() + 30 * 60 * 1000);
+    
     const orderDoc = {
       userId,
       items:           validatedItems,
@@ -213,6 +216,7 @@ export async function POST(req: Request) {
       razorpayOrderId,
       reservationId,
       isCOD,
+      paymentExpiresAt: isCOD || isMock ? null : paymentExpiresAt, // Only for pending payment orders
       paymentBreakdown: {
         shipping: paymentBreakdown.shipping,
         handlingFee: paymentBreakdown.handlingFee,

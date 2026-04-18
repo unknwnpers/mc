@@ -20,6 +20,7 @@ const statusConfig: any = {
     shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-600", icon: Truck, desc: "Your order is on its way!" },
     delivered: { label: "Delivered", color: "bg-green-100 text-green-600", icon: CheckCircle2, desc: "Order has been successfully delivered. Hope you love it!" },
     cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600", icon: ArrowLeft, desc: "Your order has been cancelled." },
+    expired: { label: "Expired", color: "bg-gray-100 text-gray-500", icon: Clock, desc: "Payment window expired. Please create a new order to complete your purchase." },
 };
 
 // Timeline steps for visual progress tracker (different for COD vs Online)
@@ -68,6 +69,79 @@ const formatTimelineTime = (val: any): string => {
     return d.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });
 };
 
+// ── Countdown Hook ─────────────────────────────────────────────────────────────
+function useCountdown(expiresAt: any) {
+    const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number; totalMs: number } | null>(null);
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        if (!expiresAt) return;
+
+        const calculateTimeLeft = () => {
+            const now = Date.now();
+            const expiry = expiresAt?.toDate ? expiresAt.toDate().getTime() : new Date(expiresAt).getTime();
+            const diff = expiry - now;
+
+            if (diff <= 0) {
+                setIsExpired(true);
+                setTimeLeft(null);
+                return;
+            }
+
+            setIsExpired(false);
+            setTimeLeft({
+                minutes: Math.floor(diff / 60000),
+                seconds: Math.floor((diff % 60000) / 1000),
+                totalMs: diff,
+            });
+        };
+
+        calculateTimeLeft();
+        const timer = setInterval(calculateTimeLeft, 1000);
+
+        return () => clearInterval(timer);
+    }, [expiresAt]);
+
+    return { timeLeft, isExpired };
+}
+
+// ── Countdown Display Component ────────────────────────────────────────────────
+function CountdownBadge({ expiresAt, onExpire }: { expiresAt: any; onExpire?: () => void }) {
+    const { timeLeft, isExpired } = useCountdown(expiresAt);
+
+    useEffect(() => {
+        if (isExpired && onExpire) {
+            onExpire();
+        }
+    }, [isExpired, onExpire]);
+
+    if (isExpired || !timeLeft) {
+        return (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200">
+                <Clock className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-widest">Expired</span>
+            </div>
+        );
+    }
+
+    const isUrgent = timeLeft.totalMs < 5 * 60 * 1000; // Less than 5 minutes
+    const isCritical = timeLeft.totalMs < 1 * 60 * 1000; // Less than 1 minute
+
+    return (
+        <div className={cn(
+            "inline-flex items-center gap-2 px-4 py-2 rounded-xl border animate-pulse",
+            isCritical ? "bg-red-50 text-red-600 border-red-200" :
+            isUrgent ? "bg-amber-50 text-amber-600 border-amber-200" :
+            "bg-blue-50 text-blue-600 border-blue-200"
+        )}>
+            <Clock className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-widest">
+                Pay in {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+            </span>
+        </div>
+    );
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function OrderDetailPage() {
     const { id } = useParams();
@@ -77,6 +151,7 @@ export default function OrderDetailPage() {
     const [loading, setLoading] = useState(true);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isPayingOnline, setIsPayingOnline] = useState(false);
+    const [isExpired, setIsExpired] = useState(false);
     
     const orderId = Array.isArray(id) ? id[0] : id;
 
@@ -234,6 +309,7 @@ export default function OrderDetailPage() {
     const orderTimestamp = order.createdAt || order.updatedAt;
     const formattedDate = getOrderDate(orderTimestamp) || "Recently";
     const isCancelled = order.status === "cancelled";
+    const isOrderExpired = order.status === "expired" || isExpired;
     // Timeline steps: COD shows 3 steps, online shows 5 steps
     // If a COD order was converted to online (isCOD=false but has codPaymentRazorpayOrderId),
     // show online steps starting from "paid" (skip pending_payment)
@@ -286,8 +362,18 @@ export default function OrderDetailPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 flex-wrap">
+                                            {/* Countdown for pending payment orders */}
+                                            {order.status === "pending_payment" && order.paymentExpiresAt && (
+                                                <CountdownBadge 
+                                                    expiresAt={order.paymentExpiresAt} 
+                                                    onExpire={() => {
+                                                        setIsExpired(true);
+                                                        fetchOrder(); // Refresh to get updated status
+                                                    }}
+                                                />
+                                            )}
                                             {/* Pay Online button for COD orders (before delivery) */}
-                                            {order.isCOD && !["cancelled", "delivered"].includes(order.status) && !order.razorpayPaymentId && (
+                                            {order.isCOD && !["cancelled", "delivered", "expired"].includes(order.status) && !order.razorpayPaymentId && (
                                                 <button 
                                                     onClick={handlePayOnline}
                                                     disabled={isPayingOnline}
@@ -297,7 +383,8 @@ export default function OrderDetailPage() {
                                                     {isPayingOnline ? "Processing..." : "Pay Online"}
                                                 </button>
                                             )}
-                                            {["pending_payment", "paid", "processing"].includes(order.status) && (
+                                            {/* Cancel button - disabled for expired orders */}
+                                            {["pending_payment", "paid", "processing"].includes(order.status) && !isOrderExpired && (
                                                 <button 
                                                     onClick={handleCancel}
                                                     disabled={isCancelling}
@@ -313,8 +400,26 @@ export default function OrderDetailPage() {
                                         </div>
                                     </div>
 
+                                    {/* ── Expiration Banner ───────────────────── */}
+                                    {isOrderExpired && (
+                                        <div className="mb-8 p-6 bg-red-50 rounded-2xl border border-red-200">
+                                            <div className="flex items-start gap-4">
+                                                <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-red-500 shrink-0">
+                                                    <Clock className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-red-700 mb-1">Payment Window Expired</p>
+                                                    <p className="text-sm text-red-600">
+                                                        This order has expired because payment was not completed within 30 minutes. 
+                                                        Please create a new order if you still want to purchase these items.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* ── Visual Progress Timeline ────────────── */}
-                                    {!isCancelled && (
+                                    {!isCancelled && !isOrderExpired && (
                                         <div className="mb-8">
                                             {/* Desktop: Horizontal stepper */}
                                             <div className="hidden md:flex items-center justify-between">

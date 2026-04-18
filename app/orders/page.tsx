@@ -19,6 +19,7 @@ const statusConfig: any = {
     shipped: { label: "Shipped", color: "bg-indigo-100 text-indigo-600", icon: Truck, isCancelled: false },
     delivered: { label: "Delivered", color: "bg-green-100 text-green-600", icon: CheckCircle2, isCancelled: false },
     cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600", icon: XCircle, isCancelled: true },
+    expired: { label: "Expired", color: "bg-gray-100 text-gray-500", icon: Clock, isCancelled: true },
 };
 
 const formatDate = (dateStr: string) => {
@@ -46,11 +47,12 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
-    // Calculate stats excluding cancelled orders
-    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    // Calculate stats excluding cancelled and expired orders
+    const activeOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'expired');
     const totalSpent = activeOrders.reduce((sum, order) => sum + (order.total || 0), 0);
     const totalOrders = activeOrders.length;
     const cancelledCount = orders.filter(o => o.status === 'cancelled').length;
+    const expiredCount = orders.filter(o => o.status === 'expired').length;
 
     useEffect(() => {
         if (user === null) {
@@ -164,14 +166,16 @@ export default function OrdersPage() {
                 ) : (
                     <div className="space-y-16">
                         {(() => {
-                            // 1. Sort BEFORE grouping (Defensive)
-                            const sortedOrders = [...orders].sort((a, b) => {
+                            // 1. Filter out expired orders (customers shouldn't see them)
+                            // 2. Sort BEFORE grouping (Defensive)
+                            const visibleOrders = orders.filter(o => o.status !== 'expired');
+                            const sortedOrders = visibleOrders.sort((a, b) => {
                                 const timeA = a.createdAt?.seconds || 0;
                                 const timeB = b.createdAt?.seconds || 0;
                                 return timeB - timeA;
                             });
 
-                            // 2. Group
+                            // 3. Group
                             const groups = sortedOrders.reduce((acc: any, order) => {
                                 const date = order.createdAt?.seconds
                                     ? new Date(order.createdAt.seconds * 1000).toDateString()

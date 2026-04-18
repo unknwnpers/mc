@@ -94,12 +94,13 @@ export interface Order {
   userId: string;
   items: OrderItem[];
   total: number;
-  status: "pending_payment" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "failed";
+  status: "pending_payment" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "failed" | "expired";
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   reservationId?: string;
   recipient: { name: string; phone: string };
   shipping: { address: string; city?: string; pincode?: string };
+  paymentExpiresAt?: any; // Firestore Timestamp - when pending payment expires
   createdAt: any;
   updatedAt: any;
 }
