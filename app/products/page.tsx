@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import type { Product, Category } from '@/lib/types';
-import { Search, SlidersHorizontal, ArrowUpDown, Tag, X, IndianRupee, Ruler, ChevronRight, Home, Eye, ShoppingBag, Heart, Clock } from 'lucide-react';
+import { Search, SlidersHorizontal, ArrowUpDown, Tag, X, IndianRupee, Ruler, ChevronRight, Home, Eye, ShoppingBag, Heart, Clock, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { PRODUCT_CATEGORIES, normalizeUrlCategory } from '@/lib/constants';
@@ -46,6 +46,14 @@ function ProductsContent() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>(urlSizes);
   const [sizeFilterOpen, setSizeFilterOpen] = useState(false);
   const [availableSizes, setAvailableSizes] = useState<string[]>([]);
+
+  // Sort Dropdown State
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const sortOptions = [
+    { value: 'latest', label: 'Latest Arrivals' },
+    { value: 'price_low', label: 'Price: Low to High' },
+    { value: 'price_high', label: 'Price: High to Low' },
+  ];
 
   // Pagination State
   const ITEMS_PER_PAGE = 12;
@@ -350,25 +358,25 @@ function ProductsContent() {
           </nav>
 
           {/* 🔹 Header section */}
-          <div className="mt-10 mb-12">
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-charcoal tracking-tight">
+          <div className="mt-6 mb-6">
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-charcoal tracking-tight">
               The <span className="text-blush italic">Collection</span>
             </h1>
-            <p className="text-neutral-500 mt-6 max-w-lg text-lg font-sans leading-relaxed">
+            <p className="text-neutral-500 mt-3 max-w-lg text-base font-sans leading-relaxed">
               Thoughtfully curated essentials for mothers and children, crafted with care.
             </p>
           </div>
 
           {/* 🔹 Filters + Search + Sort Row (Consolidated for Alignment) */}
-          <div className="space-y-8 mb-16">
-            <div className="flex flex-wrap gap-4">
+          <div className="space-y-4 mb-12">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => handleCategoryChange(null)}
                 className={cn(
-                  "px-8 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 transform active:scale-95",
+                  "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 hover:shadow-md",
                   !selectedCategory
-                    ? "bg-blush text-white shadow-xl shadow-blush/20 scale-105"
-                    : "bg-white border border-[#F3E8E5] text-charcoal/60 hover:bg-blush/5 hover:border-blush/30 hover:text-blush"
+                    ? "bg-blush text-white font-semibold shadow-lg shadow-blush/20"
+                    : "bg-white border border-neutral-300 text-charcoal/70 hover:border-blush hover:text-blush hover:scale-105"
                 )}
               >
                 All Items
@@ -378,10 +386,10 @@ function ProductsContent() {
                   key={cat.id}
                   onClick={() => handleCategoryChange(cat.slug)}
                   className={cn(
-                    "px-8 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 transform active:scale-95",
+                    "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 hover:shadow-md",
                     selectedCategory === cat.slug
-                      ? "bg-blush text-white shadow-xl shadow-blush/20 scale-105"
-                      : "bg-white border border-[#F3E8E5] text-charcoal/60 hover:bg-blush/5 hover:border-blush/30 hover:text-blush"
+                      ? "bg-blush text-white font-semibold shadow-lg shadow-blush/20"
+                      : "bg-white border border-neutral-300 text-charcoal/70 hover:border-blush hover:text-blush hover:scale-105"
                   )}
                 >
                   {cat.name}
@@ -389,29 +397,58 @@ function ProductsContent() {
               ))}
             </div>
 
-            <div className="flex flex-col md:flex-row justify-between gap-6">
-              <div className="relative w-full md:w-3/5 lg:w-1/2 group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 group-focus-within:text-blush transition-colors" />
+            {/* Unified Toolbar - Search, Sort, Filters */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+              {/* Search */}
+              <div className="relative flex-1 max-w-xl group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-blush transition-colors" />
                 <input
                   type="text"
-                  placeholder="Search our premium collection..."
+                  placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-16 pr-8 py-4.5 rounded-[20px] border border-[#F3E8E5] bg-white text-charcoal placeholder:text-neutral-400 focus:outline-none focus:border-blush/50 focus:ring-4 focus:ring-blush/10 transition-all font-sans"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-neutral-300 bg-white text-charcoal text-sm placeholder:text-neutral-400 focus:outline-none focus:border-blush focus:ring-2 focus:ring-blush/20 focus:shadow-md transition-all duration-200 shadow-sm"
                 />
               </div>
 
-              <div className="relative w-full md:w-72">
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    className="w-full px-8 py-4.5 rounded-[20px] border border-[#F3E8E5] bg-white text-charcoal font-bold text-xs uppercase tracking-widest appearance-none focus:outline-none focus:border-blush/50 focus:ring-4 focus:ring-blush/10 transition-all cursor-pointer"
-                  >
-                    <option value="latest">Sort: Latest Arrivals</option>
-                    <option value="price_low">Price: Low to High</option>
-                    <option value="price_high">Price: High to Low</option>
-                  </select>
-                  <ArrowUpDown className="absolute right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+              {/* Sort Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                  className={cn(
+                    "h-11 px-4 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95",
+                    sortDropdownOpen
+                      ? "border-blush bg-blush/5 text-blush"
+                      : "border-neutral-300 bg-white text-charcoal hover:border-blush hover:text-blush"
+                  )}
+                >
+                  <ArrowUpDown className="w-4 h-4" />
+                  <span className="hidden sm:inline">
+                    {sortOptions.find(o => o.value === sort)?.label || 'Sort'}
+                  </span>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", sortDropdownOpen && "rotate-180")} />
+                </button>
+
+                {/* Sort Dropdown Menu */}
+                {sortDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl border border-neutral-200 shadow-xl py-1 z-50">
+                    {sortOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSort(option.value);
+                          setSortDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-neutral-50",
+                          sort === option.value ? "text-blush bg-blush/5" : "text-charcoal"
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Price Range Filter */}
@@ -419,19 +456,20 @@ function ProductsContent() {
                 <button
                   onClick={() => setPriceRangeOpen(!priceRangeOpen)}
                   className={cn(
-                    "w-full md:w-auto px-6 py-4.5 rounded-[20px] border font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2",
-                    (urlMinPrice || urlMaxPrice)
-                      ? "bg-blush text-white border-blush shadow-xl shadow-blush/20"
-                      : "bg-white border-[#F3E8E5] text-charcoal hover:border-blush/50 hover:text-blush"
+                    "h-11 px-4 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95",
+                    priceRangeOpen || (urlMinPrice || urlMaxPrice)
+                      ? "border-blush bg-blush text-white shadow-lg shadow-blush/20"
+                      : "border-neutral-300 bg-white text-charcoal hover:border-blush hover:text-blush"
                   )}
                 >
                   <IndianRupee className="w-4 h-4" />
-                  Price Range
+                  <span className="hidden sm:inline">Price</span>
                   {(urlMinPrice || urlMaxPrice) && (
-                    <span className="ml-1 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">
-                      {urlMinPrice ? `₹${urlMinPrice}` : '₹0'} - {urlMaxPrice ? `₹${urlMaxPrice}` : '∞'}
+                    <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded">
+                      {urlMinPrice || '0'}-{urlMaxPrice || '∞'}
                     </span>
                   )}
+                  <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", priceRangeOpen && "rotate-180")} />
                 </button>
 
                 {/* Price Range Dropdown */}
@@ -531,19 +569,20 @@ function ProductsContent() {
                 <button
                   onClick={() => setSizeFilterOpen(!sizeFilterOpen)}
                   className={cn(
-                    "w-full md:w-auto px-6 py-4.5 rounded-[20px] border font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2",
-                    urlSizes.length > 0
-                      ? "bg-blush text-white border-blush shadow-xl shadow-blush/20"
-                      : "bg-white border-[#F3E8E5] text-charcoal hover:border-blush/50 hover:text-blush"
+                    "h-11 px-4 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95",
+                    sizeFilterOpen || urlSizes.length > 0
+                      ? "border-blush bg-blush text-white shadow-lg shadow-blush/20"
+                      : "border-neutral-300 bg-white text-charcoal hover:border-blush hover:text-blush"
                   )}
                 >
                   <Ruler className="w-4 h-4" />
-                  Size
+                  <span className="hidden sm:inline">Size</span>
                   {urlSizes.length > 0 && (
-                    <span className="ml-1 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">
+                    <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded">
                       {urlSizes.length}
                     </span>
                   )}
+                  <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", sizeFilterOpen && "rotate-180")} />
                 </button>
 
                 {/* Size Filter Dropdown */}
@@ -622,7 +661,7 @@ function ProductsContent() {
             </div>
 
             {/* 🔹 Active Filters & Product Count */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
               {/* Product Count */}
               <p className="text-sm text-neutral-500">
                 {!loading && (
@@ -635,7 +674,10 @@ function ProductsContent() {
               {/* Active Filters */}
               {hasActiveFilters && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Active:</span>
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1">
+                    <SlidersHorizontal className="w-3 h-3" />
+                    Filters ({activeFilters.length}):
+                  </span>
                   {activeFilters.map((filter) => (
                     <button
                       key={filter.key}
@@ -646,27 +688,15 @@ function ProductsContent() {
                         }
                         removeFilter(filter.key);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blush/10 text-blush rounded-full text-xs font-bold hover:bg-blush/20 transition-colors group"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blush text-white rounded-lg text-xs font-semibold hover:bg-blush/90 transition-all duration-200 group shadow-sm hover:shadow-md active:scale-95"
                     >
                       <span>{filter.label}: {filter.value}</span>
                       <X className="w-3 h-3 group-hover:scale-110 transition-transform" />
                     </button>
                   ))}
-                  {search && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm("");
-                        setSearch("");
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blush/10 text-blush rounded-full text-xs font-bold hover:bg-blush/20 transition-colors group"
-                    >
-                      <span>Search: {search}</span>
-                      <X className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                    </button>
-                  )}
                   <button
                     onClick={clearAllFilters}
-                    className="text-xs font-bold text-neutral-400 hover:text-blush underline underline-offset-2 transition-colors ml-2"
+                    className="text-xs font-bold text-neutral-500 hover:text-blush hover:bg-neutral-100 px-2 py-1 rounded transition-all duration-200 ml-1"
                   >
                     Clear all
                   </button>
