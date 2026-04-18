@@ -10,6 +10,7 @@ import type { Product } from '@/lib/types';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 /**
  * Get thumbnail URL from original image URL
@@ -35,6 +36,7 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
 
   // Get image from images array (first image) or fallback
   const originalImage = product.images?.[0] || '/placeholder.svg';
@@ -47,7 +49,7 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   // Get stock from first variant or fallback to 0
   const displayStock = product.variants?.[0]?.stock ?? 0;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     
     if (!user) {
@@ -66,44 +68,54 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    // If product has exactly one variant, use it directly
-    if (hasVariants && variants.length === 1) {
-      const variant = variants[0];
-      
-      // Check stock
-      if (variant.stock <= 0) {
-        toast.error("Sorry, this item is out of stock");
+    setIsAdding(true);
+
+    try {
+      // If product has exactly one variant, use it directly
+      if (hasVariants && variants.length === 1) {
+        const variant = variants[0];
+        
+        // Check stock
+        if (variant.stock <= 0) {
+          toast.error("Sorry, this item is out of stock");
+          return;
+        }
+
+        await addToCart({
+          id: product.id,
+          name: product.name,
+          price: variant.price,
+          image: displayImage,
+          quantity: 1,
+          stock: variant.stock,
+          sku: variant.sku,
+          selectedSize: variant.options?.Size || variant.sku,
+        });
+        
+        // Navigate to cart after successful add
+        router.push('/cart');
         return;
       }
 
-      addToCart({
+      // Fallback for products without variants (legacy)
+      await addToCart({
         id: product.id,
         name: product.name,
-        price: variant.price,
+        price: displayPrice,
         image: displayImage,
         quantity: 1,
-        stock: variant.stock,
-        sku: variant.sku,
-        selectedSize: variant.options?.Size || variant.sku,  // Use Size from options, fallback to SKU
+        stock: displayStock,
+        sku: product.id,
+        selectedSize: "Free Size"
       });
       
-      toast.success(`${product.name} added to cart!`);
-      return;
+      // Navigate to cart after successful add
+      router.push('/cart');
+    } catch (error) {
+      toast.error("Failed to add to cart");
+    } finally {
+      setIsAdding(false);
     }
-
-    // Fallback for products without variants (legacy)
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: displayPrice,
-      image: displayImage,
-      quantity: 1,
-      stock: displayStock,
-      sku: product.id,
-      selectedSize: "Free Size"
-    });
-    
-    toast.success(`${product.name} added to cart!`);
   };
 
   return (
@@ -152,15 +164,26 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
 
           <button 
             onClick={handleAddToCart}
-            disabled={displayStock <= 0}
+            disabled={displayStock <= 0 || isAdding}
             className={cn(
-              "text-sm px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10",
+              "text-sm px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10 flex items-center gap-2",
               displayStock <= 0 
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-blush text-white hover:bg-[#f48c82]"
+                : isAdding
+                  ? "bg-blush/80 text-white cursor-wait"
+                  : "bg-blush text-white hover:bg-[#f48c82]"
             )}
           >
-            {displayStock <= 0 ? "Out of Stock" : "Add"}
+            {isAdding ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Adding...
+              </>
+            ) : displayStock <= 0 ? (
+              "Out of Stock"
+            ) : (
+              "Add"
+            )}
           </button>
         </div>
       </div>
