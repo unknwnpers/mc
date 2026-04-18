@@ -7,7 +7,9 @@ import { ApplyCoupon } from "@/components/ApplyCoupon";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle, Shield, RefreshCw, Headphones, AlertCircle } from "lucide-react";
+
+const MIN_ORDER_VALUE = 200;
 import Link from "next/link";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
@@ -189,10 +191,12 @@ export default function CartPage() {
                     {cart.length > 0 && (
                         <button 
                             onClick={() => {
-                                clearCart();
-                                toast.success("Cart cleared");
+                                if (confirm("Are you sure you want to remove all items from your cart?")) {
+                                    clearCart();
+                                    toast.success("Cart cleared");
+                                }
                             }}
-                            className="text-neutral-400 hover:text-blush transition-colors text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2"
+                            className="text-neutral-400 hover:text-red-500 transition-colors text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50"
                         >
                             <Trash2 className="w-4 h-4" />
                             Clear All
@@ -215,9 +219,9 @@ export default function CartPage() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-start">
                         {/* ITEMS LIST */}
-                        <div className="lg:col-span-2 space-y-10">
+                        <div className="lg:col-span-3 space-y-8">
                             <div className="space-y-6">
                                 {cart.map((item) => (
                                     <div
@@ -265,7 +269,7 @@ export default function CartPage() {
                                                 ₹{item.price}
                                             </p>
 
-                                            <div className="flex items-center gap-2 bg-cream width-fit p-1 rounded-2xl border border-blush/10 w-fit">
+                                            <div className="flex items-center gap-1 bg-white p-1.5 rounded-xl border border-neutral-300 w-fit shadow-sm">
                                                 <button
                                                     onClick={() =>
                                                         updateQuantity(
@@ -274,12 +278,13 @@ export default function CartPage() {
                                                             item.sku
                                                         )
                                                     }
-                                                    className="p-2.5 hover:bg-white hover:text-blush rounded-xl transition-all shadow-sm active:scale-90"
+                                                    className="w-10 h-10 flex items-center justify-center hover:bg-blush/10 hover:text-blush rounded-lg transition-all active:scale-90 border border-transparent hover:border-blush/20"
+                                                    aria-label="Decrease quantity"
                                                 >
                                                     <Minus className="w-4 h-4" />
                                                 </button>
 
-                                                <span className="w-12 text-center font-bold text-charcoal font-sans">
+                                                <span className="w-12 text-center font-bold text-charcoal font-sans text-lg">
                                                     {item.quantity}
                                                 </span>
 
@@ -287,7 +292,8 @@ export default function CartPage() {
                                                     onClick={() =>
                                                         updateQuantity(item.id, item.quantity + 1, item.sku)
                                                     }
-                                                    className="p-2.5 hover:bg-white hover:text-blush rounded-xl transition-all shadow-sm active:scale-90"
+                                                    className="w-10 h-10 flex items-center justify-center hover:bg-blush/10 hover:text-blush rounded-lg transition-all active:scale-90 border border-transparent hover:border-blush/20"
+                                                    aria-label="Increase quantity"
                                                 >
                                                     <Plus className="w-4 h-4" />
                                                 </button>
@@ -303,7 +309,9 @@ export default function CartPage() {
                                                     removeFromCart(item.id, item.sku);
                                                     toast.error(`${item.name} removed`);
                                                 }}
-                                                className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all shadow-sm active:scale-90"
+                                                className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-transparent hover:border-red-200"
+                                                title="Remove item"
+                                                aria-label="Remove item from cart"
                                             >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>
@@ -314,7 +322,7 @@ export default function CartPage() {
                         </div>
 
                         {/* ORDER SUMMARY */}
-                        <div className="bg-white p-10 rounded-[48px] border border-[#F3E8E5] shadow-2xl shadow-blush/5 sticky top-32">
+                        <div className="lg:col-span-2 bg-white p-8 rounded-[32px] border border-[#F3E8E5] shadow-xl shadow-blush/5 sticky top-32">
                             <h2 className="text-3xl font-serif font-bold text-charcoal mb-8">
                                 Order <span className="text-blush italic">Summary</span>
                             </h2>
@@ -598,6 +606,19 @@ export default function CartPage() {
                                 </div>
                             )}
 
+                            {/* Minimum Order Value Check */}
+                            {user && hasCompleteAddress && total < MIN_ORDER_VALUE && (
+                                <div className="mb-8 p-6 bg-amber-50 rounded-3xl border border-amber-200 flex items-start gap-4">
+                                    <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-2">Minimum Order Required</p>
+                                        <p className="text-sm text-amber-700 leading-relaxed font-sans">
+                                            Add ₹{MIN_ORDER_VALUE - total} more to checkout (minimum order ₹{MIN_ORDER_VALUE})
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                              <button
                                 onClick={async () => {
                                     if (!user) {
@@ -732,8 +753,15 @@ export default function CartPage() {
                                         setIsCheckingOut(false);
                                     }
                                 }}
-                                disabled={isCheckingOut || !hasCompleteAddress}
-                                className="w-full bg-blush text-white py-6 rounded-3xl font-bold text-lg hover:bg-[#f48c82] transition-all shadow-2xl shadow-blush/20 flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transform hover:-translate-y-1"
+                                disabled={isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE}
+                                className={`
+                                    w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl 
+                                    flex items-center justify-center gap-3 group active:scale-95
+                                    ${isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE
+                                        ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                                        : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30 animate-pulse"
+                                    }
+                                `}
                             >
                                 {isCheckingOut ? (
                                     <div className="h-6 w-6 animate-spin rounded-full border-3 border-solid border-white border-r-transparent" />
@@ -743,22 +771,87 @@ export default function CartPage() {
                                             ? "Login to Checkout" 
                                             : !hasCompleteAddress 
                                                 ? "Add Delivery Address" 
-                                                : isCOD 
-                                                    ? `Place COD Order ₹${finalAmount}` 
-                                                    : "Secure Checkout"
+                                                : total < MIN_ORDER_VALUE
+                                                    ? `Add ₹${MIN_ORDER_VALUE - total} More`
+                                                    : isCOD 
+                                                        ? `Pay ₹${finalAmount} Cash on Delivery`
+                                                        : `Pay ₹${finalAmount} Securely`
                                         }
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                                     </>
                                 )}
                             </button>
                             
-                            <p className="text-center text-[10px] text-gray-400 mt-8 uppercase tracking-[0.2em] font-bold">
+                            {/* Trust Signals */}
+                            <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-neutral-100">
+                                <div className="text-center">
+                                    <Shield className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                                    <p className="text-[10px] text-neutral-500 font-medium">Secure Payment</p>
+                                </div>
+                                <div className="text-center">
+                                    <RefreshCw className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                                    <p className="text-[10px] text-neutral-500 font-medium">Easy Returns</p>
+                                </div>
+                                <div className="text-center">
+                                    <Headphones className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+                                    <p className="text-[10px] text-neutral-500 font-medium">24/7 Support</p>
+                                </div>
+                            </div>
+                            
+                            <p className="text-center text-[10px] text-gray-400 mt-6 uppercase tracking-[0.2em] font-bold">
                                 Protected by Razorpay Secure
                             </p>
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Mobile Sticky Checkout Bar */}
+            {cart.length > 0 && (
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 p-4 shadow-lg z-50">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-xs text-neutral-500">Total</p>
+                            <p className="text-xl font-bold text-blush">₹{finalAmount || total}</p>
+                        </div>
+                        <button 
+                            onClick={async () => {
+                                if (!user) {
+                                    toast.info("Please login to checkout");
+                                    router.push("/login?redirect=/cart");
+                                    return;
+                                }
+                                if (total < MIN_ORDER_VALUE) {
+                                    toast.warning(`Minimum order ₹${MIN_ORDER_VALUE} required`);
+                                    return;
+                                }
+                                // Scroll to checkout button on mobile
+                                const checkoutBtn = document.querySelector('[data-checkout-btn]');
+                                if (checkoutBtn) {
+                                    checkoutBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }}
+                            disabled={isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE}
+                            className={`
+                                flex-1 py-3 px-6 rounded-xl font-bold text-sm transition-all
+                                ${isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE
+                                    ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                                    : "bg-gradient-to-r from-blush to-rose-400 text-white"
+                                }
+                            `}
+                        >
+                            {!user 
+                                ? "Login" 
+                                : !hasCompleteAddress 
+                                    ? "Add Address" 
+                                    : total < MIN_ORDER_VALUE
+                                        ? `Add ₹${MIN_ORDER_VALUE - total}`
+                                        : "Checkout"
+                            }
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <Footer />
 
