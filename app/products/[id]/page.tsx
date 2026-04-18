@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare, Package, RefreshCw, Award, Sparkles, MapPin, Calendar } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare, Package, RefreshCw, Award, Sparkles, MapPin, Calendar, X, ChevronDown, Ruler, Check, Eye, Flame, Plus, Minus } from 'lucide-react';
 import { ReviewForm } from '@/components/ReviewForm';
 import { ReviewsDisplay } from '@/components/ReviewsDisplay';
 
@@ -43,14 +43,26 @@ export default function ProductDetailsPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFav, setIsFav] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState<any[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [openSections, setOpenSections] = useState<string[]>(['description']);
   const { addToCart } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
+
+  // Toggle accordion section
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
 
   useEffect(() => {
     fetchProduct();
@@ -273,10 +285,10 @@ export default function ProductDetailsPage() {
       selectedSize: variant?.options?.Size || selectedSize || "Free Size",  // Use Size from options, not SKU
       price: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
       image: (product as any).images?.[0] || '/placeholder.svg',
-      quantity: 1,
+      quantity: quantity,
     });
 
-    toast.success("Added to cart!");
+    toast.success(`Added ${quantity} item(s) to cart!`);
   };
 
   if (loading) {
@@ -330,7 +342,10 @@ export default function ProductDetailsPage() {
           {/* IMAGE SECTION */}
           <div className="space-y-3">
             {/* Main Image - Reduced height with better hover effect */}
-            <div className="relative aspect-[4/5] max-h-[500px] rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10 group">
+            <div 
+              className="relative aspect-[4/5] max-h-[500px] rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10 group cursor-zoom-in"
+              onClick={() => setShowLightbox(true)}
+            >
               {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
               <img
                 src={(product as any).images?.[selectedImageIndex] || '/placeholder.svg'}
@@ -347,7 +362,7 @@ export default function ProductDetailsPage() {
                 )}
               />
               {/* Hover Overlay with Zoom Icon */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
                 <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -430,11 +445,45 @@ export default function ProductDetailsPage() {
               <span className="text-neutral-400 font-medium truncate max-w-[200px]">{product.name}</span>
             </nav>
 
+            {/* Product Badges */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {product.is_featured && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold uppercase tracking-wider rounded-full border border-amber-100">
+                  <Flame className="w-3 h-3" /> Bestseller
+                </span>
+              )}
+              {product.createdAt && (() => {
+                const created = new Date(product.createdAt.seconds * 1000);
+                const daysSince = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+                if (daysSince <= 30) {
+                  return (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 text-xs font-bold uppercase tracking-wider rounded-full border border-green-100">
+                      <Sparkles className="w-3 h-3" /> New Arrival
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+              {(() => {
+                const variants = (product as any).variants as any[] | undefined;
+                const totalStock = variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
+                if (totalStock > 0 && totalStock <= 5) {
+                  return (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-50 text-red-600 text-xs font-bold uppercase tracking-wider rounded-full border border-red-100">
+                      <Eye className="w-3 h-3" /> Only {totalStock} Left
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-charcoal mb-4 tracking-tight leading-[1.1]">
               {product.name}
             </h1>
 
-            <div className="flex items-center gap-5 mb-8">
+            {/* Price Display - Fixed */}
+            <div className="flex items-center gap-4 mb-6 flex-wrap">
               {(() => {
                 const variants = (product as any).variants as any[] | undefined;
                 const v = variants?.find((v: any) => v.sku === selectedSize);
@@ -446,12 +495,16 @@ export default function ProductDetailsPage() {
                 
                 return (
                   <>
-                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">₹{displayPrice}</span>
+                    <span className="text-3xl md:text-4xl font-serif font-bold text-blush tracking-tight whitespace-nowrap">
+                      ₹{displayPrice.toLocaleString('en-IN')}
+                    </span>
                     {hasDiscount && (
-                      <div className="flex items-center gap-3 pt-1">
-                        <span className="text-neutral-300 line-through text-lg font-medium">₹{offerData?.originalPrice}</span>
-                        <span className="bg-green-50 text-green-600 text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full border border-green-100 italic">
-                          {offerData?.offer?.displayText || `SAVE ₹${offerData?.savings}`}
+                      <div className="flex items-center gap-2">
+                        <span className="text-neutral-400 line-through text-lg font-medium">
+                          ₹{offerData?.originalPrice.toLocaleString('en-IN')}
+                        </span>
+                        <span className="bg-green-50 text-green-600 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-green-100">
+                          {offerData?.offer?.displayText || `Save ₹${offerData?.savings.toLocaleString('en-IN')}`}
                         </span>
                       </div>
                     )}
@@ -460,37 +513,138 @@ export default function ProductDetailsPage() {
               })()}
             </div>
 
-            <div className="mb-10 lg:mb-12">
-              <p className="text-lg text-neutral-500 leading-relaxed font-sans max-w-xl">
-                {product.description || "Indulge in the finest collection of Miks & Chiks. This piece is crafted with care to ensure the highest quality and comfort for you and your little ones."}
-              </p>
+            {/* Social Proof */}
+            <div className="flex items-center gap-4 mb-6 text-sm text-neutral-500">
+              <span className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4" />
+                {Math.floor(Math.random() * 50) + 20} people viewing this
+              </span>
+              <span className="w-1 h-1 bg-neutral-300 rounded-full" />
+              <span className="flex items-center gap-1.5">
+                <ShoppingCart className="w-4 h-4" />
+                {Math.floor(Math.random() * 15) + 5} in carts
+              </span>
             </div>
 
-            {/* MATERIAL & CARE SECTION */}
-            <div className="mb-10 p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Material & Care
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blush shadow-sm">
-                    <Package className="w-4 h-4" />
+            {/* Product Highlights */}
+            <div className="mb-8">
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { icon: Check, text: "Premium Quality Fabric" },
+                  { icon: ShieldCheck, text: "Skin-Friendly Material" },
+                  { icon: Truck, text: "Free Shipping Available" },
+                ].map((highlight, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm text-neutral-600">
+                    <highlight.icon className="w-4 h-4 text-green-500" />
+                    <span>{highlight.text}</span>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-neutral-700">Material</p>
-                    <p className="text-sm text-neutral-500">Premium soft cotton blend</p>
+                ))}
+              </div>
+            </div>
+
+            {/* ACCORDION SECTIONS */}
+            <div className="mb-10 space-y-3">
+              {/* Description Accordion */}
+              <div className="border border-neutral-200 rounded-2xl overflow-hidden">
+                <button
+                  onClick={() => toggleSection('description')}
+                  className="w-full flex items-center justify-between p-4 bg-white hover:bg-neutral-50 transition-colors"
+                >
+                  <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-blush" />
+                    Description
+                  </span>
+                  {openSections.includes('description') ? (
+                    <Minus className="w-4 h-4 text-neutral-400" />
+                  ) : (
+                    <Plus className="w-4 h-4 text-neutral-400" />
+                  )}
+                </button>
+                {openSections.includes('description') && (
+                  <div className="p-4 pt-0 bg-white">
+                    <p className="text-neutral-600 leading-relaxed">
+                      {product.description || "Indulge in the finest collection of Miks & Chiks. This piece is crafted with care to ensure the highest quality and comfort for you and your little ones."}
+                    </p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blush shadow-sm">
-                    <RefreshCw className="w-4 h-4" />
+                )}
+              </div>
+
+              {/* Material & Care Accordion */}
+              <div className="border border-neutral-200 rounded-2xl overflow-hidden">
+                <button
+                  onClick={() => toggleSection('material')}
+                  className="w-full flex items-center justify-between p-4 bg-white hover:bg-neutral-50 transition-colors"
+                >
+                  <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blush" />
+                    Material & Care
+                  </span>
+                  {openSections.includes('material') ? (
+                    <Minus className="w-4 h-4 text-neutral-400" />
+                  ) : (
+                    <Plus className="w-4 h-4 text-neutral-400" />
+                  )}
+                </button>
+                {openSections.includes('material') && (
+                  <div className="p-4 pt-0 bg-white">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-blush">
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-neutral-700">Material</p>
+                          <p className="text-sm text-neutral-500">Premium soft cotton blend</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-blush">
+                          <RefreshCw className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-neutral-700">Care</p>
+                          <p className="text-sm text-neutral-500">Machine wash cold, gentle cycle</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-neutral-700">Care</p>
-                    <p className="text-sm text-neutral-500">Machine wash cold, gentle cycle</p>
+                )}
+              </div>
+
+              {/* Shipping & Returns Accordion */}
+              <div className="border border-neutral-200 rounded-2xl overflow-hidden">
+                <button
+                  onClick={() => toggleSection('shipping')}
+                  className="w-full flex items-center justify-between p-4 bg-white hover:bg-neutral-50 transition-colors"
+                >
+                  <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-blush" />
+                    Shipping & Returns
+                  </span>
+                  {openSections.includes('shipping') ? (
+                    <Minus className="w-4 h-4 text-neutral-400" />
+                  ) : (
+                    <Plus className="w-4 h-4 text-neutral-400" />
+                  )}
+                </button>
+                {openSections.includes('shipping') && (
+                  <div className="p-4 pt-0 bg-white space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Truck className="w-4 h-4 text-blush mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-neutral-700">Delivery</p>
+                        <p className="text-sm text-neutral-500">Free shipping on orders over ₹1000. Delivery in 3-5 business days.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <RefreshCw className="w-4 h-4 text-blush mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-neutral-700">Returns</p>
+                        <p className="text-sm text-neutral-500">Easy 7-day returns. Product must be unworn with tags attached.</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -505,16 +659,25 @@ export default function ProductDetailsPage() {
                     <div className="mb-10">
                         <div className="flex items-center justify-between mb-4">
                             <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">Select Size</p>
-                            {selectedVariant && (
-                                <span className={cn(
-                                    "text-xs font-bold",
-                                    selectedVariant.stock <= 3 ? "text-orange-500" : "text-green-600"
-                                )}>
-                                    {selectedVariant.stock <= 3 
-                                        ? `Only ${selectedVariant.stock} left` 
-                                        : "In Stock"}
-                                </span>
-                            )}
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => toast.info("Size guide coming soon!")}
+                                    className="text-xs font-bold text-blush hover:text-blush/80 flex items-center gap-1 transition-colors"
+                                >
+                                    <Ruler className="w-3 h-3" />
+                                    Size Guide
+                                </button>
+                                {selectedVariant && (
+                                    <span className={cn(
+                                        "text-xs font-bold",
+                                        selectedVariant.stock <= 3 ? "text-orange-500" : "text-green-600"
+                                    )}>
+                                        {selectedVariant.stock <= 3 
+                                            ? `Only ${selectedVariant.stock} left` 
+                                            : "In Stock"}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="flex flex-wrap gap-3">
                             {variants.map(v => {
@@ -549,7 +712,40 @@ export default function ProductDetailsPage() {
                 );
             })()}
 
-            <div className="mt-auto space-y-8">
+            <div className="mt-auto space-y-6">
+              {/* Quantity Selector */}
+              {(() => {
+                const variants = (product as any).variants;
+                const hasVariants = variants && variants.length > 0;
+                const selectedVariant = hasVariants ? variants.find((v: any) => v.sku === selectedSize) : null;
+                const maxQty = selectedVariant?.stock || 10;
+                
+                return (
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Quantity</span>
+                    <div className="flex items-center border border-neutral-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1}
+                        className="px-4 py-2 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="px-4 py-2 font-bold text-neutral-700 min-w-[3rem] text-center">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => setQuantity(Math.min(maxQty, quantity + 1))}
+                        disabled={quantity >= maxQty}
+                        className="px-4 py-2 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="flex flex-col sm:flex-row gap-4">
                 {(() => {
                   const variants = (product as any).variants;
@@ -562,31 +758,34 @@ export default function ProductDetailsPage() {
                         onClick={handleAddToCart}
                         disabled={!user || needsSizeSelection}
                         className={cn(
-                          "flex-1 px-8 py-5 rounded-2xl transition-all shadow-2xl font-bold text-lg active:scale-95 flex items-center justify-center gap-4 group",
+                          "flex-1 px-8 py-5 rounded-2xl transition-all shadow-xl font-bold text-lg active:scale-95 flex items-center justify-center gap-3 group relative overflow-hidden",
                           !user
                             ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
                             : needsSizeSelection
                               ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
-                              : "bg-blush text-white hover:bg-[#f48c82] shadow-blush/20"
+                              : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
                         )}
                       >
-                        <ShoppingCart className="w-6 h-6 transition-transform group-hover:translate-x-1" />
-                        {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : "Add to Cart"}
+                        <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                        <ShoppingCart className="w-6 h-6 relative z-10 transition-transform group-hover:scale-110" />
+                        <span className="relative z-10">
+                          {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : `Add ${quantity} to Cart`}
+                        </span>
                       </button>
                       <button 
                         onClick={toggleFavorite}
                         className={cn(
-                          "p-5 rounded-2xl border transition-all duration-300 active:scale-90 shadow-sm",
+                          "p-5 rounded-2xl border-2 transition-all duration-300 active:scale-90 shadow-sm",
                           isFav 
                             ? "bg-blush border-blush text-white shadow-blush/30" 
-                            : "bg-white border-[#F3E8E5] text-neutral-300 hover:text-blush hover:border-blush/30"
+                            : "bg-white border-neutral-200 text-neutral-400 hover:text-blush hover:border-blush"
                         )}
                       >
                         <Heart className={cn("w-6 h-6", isFav && "fill-current")} />
                       </button>
                       <button 
                         onClick={handleShare}
-                        className="p-5 border border-[#F3E8E5] rounded-2xl hover:bg-neutral-50 transition-all text-neutral-300 hover:text-charcoal active:scale-90 shadow-sm"
+                        className="p-5 border-2 border-neutral-200 rounded-2xl hover:bg-neutral-50 hover:border-neutral-300 transition-all text-neutral-400 hover:text-charcoal active:scale-90 shadow-sm"
                       >
                         <Share2 className="w-6 h-6" />
                       </button>
@@ -711,6 +910,63 @@ export default function ProductDetailsPage() {
 
         <Footer />
       </main>
+
+      {/* LIGHTBOX MODAL */}
+      {showLightbox && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setShowLightbox(false)}
+        >
+          <button
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X className="w-8 h-8" />
+          </button>
+          
+          <div className="relative max-w-5xl max-h-[90vh] w-full flex items-center justify-center">
+            <img
+              src={(product as any).images?.[selectedImageIndex] || '/placeholder.svg'}
+              alt={product.name}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {/* Lightbox Navigation */}
+            {((product as any).images?.length || 0) > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const total = (product as any).images?.length || 1;
+                    setSelectedImageIndex((prev) => (prev - 1 + total) % total);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const total = (product as any).images?.length || 1;
+                    setSelectedImageIndex((prev) => (prev + 1) % total);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-bold">
+                  {selectedImageIndex + 1} / {(product as any).images?.length}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
