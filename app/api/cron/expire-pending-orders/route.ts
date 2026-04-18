@@ -27,22 +27,55 @@ export async function GET(req: Request) {
     }
 
     const now = Timestamp.now();
+    const EXPIRATION_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
     let expiredCount = 0;
     let errorCount = 0;
     const errors: string[] = [];
 
-    // Find all pending_payment orders that have expired
-    const q = adminDb
+    // Process orders in two batches:
+    // 1. Orders with paymentExpiresAt set (new orders)
+    // 2. Legacy orders without paymentExpiresAt (use createdAt + 30min)
+
+    // Batch 1: Orders with explicit expiration time
+    const q1 = adminDb
       .collection("orders")
       .where("status", "==", "pending_payment")
       .where("paymentExpiresAt", "<", now);
 
-    const snapshot = await q.get();
+    const snapshot1 = await q1.get();
+    console.log(`[Cron] Found ${snapshot1.size} expired orders with paymentExpiresAt`);
 
-    console.log(`[Cron] Found ${snapshot.size} expired pending orders`);
+    // Batch 2: Legacy orders without paymentExpiresAt but old createdAt
+    // We query for orders created more than 30 minutes ago
+    const legacyCutoff = Timestamp.fromMillis(now.toMillis() - EXPIRATION_WINDOW_MS);
+    const q2 = adminDb
+      .collection("orders")
+      .where("status", "==", "pending_payment")
+      .where("createdAt", "<", legacyCutoff);
+
+    const snapshot2 = await q2.get();
+    console.log(`[Cron] Found ${snapshot2.size} legacy orders without paymentExpiresAt`);
+
+    // Combine unique orders from both queries
+    const processedOrderIds = new Set<string>();
+    const allOrdersToExpire: typeof snapshot1.docs = [];
+
+    for (const doc of snapshot1.docs) {
+      processedOrderIds.add(doc.id);
+      allOrdersToExpire.push(doc);
+    }
+
+    for (const doc of snapshot2.docs) {
+      if (!processedOrderIds.has(doc.id)) {
+        processedOrderIds.add(doc.id);
+        allOrdersToExpire.push(doc);
+      }
+    }
+
+    console.log(`[Cron] Total orders to expire: ${allOrdersToExpire.length}`);
 
     // Process each expired order
-    for (const orderDoc of snapshot.docs) {
+    for (const orderDoc of allOrdersToExpire) {
       const orderId = orderDoc.id;
       const orderData = orderDoc.data();
 
@@ -58,11 +91,14 @@ export async function GET(req: Request) {
         }
 
         // Update order status to expired
+        const isLegacyOrder = !orderData.paymentExpiresAt;
         const timelineEntry = {
           status: "expired",
           time: Timestamp.now(),
           by: "system",
-          note: "Payment window expired (auto-cleanup)",
+          note: isLegacyOrder 
+            ? "Payment window expired (legacy order cleanup)" 
+            : "Payment window expired (auto-cleanup)",
         };
 
         await orderDoc.ref.update({

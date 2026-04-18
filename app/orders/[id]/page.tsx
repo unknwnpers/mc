@@ -69,6 +69,14 @@ const formatTimelineTime = (val: any): string => {
     return d.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });
 };
 
+// Helper to calculate expiration for legacy orders (created before paymentExpiresAt field existed)
+const calculateLegacyExpiry = (createdAt: any): Date | null => {
+    const created = parseDate(createdAt);
+    if (!created) return null;
+    // Add 30 minutes to created time
+    return new Date(created.getTime() + 30 * 60 * 1000);
+};
+
 // ── Countdown Hook ─────────────────────────────────────────────────────────────
 function useCountdown(expiresAt: any) {
     const [timeLeft, setTimeLeft] = useState<{ minutes: number; seconds: number; totalMs: number } | null>(null);
@@ -363,9 +371,9 @@ export default function OrderDetailPage() {
                                         </div>
                                         <div className="flex items-center gap-4 flex-wrap">
                                             {/* Countdown for pending payment orders */}
-                                            {order.status === "pending_payment" && order.paymentExpiresAt && (
+                                            {order.status === "pending_payment" && (
                                                 <CountdownBadge 
-                                                    expiresAt={order.paymentExpiresAt} 
+                                                    expiresAt={order.paymentExpiresAt || calculateLegacyExpiry(order.createdAt)} 
                                                     onExpire={() => {
                                                         setIsExpired(true);
                                                         fetchOrder(); // Refresh to get updated status
