@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare, Package, RefreshCw, Award, Sparkles, MapPin, Calendar } from 'lucide-react';
 import { ReviewForm } from '@/components/ReviewForm';
 import { ReviewsDisplay } from '@/components/ReviewsDisplay';
 
@@ -411,7 +411,15 @@ export default function ProductDetailsPage() {
             <nav className="flex mb-4 text-xs text-blush uppercase tracking-[0.2em] font-black">
               <Link href="/" className="hover:underline">Home</Link>
               <span className="mx-2 text-neutral-300">/</span>
-              <span className="text-neutral-400 font-medium">{product.name}</span>
+              {product.category_slug ? (
+                <>
+                  <Link href={`/products?category=${product.category_slug}`} className="hover:underline">
+                    {product.category_slug.replace(/-/g, ' ')}
+                  </Link>
+                  <span className="mx-2 text-neutral-300">/</span>
+                </>
+              ) : null}
+              <span className="text-neutral-400 font-medium truncate max-w-[200px]">{product.name}</span>
             </nav>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-charcoal mb-4 tracking-tight leading-[1.1]">
@@ -450,36 +458,85 @@ export default function ProductDetailsPage() {
               </p>
             </div>
 
+            {/* MATERIAL & CARE SECTION */}
+            <div className="mb-10 p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Material & Care
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blush shadow-sm">
+                    <Package className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-neutral-700">Material</p>
+                    <p className="text-sm text-neutral-500">Premium soft cotton blend</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blush shadow-sm">
+                    <RefreshCw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-neutral-700">Care</p>
+                    <p className="text-sm text-neutral-500">Machine wash cold, gentle cycle</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* SIZE SELECTION — canonical variants[] */}
             {(() => {
                 const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
                 if (!variants || variants.length === 0) return (
                   <p className="text-sm text-neutral-400 mb-6 italic">No sizes available</p>
                 );
+                const selectedVariant = variants.find(v => v.sku === selectedSize);
                 return (
                     <div className="mb-10">
                         <div className="flex items-center justify-between mb-4">
                             <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">Select Size</p>
+                            {selectedVariant && (
+                                <span className={cn(
+                                    "text-xs font-bold",
+                                    selectedVariant.stock <= 3 ? "text-orange-500" : "text-green-600"
+                                )}>
+                                    {selectedVariant.stock <= 3 
+                                        ? `Only ${selectedVariant.stock} left` 
+                                        : "In Stock"}
+                                </span>
+                            )}
                         </div>
                         <div className="flex flex-wrap gap-3">
                             {variants.map(v => {
                                 const isOOS = v.stock <= 0;
+                                const isLowStock = v.stock > 0 && v.stock <= 3;
                                 return (
                                 <button key={v.sku}
                                     onClick={() => !isOOS && setSelectedSize(v.sku)}
                                     disabled={isOOS}
                                     className={cn(
-                                        "px-6 py-3 rounded-2xl border text-xs font-bold transition-all duration-300",
+                                        "relative px-6 py-3 rounded-2xl border text-xs font-bold transition-all duration-300",
                                         isOOS ? "opacity-40 cursor-not-allowed bg-neutral-100 border-neutral-200 line-through" : "active:scale-95",
                                         selectedSize === v.sku
                                             ? "bg-charcoal border-charcoal text-white shadow-xl shadow-charcoal/20"
-                                            : (!isOOS && "bg-white border-[#F3E8E5] text-charcoal hover:border-blush hover:text-blush")
+                                            : (!isOOS && "bg-white border-[#F3E8E5] text-charcoal hover:border-blush hover:text-blush"),
+                                        isLowStock && selectedSize !== v.sku && "border-orange-200 text-orange-600"
                                     )}>
-                                    {v.options?.Size || v.sku} {isOOS && "(Out of Stock)"}
+                                    {v.options?.Size || v.sku}
+                                    {isOOS && <span className="block text-[9px] font-normal mt-0.5">Out of Stock</span>}
+                                    {isLowStock && !isOOS && <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" title="Low stock" />}
                                 </button>
                                 );
                             })}
                         </div>
+                        {/* SKU Display */}
+                        {selectedVariant && (
+                            <p className="mt-3 text-xs text-neutral-400 font-mono">
+                                SKU: <span className="text-neutral-600">{selectedVariant.sku}</span>
+                            </p>
+                        )}
                     </div>
                 );
             })()}
@@ -530,19 +587,44 @@ export default function ProductDetailsPage() {
                 })()}
               </div>
 
-              <div className="flex items-center gap-4">
-                <ShieldCheck className="w-6 h-6 text-neutral-400" />
-                <p className="text-sm text-neutral-400">100% Secure Payment</p>
+              {/* DELIVERY ESTIMATE */}
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <MapPin className="w-5 h-5 text-blue-500" />
+                  <p className="text-sm font-bold text-blue-800">Delivery Estimate</p>
+                </div>
+                <p className="text-sm text-blue-600 pl-8">
+                  Usually ships within 1-2 business days. 
+                  <span className="font-medium">Delivery in 3-5 days</span> for metro cities.
+                </p>
               </div>
-              <div className="flex items-center gap-4">
-                <Truck className="w-6 h-6 text-neutral-400" />
-                <p className="text-sm text-neutral-400">Free Shipping on Orders Over ₹1000</p>
+
+              {/* ENHANCED TRUST BADGES */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                  <ShieldCheck className="w-5 h-5 text-green-500" />
+                  <p className="text-xs font-bold text-neutral-600">Secure Payment</p>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                  <Truck className="w-5 h-5 text-blue-500" />
+                  <p className="text-xs font-bold text-neutral-600">Free Shipping ₹1000+</p>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                  <RefreshCw className="w-5 h-5 text-purple-500" />
+                  <p className="text-xs font-bold text-neutral-600">Easy Returns</p>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                  <Award className="w-5 h-5 text-orange-500" />
+                  <p className="text-xs font-bold text-neutral-600">Quality Guarantee</p>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Reviews Section */}
-          <div className="mt-16 border-t pt-12">
+        {/* Reviews Section - Full Width Outside Grid */}
+        <div className="max-w-7xl mx-auto px-6 md:px-10 mt-16 mb-20">
+          <div className="border-t border-neutral-200 pt-12">
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-8 h-8 text-blush" />
