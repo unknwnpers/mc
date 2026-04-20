@@ -4,6 +4,30 @@ import { adminDb } from '@/lib/firebase-admin';
 
 const VIEWER_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
+// Cleanup old view records for a product (fire-and-forget)
+async function cleanupOldViews(productId: string, cutoffTime: number): Promise<void> {
+  try {
+    const oldViewsSnapshot = await adminDb
+      .collection('product_views')
+      .where('productId', '==', productId)
+      .where('viewedAt', '<', cutoffTime)
+      .limit(100)
+      .get();
+    
+    if (oldViewsSnapshot.empty) return;
+    
+    const batch = adminDb.batch();
+    oldViewsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    console.log(`[Product Stats] Cleaned up ${oldViewsSnapshot.size} old views for ${productId}`);
+  } catch (error) {
+    console.error('[Product Stats] Cleanup error:', error);
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,6 +46,7 @@ export async function GET(
     const cutoffTime = now - VIEWER_WINDOW_MS;
 
     // 1. Get active viewers count (views in last 5 minutes)
+    // Note: viewedAt is stored as timestamp (number), query as number
     const viewsSnapshot = await adminDb
       .collection('product_views')
       .where('productId', '==', id)
@@ -31,16 +56,16 @@ export async function GET(
     
     const viewers = viewsSnapshot.data().count;
 
+    // Cleanup old views (fire-and-forget)
+    cleanupOldViews(id, cutoffTime).catch(console.error);
+
     // 2. Get in-cart count
-    // This requires querying all user cart subcollections
-    // For performance, we'll use a cart_items collection group query
-    // or query the reservations collection for pending items
+    // Query all reservations with 'reserved' status and count those containing this product
     let inCart = 0;
     try {
       const reservationsSnapshot = await adminDb
         .collection('reservations')
         .where('status', '==', 'reserved')
-        .where('items', 'array-contains-any', [{ productId: id }])
         .get();
       
       // Count unique users with this product in their reservation

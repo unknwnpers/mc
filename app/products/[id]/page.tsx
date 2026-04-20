@@ -72,13 +72,18 @@ export default function ProductDetailsPage() {
     
     // Track product view and setup stats polling
     if (id) {
-      trackProductView();
+      // Small delay to ensure page is fully loaded
+      const viewTimeout = setTimeout(() => {
+        trackProductView();
+      }, 500);
+      
       fetchProductStats();
       
-      // Poll stats every 30 seconds
-      const statsInterval = setInterval(fetchProductStats, 30000);
+      // Poll stats every 15 seconds for more real-time feel
+      const statsInterval = setInterval(fetchProductStats, 15000);
       
       return () => {
+        clearTimeout(viewTimeout);
         clearInterval(statsInterval);
       };
     }
@@ -94,12 +99,17 @@ export default function ProductDetailsPage() {
         localStorage.setItem('product_view_session_id', sessionId);
       }
       
-      await fetch(`/api/products/${id}/view`, {
+      const response = await fetch(`/api/products/${id}/view`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
       });
+      
+      if (!response.ok) {
+        console.warn('Product view tracking failed:', response.status);
+      }
     } catch (error) {
+      // Silent fail - don't break UX for analytics
       console.error('Error tracking product view:', error);
     }
   };
