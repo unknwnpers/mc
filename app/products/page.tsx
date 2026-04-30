@@ -13,10 +13,15 @@ import { PRODUCT_CATEGORIES, normalizeUrlCategory } from '@/lib/constants';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { useAuth } from '@/lib/auth-context';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -66,32 +71,74 @@ function ProductsContent() {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [selectedQuickViewSize, setSelectedQuickViewSize] = useState<string>('');
 
-  // Wishlist State (localStorage)
+  // Wishlist State (Backend instead of localStorage)
   const [wishlist, setWishlist] = useState<string[]>([]);
 
-  // Load wishlist from localStorage on mount
+  // Fetch favorites from Firestore on mount/user change
   useEffect(() => {
-    const saved = localStorage.getItem('miks-chiks-wishlist');
-    if (saved) {
-      try {
-        setWishlist(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse wishlist:', e);
+    const fetchFavorites = async () => {
+      if (!user) {
+        setWishlist([]);
+        return;
       }
+      try {
+        const ref = collection(db, "users", user.uid, "favorites");
+        const snapshot = await getDocs(ref);
+        const items = snapshot.docs.map(doc => doc.id);
+        setWishlist(items);
+      } catch (err) {
+        console.error("Error fetching favorites:", err);
+      }
+    };
+    fetchFavorites();
+  }, [user]);
+
+  const toggleWishlist = async (productId: string) => {
+    if (!user) {
+      toast.info("Please login to save items");
+      router.push('/login');
+      return;
     }
-  }, []);
 
-  // Save wishlist to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('miks-chiks-wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
+    const isSaved = wishlist.includes(productId);
 
-  const toggleWishlist = (productId: string) => {
+    // Optimistic UI update
     setWishlist(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
+      isSaved ? prev.filter(id => id !== productId) : [...prev, productId]
     );
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/user/favorites/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      if (result.isFavorite) {
+        setWishlist(prev => prev.includes(productId) ? prev : [...prev, productId]);
+        toast.success("Added to saved items");
+      } else {
+        setWishlist(prev => prev.filter(id => id !== productId));
+        toast.info("Removed from saved items");
+      }
+    } catch (err) {
+      console.error("Favorite error:", err);
+      // Revert optimistic update
+      setWishlist(prev => 
+        isSaved ? [...prev, productId] : prev.filter(id => id !== productId)
+      );
+      toast.error("Failed to update saved items");
+    }
   };
 
   const isInWishlist = (productId: string) => wishlist.includes(productId);
