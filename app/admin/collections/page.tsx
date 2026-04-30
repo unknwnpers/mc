@@ -29,6 +29,14 @@ const CARD_STYLES = [
   { value: "banner", label: "Banner (full width)" },
 ];
 
+const CATEGORY_OPTIONS = [
+  { label: "Maternity Wear", value: "maternity-wear" },
+  { label: "Kids Clothing", value: "kids-clothing" },
+  { label: "Baby Essentials", value: "baby-essentials" },
+  { label: "Feeding & Nursing", value: "feeding-nursing" },
+  { label: "Accessories", value: "accessories" },
+];
+
 const EMPTY_FORM: Omit<CuratedCollection, "id" | "createdAt" | "updatedAt"> = {
   title: "",
   subtitle: "",
@@ -752,9 +760,9 @@ export default function AdminCollectionsPage() {
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30"
                     >
                       <option value="" className="bg-slate-900">All Categories</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.slug} className="bg-slate-900">
-                          {cat.name}
+                      {CATEGORY_OPTIONS.map((cat) => (
+                        <option key={cat.value} value={cat.value} className="bg-slate-900">
+                          {cat.label}
                         </option>
                       ))}
                     </select>
