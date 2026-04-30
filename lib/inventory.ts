@@ -53,10 +53,31 @@ export async function reserveStock(items: CartItem[], userId: string): Promise<s
 
       const variant = variants[idx];
 
-      if (variant.stock < item.quantity) {
+      // -------------------------------------------------------------
+      // CORE RULES: Dynamic Scarcity & Fair Distribution
+      // -------------------------------------------------------------
+      const total_stock = variant.stock;
+      const reserve = Math.ceil(0.2 * total_stock);
+      const sellable_stock = total_stock - reserve;
+      
+      // Enforce max 2 items per customer, dynamically scaling down based on stock
+      const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+
+      // 1. Prevent selling into reserve (Strict cutoff)
+      if (item.quantity > sellable_stock) {
         throw new Error(
-          `Insufficient stock for "${data.name || item.id}" (${item.sku}). ` +
-          `Requested: ${item.quantity}, Available: ${variant.stock}`
+          `Insufficient sellable stock for "${data.name || item.id}". Reserve limits active.`
+        );
+      }
+
+      // 2. Never trust frontend quantity - enforce max allowed strictly
+      if (max_per_customer <= 0) {
+        throw new Error(`"${data.name || item.id}" is currently unavailable for purchase.`);
+      }
+
+      if (item.quantity > max_per_customer) {
+        throw new Error(
+          `Maximum allowed quantity for "${data.name || item.id}" is ${max_per_customer} to ensure fair distribution.`
         );
       }
 

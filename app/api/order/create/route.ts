@@ -34,8 +34,28 @@ export async function POST(req: Request) {
           throw new Error(`Product ${item.name || item.productId} not found`);
         }
 
-        if (product.stock < item.quantity) {
-          throw new Error(`Out of stock for ${product.name}`);
+        // -------------------------------------------------------------
+        // CORE RULES: Dynamic Scarcity & Fair Distribution
+        // -------------------------------------------------------------
+        const total_stock = product.stock;
+        const reserve = Math.ceil(0.2 * total_stock);
+        const sellable_stock = total_stock - reserve;
+        
+        // Enforce max 2 items per customer, dynamically scaling down based on stock
+        const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+
+        // 1. Prevent selling into reserve (Strict cutoff)
+        if (item.quantity > sellable_stock) {
+          throw new Error(`Insufficient sellable stock for "${product.name}". Reserve limits active.`);
+        }
+
+        // 2. Never trust frontend quantity - enforce max allowed strictly
+        if (max_per_customer <= 0) {
+          throw new Error(`"${product.name}" is currently unavailable for purchase.`);
+        }
+
+        if (item.quantity > max_per_customer) {
+          throw new Error(`Maximum allowed quantity for "${product.name}" is ${max_per_customer} to ensure fair distribution.`);
         }
 
         // 🔥 reduce stock
