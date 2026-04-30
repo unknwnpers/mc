@@ -121,7 +121,7 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
         await addToCart({
           id: product.id,
           name: product.name,
-          price: variant.price,
+          price: offerData?.hasOffer ? offerData.discountedPrice : variant.price,
           image: displayImage,
           quantity: 1,
           stock: variant.stock,
@@ -138,7 +138,7 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
       await addToCart({
         id: product.id,
         name: product.name,
-        price: displayPrice,
+        price: offerData?.hasOffer ? offerData.discountedPrice : displayPrice,
         image: displayImage,
         quantity: 1,
         stock: displayStock,
@@ -194,21 +194,22 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
           {product.category_slug || "Collection"}
         </p>
 
-        <div className="flex items-center justify-between mt-auto pt-4 flex-wrap gap-2">
-          <div>
+        <div className="flex items-center justify-between mt-auto pt-4 flex-wrap gap-2 min-w-0">
+          <div className="flex-1 min-w-0 pr-2">
             {offerData?.hasOffer ? (
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-blush text-xl tracking-tight">
+              <div className="flex flex-col gap-1 items-start w-full min-w-0">
+                <span className="text-[10px] font-bold text-green-600 bg-green-50/80 px-2 py-0.5 rounded border border-green-200/50 max-w-full truncate flex items-center gap-1" title={offerData.offer?.displayText || `SAVE ₹${offerData.savings}`}>
+                  <Tag className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{offerData.offer?.displayText || `SAVE ₹${offerData.savings}`}</span>
+                </span>
+                <div className="flex items-end gap-2">
+                  <span className="font-bold text-blush text-xl tracking-tight leading-none">
                     ₹{offerData.discountedPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-xs font-bold text-green-500 bg-green-50 px-1.5 py-0.5 rounded border border-green-100 whitespace-nowrap flex items-center gap-1">
-                    <Tag className="w-3 h-3" /> {offerData.offer?.displayText || `SAVE ₹${offerData.savings}`}
+                  <span className="text-gray-400 line-through text-xs font-medium mb-0.5">
+                    ₹{displayPrice.toLocaleString('en-IN')}
                   </span>
                 </div>
-                <span className="text-gray-400 line-through text-sm font-medium">
-                  ₹{displayPrice.toLocaleString('en-IN')}
-                </span>
               </div>
             ) : (
               <span className="font-bold text-blush text-xl tracking-tight">

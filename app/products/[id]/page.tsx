@@ -354,7 +354,7 @@ export default function ProductDetailsPage() {
       name: product.name,
       sku: variant?.sku || "ONE-SIZE",
       selectedSize: variant?.options?.Size || selectedSize || "Free Size",
-      price: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
+      price: offerData?.hasOffer ? offerData.discountedPrice : (variant?.price ?? ((product as any).variants?.[0]?.price || 0)),
       image: (product as any).images?.[0] || '/placeholder.svg',
       quantity: finalQty,
     });
