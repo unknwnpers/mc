@@ -111,7 +111,7 @@ export default function AdminOffersPage() {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const data = await adminFetch('/api/admin/offers');
+      const data = await adminFetch(`/api/admin/offers?_t=${Date.now()}`);
       if (data.success) {
         setOffers(data.offers);
       } else {
