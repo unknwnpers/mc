@@ -127,11 +127,23 @@ export default function AdminOffersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    let startIso, endIso;
+    if (formData.startDate) {
+      // Start of the day in local timezone
+      const start = new Date(formData.startDate + "T00:00:00");
+      startIso = start.toISOString();
+    }
+    if (formData.endDate) {
+      // End of the day in local timezone
+      const end = new Date(formData.endDate + "T23:59:59");
+      endIso = end.toISOString();
+    }
+
     const payload = {
       ...formData,
       value: Number(formData.value),
-      startDate: formData.startDate || undefined,
-      endDate: formData.endDate || undefined
+      startDate: startIso || undefined,
+      endDate: endIso || undefined
     };
 
     try {

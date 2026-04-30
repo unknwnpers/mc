@@ -41,9 +41,21 @@ export async function GET(request: NextRequest) {
         ...doc.data()
       }))
       .filter((offer: any) => {
+        // Safe date parser
+        const getOfferDate = (dateValue: any): Date | null => {
+          if (!dateValue) return null;
+          if (dateValue.toDate) return dateValue.toDate();
+          if (dateValue.seconds) return new Date(dateValue.seconds * 1000);
+          const d = new Date(dateValue);
+          return isNaN(d.getTime()) ? null : d;
+        };
+
+        const startDate = getOfferDate(offer.startDate);
+        const endDate = getOfferDate(offer.endDate);
+
         // Check date range
-        if (offer.startDate && offer.startDate.toDate() > now) return false;
-        if (offer.endDate && offer.endDate.toDate() < now) return false;
+        if (startDate && startDate > now) return false;
+        if (endDate && endDate < now) return false;
         
         // Filter by applicability
         if (categorySlug && offer.appliesTo === 'category') {
@@ -102,8 +114,19 @@ export async function POST(request: NextRequest) {
         ...doc.data()
       }))
       .filter((offer: any) => {
-        if (offer.startDate && offer.startDate.toDate() > now) return false;
-        if (offer.endDate && offer.endDate.toDate() < now) return false;
+        const getOfferDate = (dateValue: any): Date | null => {
+          if (!dateValue) return null;
+          if (dateValue.toDate) return dateValue.toDate();
+          if (dateValue.seconds) return new Date(dateValue.seconds * 1000);
+          const d = new Date(dateValue);
+          return isNaN(d.getTime()) ? null : d;
+        };
+
+        const startDate = getOfferDate(offer.startDate);
+        const endDate = getOfferDate(offer.endDate);
+
+        if (startDate && startDate > now) return false;
+        if (endDate && endDate < now) return false;
         
         if (offer.appliesTo === 'all') return true;
         if (offer.appliesTo === 'category' && offer.categorySlug === categorySlug) return true;
