@@ -124,7 +124,7 @@ export default function AdminProductsPage() {
     if (!user || !isAdmin) return;
     setFetching(true);
     try {
-      const res = await adminFetch("/api/admin/products?includeArchived=true");
+      const res = await adminFetch(`/api/admin/products?includeArchived=true&_t=${Date.now()}`);
       
       // Check if response is JSON before parsing
       const contentType = res.headers.get("content-type");
@@ -512,7 +512,7 @@ export default function AdminProductsPage() {
       console.log('[Save] Saving product with body:', body);
 
       const res = editing
-        ? await adminFetch("/api/admin/products", { method: "PATCH", body: JSON.stringify({ id: editing.id, data: body }) })
+        ? await adminFetch(`/api/admin/products/${editing.id}`, { method: "PATCH", body: JSON.stringify(body) })
         : await adminFetch("/api/admin/products", { method: "POST", body: JSON.stringify(body) });
 
       const data = await res.json();

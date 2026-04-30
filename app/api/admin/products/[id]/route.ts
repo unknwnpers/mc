@@ -51,7 +51,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     }
 
     const safeUpdate: Record<string, any> = { updatedAt: FieldValue.serverTimestamp() };
-    const allowed = ["name", "description", "images", "variants", "isActive", "is_featured", "category_id", "category_slug"];
+    const allowed = ["name", "description", "images", "variants", "options", "isActive", "is_featured", "category_id", "category_slug"];
     for (const key of allowed) {
       if (body[key] !== undefined) safeUpdate[key] = body[key];
     }
