@@ -334,24 +334,32 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    // Double-check stock availability
-    if (variant && variant.stock <= 0) {
-      toast.error("Sorry, this size is out of stock");
+    // Backend Purchase Logic constraints
+    const raw_stock = variant?.stock ?? 0;
+    const reserve = Math.ceil(0.2 * raw_stock);
+    const sellable_stock = Math.max(0, raw_stock - reserve);
+    const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+
+    // Double-check stock availability against backend rules
+    if (variant && max_per_customer <= 0) {
+      toast.error("Sorry, this size is out of stock (reserve limit)");
       return;
     }
+
+    const finalQty = Math.min(quantity, Math.max(1, max_per_customer));
 
     // Add to cart with correct variant data
     addToCart({
       id: product.id,
       name: product.name,
       sku: variant?.sku || "ONE-SIZE",
-      selectedSize: variant?.options?.Size || selectedSize || "Free Size",  // Use Size from options, not SKU
+      selectedSize: variant?.options?.Size || selectedSize || "Free Size",
       price: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
       image: (product as any).images?.[0] || '/placeholder.svg',
-      quantity: quantity,
+      quantity: finalQty,
     });
 
-    toast.success(`Added ${quantity} item(s) to cart!`);
+    toast.success(`Added ${finalQty} item(s) to cart!`);
   };
 
   if (loading) {
@@ -781,28 +789,38 @@ export default function ProductDetailsPage() {
                 const variants = (product as any).variants;
                 const hasVariants = variants && variants.length > 0;
                 const selectedVariant = hasVariants ? variants.find((v: any) => v.sku === selectedSize) : null;
-                // Use availableStock from server (stock - reservedStock), fallback to variant.availableStock or stock
-                const maxQty = selectedSize ? (availableStock[selectedSize] ?? selectedVariant?.availableStock ?? selectedVariant?.stock ?? 10) : 10;
+                
+                // Backend Purchase Logic constraints
+                const raw_total_stock = selectedVariant?.stock ?? 0;
+                const reserve = Math.ceil(0.2 * raw_total_stock);
+                const sellable_stock = Math.max(0, raw_total_stock - reserve);
+                const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+
+                const maxQty = max_per_customer;
+                const displayStock = sellable_stock;
+                
                 const isOutOfStock = maxQty <= 0;
-                const isLowStock = maxQty > 0 && maxQty <= 3;
+                const isLowStock = displayStock > 0 && displayStock <= 3;
+                
+                const currentQty = Math.min(quantity, Math.max(1, maxQty));
                 
                 return (
                   <div className="flex items-center gap-4 flex-wrap">
                     <span className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Quantity</span>
                     <div className="flex items-center border border-neutral-200 rounded-xl overflow-hidden">
                       <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        disabled={quantity <= 1 || isOutOfStock}
+                        onClick={() => setQuantity(Math.max(1, currentQty - 1))}
+                        disabled={currentQty <= 1 || isOutOfStock}
                         className="px-4 py-2 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className={`px-4 py-2 font-bold min-w-[3rem] text-center ${isOutOfStock ? 'text-neutral-400' : 'text-neutral-700'}`}>
-                        {isOutOfStock ? 0 : quantity}
+                        {isOutOfStock ? 0 : currentQty}
                       </span>
                       <button
-                        onClick={() => setQuantity(Math.min(maxQty, quantity + 1))}
-                        disabled={quantity >= maxQty || isOutOfStock}
+                        onClick={() => setQuantity(Math.min(maxQty, currentQty + 1))}
+                        disabled={currentQty >= maxQty || isOutOfStock}
                         className="px-4 py-2 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Plus className="w-4 h-4" />
@@ -821,8 +839,8 @@ export default function ProductDetailsPage() {
                         {isOutOfStock 
                           ? 'Out of Stock' 
                           : isLowStock 
-                            ? `Only ${maxQty} left!` 
-                            : `${maxQty} available`
+                            ? `Only ${displayStock} left!` 
+                            : `${displayStock} available`
                         }
                       </span>
                     )}
@@ -835,9 +853,14 @@ export default function ProductDetailsPage() {
                   const variants = (product as any).variants;
                   const hasVariants = variants && variants.length > 0;
                   const needsSizeSelection = hasVariants && !selectedSize;
-                  // Check if selected size is out of stock
-                  const maxQty = selectedSize ? (availableStock[selectedSize] ?? variants?.find((v: any) => v.sku === selectedSize)?.availableStock ?? variants?.find((v: any) => v.sku === selectedSize)?.stock ?? 0) : 0;
-                  const isOutOfStock = selectedSize && maxQty <= 0;
+                  // Backend Purchase Logic constraints
+                  const raw_total_stock = selectedSize ? (variants?.find((v: any) => v.sku === selectedSize)?.stock ?? 0) : 0;
+                  const reserve = Math.ceil(0.2 * raw_total_stock);
+                  const sellable_stock = Math.max(0, raw_total_stock - reserve);
+                  const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+                  
+                  const isOutOfStock = selectedSize && max_per_customer <= 0;
+                  const currentQty = Math.min(quantity, Math.max(1, max_per_customer));
                   
                   return (
                     <>
@@ -858,7 +881,7 @@ export default function ProductDetailsPage() {
                         {!isOutOfStock && <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />}
                         <ShoppingCart className={cn("w-6 h-6 relative z-10 transition-transform", !isOutOfStock && "group-hover:scale-110")} />
                         <span className="relative z-10">
-                          {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : `Add ${quantity} to Cart`}
+                          {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : `Add ${currentQty} to Cart`}
                         </span>
                       </button>
                       <button 
