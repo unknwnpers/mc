@@ -344,10 +344,7 @@ function ProfileContent() {
                   )}
                 </button>
 
-                {/* Password Change Section - Only for admin users */}
-                {profile?.role === 'admin' || profile?.role === 'superadmin' ? (
-                  <PasswordChangeSection />
-                ) : null}
+
               </div>
             </div>
           </div>
@@ -372,10 +369,10 @@ function ProfileContent() {
                     {[1,2,3,4].map(i => <Skeleton key={i} className="aspect-square rounded-2xl" />)}
                   </div>
                 ) : favorites.length === 0 ? (
-                  <div className="bg-neutral-50 rounded-2xl p-6 text-center">
-                    <Heart className="w-8 h-8 text-neutral-200 mx-auto mb-3" />
-                    <p className="text-neutral-500 mb-3">No saved items</p>
-                    <Link href="/products" className="text-sm font-bold text-blush hover:underline">Browse Products</Link>
+                  <div className="bg-white border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/5 rounded-2xl p-10 text-center flex flex-col items-center justify-center">
+                    <Heart className="w-8 h-8 text-[#D4AF37] mx-auto mb-4" />
+                    <p className="text-neutral-600 font-medium mb-4">No saved items</p>
+                    <Link href="/products" className="text-sm font-bold text-blush hover:underline underline-offset-4">Browse Products</Link>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-4">
@@ -434,12 +431,12 @@ function ProfileContent() {
                     ))}
                   </div>
                 ) : addresses.length === 0 ? (
-                  <div className="bg-neutral-50 rounded-2xl p-6 text-center">
-                    <MapPin className="w-8 h-8 text-neutral-200 mx-auto mb-3" />
-                    <p className="text-neutral-500 mb-3">No saved addresses</p>
+                  <div className="bg-white border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/5 rounded-2xl p-10 text-center flex flex-col items-center justify-center">
+                    <MapPin className="w-8 h-8 text-[#D4AF37] mx-auto mb-4" />
+                    <p className="text-neutral-600 font-medium mb-6">No saved addresses</p>
                     <button
                       onClick={() => { setShowAddressForm(true); setEditingAddress(null); }}
-                      className="text-sm font-bold text-blush hover:underline"
+                      className="px-6 py-2.5 bg-blush text-white rounded-xl font-bold shadow-lg shadow-blush/20 hover:bg-blush/90 transition-all"
                     >
                       Add Address
                     </button>
@@ -494,6 +491,10 @@ function ProfileContent() {
                 )}
               </div>
             </div>
+
+            {/* Password Change Section */}
+            <PasswordChangeSection />
+
           </div>
         </div>
 
@@ -592,8 +593,8 @@ function PasswordChangeSection() {
   };
 
   return (
-    <div className="mt-8 pt-8 border-t border-neutral-200">
-      <h3 className="text-lg font-bold text-charcoal mb-4 flex items-center gap-2">
+    <div className="bg-white p-8 rounded-3xl border border-[#F3E8E5] shadow-xl shadow-blush/5 mt-8">
+      <h3 className="text-lg font-bold text-charcoal mb-6 flex items-center gap-2">
         <Lock className="w-5 h-5 text-blush" />
         Change Password
       </h3>
@@ -678,13 +679,12 @@ function PasswordChangeSection() {
         <button
           onClick={handleChangePassword}
           disabled={isChanging || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
-          className="w-full bg-charcoal text-white py-5 rounded-3xl font-bold text-sm uppercase tracking-widest hover:bg-charcoal/90 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-blush text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-blush/20 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-4"
         >
           {isChanging ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             <>
-              <Lock className="w-5 h-5" />
               Update Password
             </>
           )}
