@@ -87,7 +87,7 @@ export default function AdminCollectionsPage() {
     if (!user || !isAdmin) return;
     setFetching(true);
     try {
-      const res = await adminFetch("/api/admin/collections?includeInactive=true");
+      const res = await adminFetch(`/api/admin/collections?includeInactive=true&_t=${Date.now()}`);
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         throw new Error("Server returned invalid response");
