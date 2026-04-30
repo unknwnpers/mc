@@ -68,27 +68,27 @@ export default function AboutPage() {
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-charcoal tracking-tight">
                 Our <span className="text-blush italic">Story</span>
               </h2>
-            
+
               <div className="space-y-6 text-neutral-600 leading-relaxed text-lg font-sans">
                 <p>
                   Miks & Chiks was built with a simple goal — to make it easier for mothers to find clothing that truly feels good.
                 </p>
-            
+
                 <p>
                   We understand that during pregnancy and early motherhood, comfort matters more than ever. At the same time, you shouldn't have to compromise on style or quality. That's why our collection focuses on fabrics that are gentle on the skin, easy to wear, and suitable for daily use in our climate.
                 </p>
-            
+
                 <p>
                   Based in Kochi, we specialize in carefully selected maternity and kids wear designed to feel soft, breathable, and effortless for everyday life. From newborn essentials to maternity comfort wear, every product we offer is chosen with care, keeping both practicality and style in mind.
                 </p>
-            
+
                 <p className="font-medium text-charcoal">
                   We are not just a store — we are a space where mothers can find reliable essentials without confusion or compromise.
                 </p>
               </div>
-                          
+
               <div className="pt-4">
-                  <div className="h-1 w-20 bg-blush rounded-full opacity-50" />
+                <div className="h-1 w-20 bg-blush rounded-full opacity-50" />
               </div>
             </div>
 
@@ -126,37 +126,37 @@ export default function AboutPage() {
           <div className="relative overflow-hidden bg-charcoal rounded-[60px] p-12 sm:p-20 text-center shadow-2xl shadow-charcoal/20">
             {/* Decorative blush glow */}
             <div className="absolute top-0 right-0 w-96 h-96 bg-blush opacity-10 blur-[120px] -translate-y-1/2 translate-x-1/2" />
-            
+
             <div className="relative z-10 max-w-3xl mx-auto">
-                <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6">
-                  Visit <span className="text-blush italic">Us</span>
-                </h2>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6">
+                Visit <span className="text-blush italic">Us</span>
+              </h2>
 
-                <p className="text-neutral-400 text-lg mb-8 font-sans leading-relaxed">
-                  We are located near Lulu Mall, Edappally, Kochi.
-                </p>
+              <p className="text-neutral-400 text-lg mb-8 font-sans leading-relaxed">
+                We are located at Kakkara House, Nettoor PO, Kochi.
+              </p>
 
-                <p className="text-neutral-300 text-base mb-12 font-sans leading-relaxed max-w-2xl mx-auto">
-                  Whether you're preparing for your baby or looking for comfortable daily wear, we're here to help you choose what feels right.
-                </p>
+              <p className="text-neutral-300 text-base mb-12 font-sans leading-relaxed max-w-2xl mx-auto">
+                Whether you're preparing for your baby or looking for comfortable daily wear, we're here to help you choose what feels right.
+              </p>
 
-                <div className="flex flex-wrap justify-center gap-6">
-                  <a
-                    href="/contact"
-                    className="inline-flex items-center gap-3 bg-blush text-white px-10 py-5 rounded-2xl hover:bg-[#f48c82] transition-all duration-300 font-bold shadow-xl shadow-blush/20 transform hover:-translate-y-1"
-                  >
-                    <MapPin className="w-5 h-5" />
-                    <span>Get Directions</span>
-                  </a>
+              <div className="flex flex-wrap justify-center gap-6">
+                <a
+                  href="/contact"
+                  className="inline-flex items-center gap-3 bg-blush text-white px-10 py-5 rounded-2xl hover:bg-[#f48c82] transition-all duration-300 font-bold shadow-xl shadow-blush/20 transform hover:-translate-y-1"
+                >
+                  <MapPin className="w-5 h-5" />
+                  <span>Get Directions</span>
+                </a>
 
-                  <a
-                    href="/products"
-                    className="inline-flex items-center gap-3 bg-white/10 text-white px-10 py-5 rounded-2xl hover:bg-white hover:text-charcoal transition-all duration-300 font-bold border border-white/20 transform hover:-translate-y-1"
-                  >
-                    <Heart className="w-5 h-5" />
-                    <span>Shop Online</span>
-                  </a>
-                </div>
+                <a
+                  href="/products"
+                  className="inline-flex items-center gap-3 bg-white/10 text-white px-10 py-5 rounded-2xl hover:bg-white hover:text-charcoal transition-all duration-300 font-bold border border-white/20 transform hover:-translate-y-1"
+                >
+                  <Heart className="w-5 h-5" />
+                  <span>Shop Online</span>
+                </a>
+              </div>
             </div>
           </div>
 

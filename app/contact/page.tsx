@@ -50,7 +50,7 @@ export default function ContactPage() {
               Get in <span className="text-blush italic">Touch</span>
             </h1>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto font-sans leading-relaxed">
-              Have questions or need assistance? We'd love to hear from you. 
+              Have questions or need assistance? We'd love to hear from you.
               Our dedicated team is here to support your motherhood journey.
             </p>
           </div>
@@ -71,8 +71,8 @@ export default function ContactPage() {
                     <div>
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-2">Boutique Location</p>
                       <p className="text-charcoal font-medium leading-relaxed font-sans text-lg">
-                        Near Lulu Mall, Edappally<br />
-                        Kochi, Kerala – 682024<br />
+                        Kakkara House, Nettoor PO<br />
+                        Ernakulam, Kerala – 682024<br />
                         India
                       </p>
                     </div>
@@ -145,46 +145,46 @@ export default function ContactPage() {
             <div className="bg-white rounded-[50px] p-12 border border-[#F3E8E5] shadow-2xl shadow-blush/5 h-fit relative">
               {/* Subtle decorative background */}
               <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-                  <Send className="w-40 h-40 text-charcoal" />
+                <Send className="w-40 h-40 text-charcoal" />
               </div>
-              
+
               <h2 className="text-3xl font-serif font-bold text-charcoal mb-10 tracking-tight">
                 Send a <span className="text-blush italic">Message</span>
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
                 <div className="grid md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <label htmlFor="name" className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">
-                        Your Name
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-6 py-4 rounded-2xl border border-[#F3E8E5] bg-cream/10 focus:outline-none focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans"
-                        placeholder="Emilia Clarke"
-                      />
-                    </div>
+                  <div className="space-y-3">
+                    <label htmlFor="name" className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-6 py-4 rounded-2xl border border-[#F3E8E5] bg-cream/10 focus:outline-none focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans"
+                      placeholder="Emilia Clarke"
+                    />
+                  </div>
 
-                    <div className="space-y-3">
-                      <label htmlFor="email" className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-6 py-4 rounded-2xl border border-[#F3E8E5] bg-cream/10 focus:outline-none focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans"
-                        placeholder="emilia@premium.com"
-                      />
-                    </div>
+                  <div className="space-y-3">
+                    <label htmlFor="email" className="text-xs font-bold text-charcoal/70 uppercase tracking-widest ml-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-6 py-4 rounded-2xl border border-[#F3E8E5] bg-cream/10 focus:outline-none focus:ring-4 focus:ring-blush/10 focus:border-blush/50 transition-all font-sans"
+                      placeholder="emilia@premium.com"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -225,7 +225,7 @@ export default function ContactPage() {
                   className="w-full flex items-center justify-center gap-4 bg-blush text-white px-10 py-6 rounded-[32px] hover:bg-[#f48c82] transition-all duration-300 font-bold text-lg shadow-2xl shadow-blush/20 transform hover:-translate-y-1 active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-r-transparent" />
                   ) : (
                     <>
                       <Send className="h-6 w-6" />
