@@ -10,7 +10,21 @@ import type { Product } from '@/lib/types';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Tag } from 'lucide-react';
+
+interface AppliedOffer {
+  hasOffer: boolean;
+  offer?: {
+    id: string;
+    name: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    displayText: string;
+  };
+  originalPrice: number;
+  discountedPrice: number;
+  savings: number;
+}
 
 /**
  * Get thumbnail URL from original image URL
@@ -37,6 +51,7 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
 
   // Get image from images array (first image) or fallback
   const originalImage = product.images?.[0] || '/placeholder.svg';
@@ -48,6 +63,28 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
 
   // Get stock from first variant or fallback to 0
   const displayStock = product.variants?.[0]?.stock ?? 0;
+
+  // Fetch offer data
+  useEffect(() => {
+    if (displayPrice > 0 && product.id) {
+      fetch('/api/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          price: displayPrice,
+          categorySlug: product.category_slug,
+          productId: product.id
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.hasOffer) {
+          setOfferData(data);
+        }
+      })
+      .catch(console.error);
+    }
+  }, [displayPrice, product.category_slug, product.id]);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -157,10 +194,28 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
           {product.category_slug || "Collection"}
         </p>
 
-        <div className="flex items-center justify-between mt-auto pt-4">
-          <span className="font-bold text-blush text-xl tracking-tight">
-            ₹{displayPrice}
-          </span>
+        <div className="flex items-center justify-between mt-auto pt-4 flex-wrap gap-2">
+          <div>
+            {offerData?.hasOffer ? (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-blush text-xl tracking-tight">
+                    ₹{offerData.discountedPrice.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-xs font-bold text-green-500 bg-green-50 px-1.5 py-0.5 rounded border border-green-100 whitespace-nowrap flex items-center gap-1">
+                    <Tag className="w-3 h-3" /> {offerData.offer?.displayText || `SAVE ₹${offerData.savings}`}
+                  </span>
+                </div>
+                <span className="text-gray-400 line-through text-sm font-medium">
+                  ₹{displayPrice.toLocaleString('en-IN')}
+                </span>
+              </div>
+            ) : (
+              <span className="font-bold text-blush text-xl tracking-tight">
+                ₹{displayPrice.toLocaleString('en-IN')}
+              </span>
+            )}
+          </div>
 
           <button 
             onClick={handleAddToCart}
