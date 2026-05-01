@@ -49,7 +49,7 @@ export default function FlashScreen() {
             alt="Grand Opening Offer"
             width={1024}
             height={768}
-            className="hidden md:block w-full h-auto object-contain rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:scale-[1.01] transition-transform duration-500"
+            className="hidden md:block w-full h-auto object-contain rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:scale-[1.01] transition-transform duration-50000"
           />
 
           {/* Mobile Image (Hidden on Desktop) */}
