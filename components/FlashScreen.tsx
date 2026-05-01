@@ -24,9 +24,9 @@ export default function FlashScreen() {
       try {
         const docRef = doc(db, "settings", "flashScreen");
         const snap = await getDoc(docRef);
-        
+
         let activeConfig: FlashConfig;
-        
+
         if (snap.exists() && snap.data()?.isActive !== false) {
           activeConfig = snap.data() as FlashConfig;
         } else if (!snap.exists()) {
@@ -48,7 +48,7 @@ export default function FlashScreen() {
           // Use updatedAt in the storage key so if admin updates it, it shows again
           const cacheKey = `flash_seen_${activeConfig.updatedAt || 'v1'}`;
           const hasSeen = sessionStorage.getItem(cacheKey);
-          
+
           if (!hasSeen) {
             setIsVisible(true);
             sessionStorage.setItem(cacheKey, "true");
@@ -67,7 +67,7 @@ export default function FlashScreen() {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-500">
       <div className="relative w-full max-w-[90vw] md:max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
-        
+
         {/* Close Button */}
         <button
           onClick={(e) => {

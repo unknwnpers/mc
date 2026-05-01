@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -101,9 +102,9 @@ export default function AdminFlashScreenPage() {
       toast.success("Flash screen updated successfully");
       setDesktopFile(null);
       setMobileFile(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to save configuration");
+      toast.error((err as Error).message || "Failed to save configuration");
     } finally {
       setSaving(false);
     }
