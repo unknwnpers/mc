@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -57,9 +56,9 @@ export default function FlashScreen() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-opacity duration-300">
       <div 
-        className="relative max-w-4xl w-full mx-auto animate-in zoom-in-95 duration-500 rounded-3xl overflow-hidden shadow-2xl"
+        className="relative max-w-4xl w-full mx-auto rounded-3xl overflow-hidden shadow-2xl transition-transform duration-500 transform scale-100"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -83,25 +82,19 @@ export default function FlashScreen() {
         >
           {/* Desktop Image (Hidden on Mobile) */}
           <div className="hidden md:block w-full">
-            <Image 
+            <img 
               src="/Flash Screen Desktop.png" 
               alt="Grand Opening Offer" 
-              width={1200} 
-              height={600} 
               className="w-full h-auto object-contain rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:scale-[1.01] transition-transform duration-500"
-              priority
             />
           </div>
 
           {/* Mobile Image (Hidden on Desktop) */}
           <div className="block md:hidden w-full">
-            <Image 
+            <img 
               src="/Flash Screen Mobile.png" 
               alt="Grand Opening Offer" 
-              width={600} 
-              height={1200} 
               className="w-full h-auto object-contain rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-              priority
             />
           </div>
           
