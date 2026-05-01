@@ -16,17 +16,12 @@ export default function FlashScreen() {
   const minSwipeDistance = 50;
 
   useEffect(() => {
-    // Check if the flash screen has been shown in this session
-    const hasSeenFlashScreen = sessionStorage.getItem("hasSeenFlashScreen");
+    // Show the flash screen shortly after the app loads
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 500);
     
-    if (!hasSeenFlashScreen) {
-      // Delay slightly for effect
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-        sessionStorage.setItem("hasSeenFlashScreen", "true");
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+    return () => clearTimeout(timer);
   }, []);
 
   const dismiss = () => {
