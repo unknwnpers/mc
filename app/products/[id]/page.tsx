@@ -294,7 +294,7 @@ export default function ProductDetailsPage() {
         const response = await fetch(`/api/products?category=${categorySlug}&limit=10`);
         const result = await response.json();
         
-        if (result.success) {
+        if (result.success && Array.isArray(result.products)) {
             const all = result.products as Product[];
             const filtered = all.filter((p: Product) => p.id !== currentProductId).slice(0, 4);
             setRelatedProducts(filtered);
@@ -882,22 +882,20 @@ export default function ProductDetailsPage() {
                     <>
                       <button
                         onClick={handleAddToCart}
-                        disabled={!user || needsSizeSelection || isOutOfStock}
+                        disabled={needsSizeSelection || !!isOutOfStock}
                         className={cn(
                           "flex-1 px-8 py-5 rounded-2xl transition-all shadow-xl font-bold text-lg active:scale-95 flex items-center justify-center gap-3 group relative overflow-hidden",
-                          !user
-                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
-                            : needsSizeSelection
-                              ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
-                              : isOutOfStock
-                                ? "bg-red-50 text-red-400 cursor-not-allowed shadow-none border-2 border-red-100"
-                                : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
+                          needsSizeSelection
+                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
+                            : isOutOfStock
+                              ? "bg-red-50 text-red-400 cursor-not-allowed shadow-none border-2 border-red-100"
+                              : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
                         )}
                       >
                         {!isOutOfStock && <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />}
                         <ShoppingCart className={cn("w-6 h-6 relative z-10 transition-transform", !isOutOfStock && "group-hover:scale-110")} />
                         <span className="relative z-10">
-                          {!user ? "Login Required" : needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : `Add ${currentQty} to Cart`}
+                          {needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : !user ? "Login to Add to Cart" : `Add ${currentQty} to Cart`}
                         </span>
                       </button>
                       <button 
