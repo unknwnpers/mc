@@ -15,12 +15,8 @@ export default function FlashScreen() {
   const minSwipeDistance = 50;
 
   useEffect(() => {
-    // Show the flash screen shortly after the app loads
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    console.log("Flash Screen mounted");
+    setIsVisible(true);
   }, []);
 
   const dismiss = () => {
@@ -83,7 +79,7 @@ export default function FlashScreen() {
           {/* Desktop Image (Hidden on Mobile) */}
           <div className="hidden md:block w-full">
             <img 
-              src="/Flash Screen Desktop.png" 
+              src="/Flash%20Screen%20Desktop.png" 
               alt="Grand Opening Offer" 
               className="w-full h-auto object-contain rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:scale-[1.01] transition-transform duration-500"
             />
@@ -92,7 +88,7 @@ export default function FlashScreen() {
           {/* Mobile Image (Hidden on Desktop) */}
           <div className="block md:hidden w-full">
             <img 
-              src="/Flash Screen Mobile.png" 
+              src="/Flash%20Screen%20Mobile.png" 
               alt="Grand Opening Offer" 
               className="w-full h-auto object-contain rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.2)]"
             />
