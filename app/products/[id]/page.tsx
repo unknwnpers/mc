@@ -334,13 +334,13 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    // Backend Purchase Logic constraints using real-time availableStock from stats API
+    // Backend Purchase Logic using real-time availableStock
     const raw_stock = availableStock[variant?.sku ?? ''] ?? (variant?.stock ?? 0);
     const reserve = Math.ceil(0.2 * raw_stock);
     const sellable_stock = Math.max(0, raw_stock - reserve);
-    const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+    // Max per customer = sellable stock, capped at 10
+    const max_per_customer = Math.min(10, sellable_stock);
 
-    // Double-check stock availability against backend rules
     if (variant && max_per_customer <= 0) {
       toast.error("Sorry, this size is currently out of stock");
       return;
@@ -804,16 +804,18 @@ export default function ProductDetailsPage() {
                 
                 // Use real-time availableStock from stats API as source of truth
                 const realStock = selectedVariant ? (availableStock[selectedVariant.sku] ?? selectedVariant.stock) : 0;
-                // Backend Purchase Logic constraints applied to real-time stock
+                // Backend Purchase Logic:
+                // Step 1 — Reserve 20% buffer for operational purposes
                 const reserve = Math.ceil(0.2 * realStock);
+                // Step 2 — Sellable stock is what can actually be sold
                 const sellable_stock = Math.max(0, realStock - reserve);
-                const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+                // Step 3 — Max per customer = sellable stock, capped at 10
+                const max_per_customer = Math.min(10, sellable_stock);
 
                 const maxQty = max_per_customer;
-                const displayStock = sellable_stock;
                 
                 const isOutOfStock = maxQty <= 0;
-                const isLowStock = displayStock > 0 && displayStock <= 3;
+                const isLowStock = maxQty > 0 && maxQty <= 3;
                 
                 const currentQty = Math.min(quantity, Math.max(1, maxQty));
                 
@@ -840,7 +842,7 @@ export default function ProductDetailsPage() {
                       </button>
                     </div>
                     
-                    {/* Stock Status Indicator */}
+                    {/* Stock Status — shows max units customer can purchase */}
                     {selectedSize && (
                       <span className={`text-xs font-medium ${
                         isOutOfStock 
@@ -852,8 +854,8 @@ export default function ProductDetailsPage() {
                         {isOutOfStock 
                           ? 'Out of Stock' 
                           : isLowStock 
-                            ? `Only ${displayStock} left!` 
-                            : `${displayStock} available`
+                            ? `Only ${maxQty} left!` 
+                            : `${maxQty} available`
                         }
                       </span>
                     )}
@@ -870,7 +872,8 @@ export default function ProductDetailsPage() {
                   const raw_total_stock = selectedSize ? (availableStock[selectedSize] ?? (variants?.find((v: any) => v.sku === selectedSize)?.stock ?? 0)) : 0;
                   const reserve = Math.ceil(0.2 * raw_total_stock);
                   const sellable_stock = Math.max(0, raw_total_stock - reserve);
-                  const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+                  // Max per customer = sellable stock, capped at 10
+                  const max_per_customer = Math.min(10, sellable_stock);
                   
                   const isOutOfStock = selectedSize && max_per_customer <= 0;
                   const currentQty = Math.min(quantity, Math.max(1, max_per_customer));
