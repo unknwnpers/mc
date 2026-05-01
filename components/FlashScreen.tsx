@@ -22,7 +22,7 @@ export default function FlashScreen() {
   useEffect(() => {
     async function loadFlashConfig() {
       try {
-        const docRef = doc(db, "settings", "flashScreen");
+        const docRef = doc(db, "image_metadata", "flashScreenConfig");
         const snap = await getDoc(docRef);
 
         let activeConfig: FlashConfig;

@@ -24,7 +24,7 @@ export default function AdminFlashScreenPage() {
   useEffect(() => {
     async function fetchConfig() {
       try {
-        const snap = await getDoc(doc(db, "settings", "flashScreen"));
+        const snap = await getDoc(doc(db, "image_metadata", "flashScreenConfig"));
         if (snap.exists()) {
           const data = snap.data();
           setIsActive(data.isActive ?? true);
@@ -90,8 +90,8 @@ export default function AdminFlashScreenPage() {
         finalMobileUrl = url;
       }
 
-      // Save to Firestore
-      await setDoc(doc(db, "settings", "flashScreen"), {
+      // Save to Firestore using an existing public-read/admin-write collection
+      await setDoc(doc(db, "image_metadata", "flashScreenConfig"), {
         isActive,
         linkUrl,
         desktopImage: finalDesktopUrl,
