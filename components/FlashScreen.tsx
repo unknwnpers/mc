@@ -45,14 +45,16 @@ export default function FlashScreen() {
         >
           {/* Desktop Image (Hidden on Mobile) */}
           <img
-            src="/Flash_Screen_Desktop.png"
+            src="/flash_screen_desktop.png"
             alt="Grand Opening Offer"
+            width={1024}
+            height={768}
             className="hidden md:block w-full h-auto object-contain rounded-3xl shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:scale-[1.01] transition-transform duration-500"
           />
 
           {/* Mobile Image (Hidden on Desktop) */}
           <img
-            src="/Flash_Screen_Mobile.png"
+            src="/flash_screen_mobile.png"
             alt="Grand Opening Offer"
             className="block md:hidden w-full h-auto object-contain rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.2)]"
           />
