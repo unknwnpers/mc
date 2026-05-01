@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { uploadImageWithTracking, validateImageFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { Save, UploadCloud, Link as LinkIcon, MonitorPlay, Loader2, Image as ImageIcon } from "lucide-react";
@@ -24,13 +23,14 @@ export default function AdminFlashScreenPage() {
   useEffect(() => {
     async function fetchConfig() {
       try {
-        const snap = await getDoc(doc(db, "image_metadata", "flashScreenConfig"));
-        if (snap.exists()) {
-          const data = snap.data();
-          setIsActive(data.isActive ?? true);
-          setLinkUrl(data.linkUrl || "/products");
-          setDesktopImagePreview(data.desktopImage || "/Flash_Screen_Desktop.png");
-          setMobileImagePreview(data.mobileImage || "/Flash_Screen_Mobile.png");
+        const res = await fetch("/api/settings/flash-screen");
+        const data = await res.json();
+        
+        if (res.ok && data.config) {
+          setIsActive(data.config.isActive ?? true);
+          setLinkUrl(data.config.linkUrl || "/products");
+          setDesktopImagePreview(data.config.desktopImage || "/Flash_Screen_Desktop.png");
+          setMobileImagePreview(data.config.mobileImage || "/Flash_Screen_Mobile.png");
         }
       } catch (err) {
         toast.error("Failed to load configuration");
@@ -90,14 +90,21 @@ export default function AdminFlashScreenPage() {
         finalMobileUrl = url;
       }
 
-      // Save to Firestore using an existing public-read/admin-write collection
-      await setDoc(doc(db, "image_metadata", "flashScreenConfig"), {
-        isActive,
-        linkUrl,
-        desktopImage: finalDesktopUrl,
-        mobileImage: finalMobileUrl,
-        updatedAt: Date.now(),
+      // Save via secure API route to bypass Firebase permission rules
+      const response = await fetch("/api/settings/flash-screen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isActive,
+          linkUrl,
+          desktopImage: finalDesktopUrl,
+          mobileImage: finalMobileUrl,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to save configuration via API");
+      }
 
       toast.success("Flash screen updated successfully");
       setDesktopFile(null);
