@@ -334,15 +334,15 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    // Backend Purchase Logic constraints
-    const raw_stock = variant?.stock ?? 0;
+    // Backend Purchase Logic constraints using real-time availableStock from stats API
+    const raw_stock = availableStock[variant?.sku ?? ''] ?? (variant?.stock ?? 0);
     const reserve = Math.ceil(0.2 * raw_stock);
     const sellable_stock = Math.max(0, raw_stock - reserve);
     const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
 
     // Double-check stock availability against backend rules
     if (variant && max_per_customer <= 0) {
-      toast.error("Sorry, this size is out of stock (reserve limit)");
+      toast.error("Sorry, this size is currently out of stock");
       return;
     }
 
@@ -738,22 +738,34 @@ export default function ProductDetailsPage() {
                                     <Ruler className="w-3 h-3" />
                                     Size Guide
                                 </button>
-                                {selectedVariant && (
-                                    <span className={cn(
-                                        "text-xs font-bold",
-                                        selectedVariant.stock <= 3 ? "text-orange-500" : "text-green-600"
-                                    )}>
-                                        {selectedVariant.stock <= 3 
-                                            ? `Only ${selectedVariant.stock} left` 
-                                            : "In Stock"}
-                                    </span>
-                                )}
+                                {selectedVariant && (() => {
+                                    // Use real-time availableStock from stats API as source of truth
+                                    const realStock = availableStock[selectedVariant.sku] ?? selectedVariant.stock;
+                                    const reserve = Math.ceil(0.2 * realStock);
+                                    const sellable = Math.max(0, realStock - reserve);
+                                    const allowedQty = Math.min(2, Math.floor(sellable / 3));
+                                    const isOOS = allowedQty <= 0;
+                                    const isLow = !isOOS && sellable <= 3;
+                                    return (
+                                        <span className={cn(
+                                            "text-xs font-bold",
+                                            isOOS ? "text-red-500" : isLow ? "text-orange-500" : "text-green-600"
+                                        )}>
+                                            {isOOS ? "Out of Stock" : isLow ? `Only ${sellable} left` : "In Stock"}
+                                        </span>
+                                    );
+                                })()}
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-3">
                             {variants.map(v => {
-                                const isOOS = v.stock <= 0;
-                                const isLowStock = v.stock > 0 && v.stock <= 3;
+                                // Use real-time stock for each variant button
+                                const realStock = availableStock[v.sku] ?? v.stock;
+                                const reserve = Math.ceil(0.2 * realStock);
+                                const sellable = Math.max(0, realStock - reserve);
+                                const allowedQty = Math.min(2, Math.floor(sellable / 3));
+                                const isOOS = allowedQty <= 0;
+                                const isLowStock = !isOOS && sellable <= 3;
                                 return (
                                 <button key={v.sku}
                                     onClick={() => !isOOS && setSelectedSize(v.sku)}
@@ -790,10 +802,11 @@ export default function ProductDetailsPage() {
                 const hasVariants = variants && variants.length > 0;
                 const selectedVariant = hasVariants ? variants.find((v: any) => v.sku === selectedSize) : null;
                 
-                // Backend Purchase Logic constraints
-                const raw_total_stock = selectedVariant?.stock ?? 0;
-                const reserve = Math.ceil(0.2 * raw_total_stock);
-                const sellable_stock = Math.max(0, raw_total_stock - reserve);
+                // Use real-time availableStock from stats API as source of truth
+                const realStock = selectedVariant ? (availableStock[selectedVariant.sku] ?? selectedVariant.stock) : 0;
+                // Backend Purchase Logic constraints applied to real-time stock
+                const reserve = Math.ceil(0.2 * realStock);
+                const sellable_stock = Math.max(0, realStock - reserve);
                 const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
 
                 const maxQty = max_per_customer;
@@ -853,8 +866,8 @@ export default function ProductDetailsPage() {
                   const variants = (product as any).variants;
                   const hasVariants = variants && variants.length > 0;
                   const needsSizeSelection = hasVariants && !selectedSize;
-                  // Backend Purchase Logic constraints
-                  const raw_total_stock = selectedSize ? (variants?.find((v: any) => v.sku === selectedSize)?.stock ?? 0) : 0;
+                  // Use real-time availableStock from stats API
+                  const raw_total_stock = selectedSize ? (availableStock[selectedSize] ?? (variants?.find((v: any) => v.sku === selectedSize)?.stock ?? 0)) : 0;
                   const reserve = Math.ceil(0.2 * raw_total_stock);
                   const sellable_stock = Math.max(0, raw_total_stock - reserve);
                   const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
