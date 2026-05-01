@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ArrowRight, Heart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import HeroSection from '@/components/HeroSection';
 import ProductCard from '@/components/ProductCard';
 import CollectionCard from '@/components/CollectionCard';
 import { adminDb } from '@/lib/firebase-admin';
@@ -138,74 +139,7 @@ export default async function Home() {
       <Navbar />
 
       {/* HERO */}
-      <section className="pt-32 pb-20 min-h-[90vh] flex items-center bg-cream relative overflow-hidden">
-        {/* Abstract Background Decor */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[800px] h-[800px] bg-blush/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6 md:px-10 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center w-full">
-
-            {/* TEXT */}
-            <div className="space-y-10 flex flex-col justify-center">
-              <div className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-md border border-blush/10 px-6 py-2.5 rounded-full shadow-sm w-fit">
-                <Heart className="h-4 w-4 text-blush" />
-                <span className="text-xs font-black text-blush uppercase tracking-[0.2em]">
-                  Welcome to Miks & Chiks
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <h1 className="font-serif text-[48px] md:text-[68px] leading-[1.1] text-[#2B2B2B] font-medium tracking-[-0.5px]">
-                  Softness That
-                </h1>
-                <h1 className="font-serif italic text-[44px] md:text-[64px] leading-[1.1] text-[#E6A79C] font-normal">
-                  Stays With You
-                </h1>
-                <h2 className="font-serif italic text-[24px] md:text-[30px] text-[#7A7A7A] mt-4">
-                  Through Every Tiny Moment
-                </h2>
-              </div>
-
-              <p className="text-lg md:text-xl text-neutral-500 leading-relaxed max-w-[550px] font-sans">
-                Not just clothing — a gentle embrace for mothers and their little ones. 
-                Thoughtfully designed pieces that feel as comforting as your touch.
-              </p>
-
-              <div className="flex flex-wrap gap-5">
-                <Link
-                  href="/products"
-                  className="group inline-flex items-center space-x-3 bg-[#E58F7C] text-white px-10 py-5 rounded-2xl hover:bg-[#d47f6d] transition-all duration-500 font-bold shadow-2xl shadow-[#E58F7C]/30 active:scale-95"
-                >
-                  <span className="uppercase tracking-widest text-xs">Shop Collection</span>
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-
-                <Link
-                  href="/about"
-                  className="inline-flex items-center space-x-3 bg-white text-charcoal px-10 py-5 rounded-2xl hover:bg-cream transition-all duration-300 font-bold border border-blush/10 shadow-sm active:scale-95"
-                >
-                  <span className="uppercase tracking-widest text-xs text-neutral-400">Explore Story</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* IMAGE */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blush/20 to-gold/20 rounded-[40px] blur-3xl" />
-              <Image
-                src={heroImage?.url || '/mother-baby.jpg'}
-                alt="Maternity Fashion"
-                width={512}
-                height={640}
-                priority
-                className="relative rounded-[40px] shadow-2xl w-full max-w-md mx-auto aspect-[4/5] object-cover object-top"
-              />
-            </div>
-
-          </div>
-        </div>
-      </section>
+      <HeroSection heroImageUrl={heroImage?.url} />
 
       {/* CURATED COLLECTIONS */}
       <section className="py-24 bg-white rounded-[60px] my-12 mx-4 shadow-sm border border-[#F3E8E5]">

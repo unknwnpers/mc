@@ -95,7 +95,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             const productData = productSnap.data();
             const variants    = (productData.variants || []) as any[];
             const variant     = variants.find((v: any) => v.sku === item.sku);
+            // Backend Purchase Logic constraints
             const currentStock = variant?.stock ?? 0;
+            const reserve = Math.ceil(0.2 * currentStock);
+            const sellable_stock = Math.max(0, currentStock - reserve);
+            const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
 
             // Require a valid SKU
             if (!item.sku) {
@@ -103,7 +107,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            if (currentStock <= 0) {
+            if (max_per_customer <= 0) {
                 toast.error("Out of stock");
                 return;
             }
@@ -120,8 +124,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 const docSnap = snapshot.docs[0];
                 const newQty = docSnap.data().quantity + 1;
 
-                if (newQty > currentStock) {
-                    toast.error(`Only ${currentStock} items in stock`);
+                if (newQty > max_per_customer) {
+                    toast.error(`You can only purchase up to ${max_per_customer} of this item`);
                     return;
                 }
 
@@ -169,9 +173,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const productData  = productSnap.data();
         const variants     = (productData.variants || []) as any[];
         const variant      = variants.find((v: any) => v.sku === sku);
+        // Backend Purchase Logic constraints
         const currentStock = variant?.stock ?? 0;
-        if (qty > currentStock) {
-            toast.error(`Only ${currentStock} items in stock`);
+        const reserve = Math.ceil(0.2 * currentStock);
+        const sellable_stock = Math.max(0, currentStock - reserve);
+        const max_per_customer = Math.min(2, Math.floor(sellable_stock / 3));
+
+        if (qty > max_per_customer) {
+            toast.error(`You can only purchase up to ${max_per_customer} of this item`);
             return;
         }
     }
