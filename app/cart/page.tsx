@@ -308,7 +308,14 @@ export default function CartPage() {
                                                     onClick={() =>
                                                         updateQuantity(item.id, item.quantity + 1, item.sku)
                                                     }
-                                                    className="w-11 h-11 flex items-center justify-center bg-white border border-neutral-300 rounded-xl hover:border-blush hover:text-blush transition-all active:scale-90 shadow-sm"
+                                                    disabled={(() => {
+                                                        const raw_stock = item.stock ?? 0;
+                                                        const reserve = Math.ceil(0.2 * raw_stock);
+                                                        const sellable = Math.max(0, raw_stock - reserve);
+                                                        const max_allowed = Math.min(2, Math.floor(sellable / 3));
+                                                        return item.quantity >= Math.max(1, max_allowed);
+                                                    })()}
+                                                    className="w-11 h-11 flex items-center justify-center bg-white border border-neutral-300 rounded-xl hover:border-blush hover:text-blush transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                                                     aria-label="Increase quantity"
                                                 >
                                                     <Plus className="w-4 h-4" />
