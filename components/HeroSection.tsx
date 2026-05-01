@@ -10,40 +10,43 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
         <div className="grid lg:grid-cols-[55%_45%] gap-12 lg:gap-8 items-center">
 
           {/* ================= LEFT SIDE (Content Block) ================= */}
-          <div className="flex flex-col space-y-8 relative">
-
+          <div className="flex flex-col items-center text-center space-y-6 lg:space-y-8 relative w-full">
+            
             {/* A. Top Ribbon Badge */}
-            <div className="relative inline-block w-fit mb-4">
+            <div className="relative inline-flex items-center justify-center w-fit mb-2">
               <div className="absolute inset-0 bg-gradient-to-r from-[#F48C7F] to-[#E76F61] rounded-full blur-md opacity-40"></div>
-              <div className="relative flex items-center space-x-2 bg-gradient-to-r from-[#F48C7F] to-[#E76F61] text-white px-6 py-2 rounded-full shadow-md">
-                <Heart className="w-4 h-4 text-white fill-white" />
-                <span className="text-xs font-bold uppercase tracking-[0.2em]">
+              <div className="relative flex items-center space-x-2 bg-gradient-to-r from-[#F48C7F] to-[#E76F61] text-white px-8 py-2.5 rounded-full shadow-md border border-white/20">
+                <span className="text-white text-lg leading-none">✦</span>
+                <span className="text-sm font-bold uppercase tracking-[0.2em] px-1">
                   We&apos;re Open!
                 </span>
-                <Heart className="w-4 h-4 text-white fill-white" />
+                <span className="text-white text-lg leading-none">✦</span>
               </div>
               {/* Ribbon tails */}
-              <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-[#D16A5E] rotate-45 -z-10"></div>
-              <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-[#D16A5E] rotate-45 -z-10"></div>
+              <div className="absolute top-1/2 -left-3 w-8 h-8 bg-[#D16A5E] rotate-45 -z-10 -translate-y-1/2"></div>
+              <div className="absolute top-1/2 -right-3 w-8 h-8 bg-[#D16A5E] rotate-45 -z-10 -translate-y-1/2"></div>
             </div>
 
             {/* B. Main Heading */}
-            <div className="space-y-1">
-              <h1 className="font-serif text-[56px] sm:text-[64px] lg:text-[72px] leading-[1.05] text-[#2B2B2B] font-bold">
+            <div className="space-y-1 flex flex-col items-center">
+              <h1 className="font-serif text-[56px] sm:text-[64px] lg:text-[80px] leading-[1.0] text-[#2B2B2B] font-bold">
                 Grand
               </h1>
-              <h1 className="font-serif text-[64px] sm:text-[72px] lg:text-[80px] leading-[1.05] text-[#F48C7F] font-bold italic">
+              <h1 className="font-serif text-[64px] sm:text-[72px] lg:text-[96px] leading-[1.0] text-[#F48C7F] font-bold">
                 Opening!
               </h1>
             </div>
 
             {/* C. Subtitle */}
-            <p className="text-[16px] sm:text-[18px] text-[#777777] font-sans max-w-md leading-relaxed font-medium">
-              A new beginning filled with love, care & little moments.
-            </p>
+            <div className="flex flex-col items-center relative">
+              <Heart className="w-5 h-5 text-[#D4A373] fill-[#D4A373] mb-4" />
+              <p className="text-[16px] sm:text-[20px] text-[#777777] font-serif italic max-w-[400px] leading-relaxed">
+                A new beginning filled with love, care & little moments.
+              </p>
+            </div>
 
             {/* D. Feature Icons Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 w-full max-w-[600px]">
               <FeatureCard icon={<Gift className="w-6 h-6" />} title="Exclusive Launch Offers" />
               <FeatureCard icon={<Heart className="w-6 h-6" />} title="Premium Quality You Can Trust" />
               <FeatureCard icon={<Leaf className="w-6 h-6" />} title="Made With Love For Little Ones" />
@@ -51,7 +54,7 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
             </div>
 
             {/* E. CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            <div className="flex flex-wrap justify-center items-center gap-4 pt-2">
               <Link
                 href="/products"
                 className="group flex items-center space-x-3 bg-gradient-to-r from-[#F48C7F] to-[#E76F61] text-white px-8 py-4 rounded-full font-bold shadow-xl shadow-[#F48C7F]/30 hover:shadow-2xl hover:scale-105 transition-all active:scale-95"
@@ -82,6 +85,9 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
           {/* ================= RIGHT SIDE (Visual + Offer) ================= */}
           <div className="relative mt-12 lg:mt-0 flex justify-center lg:justify-end">
 
+            {/* Background Gold Ring */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] aspect-square border-[2px] border-[#D4A373]/30 rounded-full z-0 pointer-events-none"></div>
+
             {/* A. Main Image */}
             <div className="relative w-full max-w-[480px] aspect-[4/5] z-10">
               <div className="absolute inset-0 border-[8px] border-white rounded-[50%_/_40%] shadow-2xl overflow-hidden bg-[#FFF6F4]">
@@ -95,9 +101,23 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
               </div>
 
               {/* B. Decorative Floating Badge */}
-              <div className="absolute -top-6 -left-6 z-20 bg-[#F48C7F] text-white w-28 h-28 rounded-full flex flex-col items-center justify-center p-2 text-center shadow-lg border-4 border-[#FFF8F6] animate-[bounce_4s_infinite]">
-                <span className="text-[10px] font-bold uppercase tracking-widest mb-1">Celebrate</span>
-                <span className="text-sm font-serif font-bold italic leading-tight">New<br />Beginnings</span>
+              <div className="absolute -top-12 -left-12 z-20 animate-[bounce_4s_infinite]">
+                <div className="relative w-[130px] h-[130px] flex items-center justify-center">
+                  {/* Ribbon tails */}
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex gap-4 w-full justify-center z-0">
+                    <div className="w-8 h-12 bg-gradient-to-b from-[#D4A373] to-[#C08F5F] transform rotate-12 origin-top-right relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-4 after:bg-[#FFF8F6] after:[clip-path:polygon(0_100%,50%_0,100%_100%)]"></div>
+                    <div className="w-8 h-12 bg-gradient-to-b from-[#D4A373] to-[#C08F5F] transform -rotate-12 origin-top-left relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-4 after:bg-[#FFF8F6] after:[clip-path:polygon(0_100%,50%_0,100%_100%)]"></div>
+                  </div>
+                  {/* Scalloped Badge Body (using stacked rotated squares to mimic scalloped edges) */}
+                  <div className="absolute inset-0 bg-[#E76F61] rounded-full z-10 flex items-center justify-center shadow-lg">
+                    <div className="absolute inset-1 border-[2px] border-dashed border-[#FFF8F6]/80 rounded-full"></div>
+                    <div className="relative flex flex-col items-center text-center text-white p-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest mb-0.5">Celebrate</span>
+                      <span className="text-sm font-serif font-bold leading-tight">NEW<br/>BEGINNINGS</span>
+                      <Heart className="w-3 h-3 text-white fill-white mt-1" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Confetti & Balloons Decorations */}
