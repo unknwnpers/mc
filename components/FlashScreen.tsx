@@ -136,7 +136,7 @@ export default function FlashScreen() {
         {/* Desktop */}
         <div className="hidden md:block relative w-full h-full">
           <Image
-            src="/flash_screen_desktop.png"
+            src="/flash_screen_desktop_img.png"
             alt="Offer"
             fill
             priority
@@ -147,7 +147,7 @@ export default function FlashScreen() {
         {/* Mobile */}
         <div className="block md:hidden relative w-full h-full">
           <Image
-            src="/flash_screen_mobile.png"
+            src="/flash_screen_mobile_img.png"
             alt="Offer"
             fill
             priority
