@@ -5,8 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { uploadImageWithTracking, validateImageFile } from "@/lib/storage";
 import { toast } from "sonner";
-import { Save, UploadCloud, Link as LinkIcon, MonitorPlay, Power, Loader2, Image as ImageIcon } from "lucide-react";
-import Image from "next/image";
+import { Save, UploadCloud, Link as LinkIcon, MonitorPlay, Loader2, Image as ImageIcon } from "lucide-react";
 
 export default function AdminFlashScreenPage() {
   const [isActive, setIsActive] = useState(true);
