@@ -110,8 +110,8 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
             </div>
 
             {/* A. Main Image */}
-            <div className="relative w-full max-w-[480px] aspect-[4/5] z-10 group">
-              <div className="absolute inset-0 border-[8px] border-white rounded-[50%_/_40%] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden bg-[#FFF6F4] transform transition-transform duration-700 group-hover:scale-[1.02]">
+            <div className="relative w-full max-w-[420px] aspect-square z-10 group">
+              <div className="absolute inset-0 border-[8px] border-white rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden bg-[#FFF6F4] transform transition-transform duration-700 group-hover:scale-[1.02]">
                 <Image
                   src={heroImageUrl || '/mother-baby.jpg'}
                   alt="Mother holding baby"
@@ -120,16 +120,16 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
                   className="object-cover object-top hover:scale-105 transition-transform duration-1000 ease-out"
                 />
                 {/* Soft inner glow */}
-                <div className="absolute inset-0 rounded-[50%_/_40%] shadow-[inset_0_0_40px_rgba(0,0,0,0.05)] pointer-events-none"></div>
+                <div className="absolute inset-0 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.05)] pointer-events-none"></div>
               </div>
 
               {/* B. Decorative Floating Badge */}
               <div className="absolute -top-10 -left-10 z-20 animate-[float_6s_ease-in-out_infinite]">
                 <div className="relative w-[140px] h-[140px] flex items-center justify-center">
                   {/* Ribbon tails with realistic v-notch */}
-                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 w-full justify-center z-0">
-                    <div className="w-9 h-14 bg-gradient-to-b from-[#D4A373] to-[#C08F5F] transform rotate-[15deg] origin-top-right shadow-md" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}></div>
-                    <div className="w-9 h-14 bg-gradient-to-b from-[#D4A373] to-[#C08F5F] transform -rotate-[15deg] origin-top-left shadow-md" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}></div>
+                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1 w-full justify-center z-0">
+                    <div className="w-8 h-12 bg-gradient-to-b from-[#D4A373] to-[#C08F5F] transform rotate-[5deg] origin-top-right shadow-md" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}></div>
+                    <div className="w-8 h-12 bg-gradient-to-b from-[#D4A373] to-[#C08F5F] transform -rotate-[5deg] origin-top-left shadow-md" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}></div>
                   </div>
                   {/* Scalloped Badge Body */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[#F48C7F] to-[#E76F61] rounded-full z-10 flex items-center justify-center shadow-[0_10px_20px_rgba(231,111,97,0.3)] border-[3px] border-white">
@@ -144,7 +144,7 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
               </div>
 
               {/* C. Offer Card (Glassmorphism + Strong Depth) */}
-              <div className="absolute -bottom-12 right-0 sm:-right-12 z-30 bg-white/95 backdrop-blur-xl rounded-[24px] p-8 shadow-[0_30px_60px_rgba(0,0,0,0.15)] border border-white w-[280px] hover:-translate-y-3 transition-transform duration-500 ease-out group">
+              <div className="absolute -bottom-8 right-0 sm:right-0 z-30 bg-white/95 backdrop-blur-xl rounded-[24px] p-8 shadow-[0_30px_60px_rgba(0,0,0,0.15)] border border-white w-[260px] hover:-translate-y-3 transition-transform duration-500 ease-out group">
                 <div className="flex flex-col items-center text-center relative z-10">
                   <Crown className="w-10 h-10 text-[#D4A373] mb-3 drop-shadow-sm group-hover:scale-110 transition-transform duration-500" />
                   <p className="text-[11px] font-bold text-[#F48C7F] uppercase tracking-[0.25em] mb-4">
@@ -170,13 +170,13 @@ export default function HeroSection({ heroImageUrl }: { heroImageUrl?: string })
                     <Heart className="w-3.5 h-3.5 text-[#D4A373] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-0.5" />
                   </div>
 
-                  <button className="bg-gradient-to-r from-[#D4A373] to-[#C08F5F] text-white text-[10px] font-bold px-6 py-2.5 rounded-full uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-shadow">
+                  <button className="bg-gradient-to-r from-[#D4A373] to-[#C08F5F] text-white text-[10px] font-bold px-6 py-2.5 rounded-full uppercase tracking-[0.2em] shadow-md hover:shadow-lg transition-shadow w-full">
                     Limited Time Only!
                   </button>
                 </div>
                 
                 {/* Optional Gift box luxury hint */}
-                <div className="absolute -bottom-10 -right-8 opacity-[0.15] rotate-12 pointer-events-none group-hover:rotate-0 transition-transform duration-700">
+                <div className="absolute -bottom-8 -right-6 opacity-[0.15] rotate-12 pointer-events-none group-hover:rotate-0 transition-transform duration-700">
                   <Gift className="w-20 h-20 text-[#D4A373]" />
                 </div>
               </div>
