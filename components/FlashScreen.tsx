@@ -9,15 +9,11 @@ export default function FlashScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    // Only show once per session to avoid annoying users
+    // Check session storage immediately on client load
     const hasSeen = sessionStorage.getItem("flash_seen_offer");
     if (!hasSeen) {
-      const timer = setTimeout(() => {
-        console.log("Flash Screen Triggered");
-        setIsVisible(true);
-        sessionStorage.setItem("flash_seen_offer", "true");
-      }, 500);
-      return () => clearTimeout(timer);
+      setIsVisible(true);
+      sessionStorage.setItem("flash_seen_offer", "true");
     }
   }, []);
 
