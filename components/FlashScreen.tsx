@@ -17,7 +17,33 @@ export interface FlashConfig {
 export default function FlashScreen() {
   const [isVisible, setIsVisible] = useState(false);
   const [config, setConfig] = useState<FlashConfig | null>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const router = useRouter();
+
+  // Minimum swipe distance (in px) to trigger dismiss
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    // Dismiss on swipe either left or right
+    if (isLeftSwipe || isRightSwipe) {
+      setIsVisible(false);
+    }
+  };
 
   useEffect(() => {
     async function loadFlashConfig() {
@@ -30,11 +56,11 @@ export default function FlashScreen() {
         if (snap.exists() && snap.data()?.isActive !== false) {
           activeConfig = snap.data() as FlashConfig;
         } else if (!snap.exists()) {
-          // Fallback to default static images if no backend config exists
+          // Fallback to the uploaded Firebase images if no backend config exists
           activeConfig = {
             isActive: true,
-            desktopImage: "/Flash_Screen_Desktop.png",
-            mobileImage: "/Flash_Screen_Mobile.png",
+            desktopImage: "https://storage.googleapis.com/miksandchiks-34b66.firebasestorage.app/system/flash-screen/original/1777614706470-flash-screen-desktop.png",
+            mobileImage: "https://storage.googleapis.com/miksandchiks-34b66.firebasestorage.app/system/flash-screen/original/1777614800145-flash-screen-mobile.png",
             linkUrl: "/products",
             updatedAt: 1
           };
@@ -66,7 +92,12 @@ export default function FlashScreen() {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-500">
-      <div className="relative w-full max-w-[90vw] md:max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+      <div 
+        className="relative w-full max-w-[90vw] md:max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
 
         {/* Close Button */}
         <button
@@ -101,6 +132,13 @@ export default function FlashScreen() {
             alt="Grand Opening Offer"
             className="block md:hidden w-full h-auto object-contain rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.2)]"
           />
+
+          {/* Swipe indicator (mobile only) */}
+          <div className="absolute bottom-4 left-0 right-0 text-center md:hidden pointer-events-none opacity-60">
+            <span className="bg-black/40 text-white text-[10px] px-3 py-1 rounded-full backdrop-blur-sm">
+              Swipe or tap to close
+            </span>
+          </div>
         </div>
       </div>
     </div>
