@@ -21,24 +21,60 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight, Copy, CheckCheck } from "lucide-react";
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="ml-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-100"
+      title="Copy order ID"
+    >
+      {copied ? <CheckCheck className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-neutral-400" />}
+    </button>
+  );
+}
+
+function Avatar({ name }: { name: string }) {
+  const initials = name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() || "?";
+  const colors = ["bg-rose-100 text-rose-600","bg-blue-100 text-blue-600","bg-amber-100 text-amber-600","bg-violet-100 text-violet-600","bg-emerald-100 text-emerald-600"];
+  const color = colors[initials.charCodeAt(0) % colors.length];
+  return (
+    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-xs font-black shrink-0", color)}>
+      {initials}
+    </div>
+  );
+}
 
 const statusStyles: Record<string, string> = {
-  pending_payment: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  paid:            "bg-emerald-100 text-emerald-700 border-emerald-200",
+  pending_payment: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  paid:            "bg-emerald-50 text-emerald-700 border-emerald-200",
   created:         "bg-neutral-100 text-neutral-600 border-neutral-200",
-  processing:      "bg-amber-100 text-amber-600 border-amber-200",
-  shipped:         "bg-blue-100 text-blue-600 border-blue-200",
-  delivered:       "bg-green-100 text-green-600 border-green-200",
-  cancelled:       "bg-red-100 text-red-600 border-red-200",
-  failed:          "bg-red-200 text-red-700 border-red-300",
-  expired:         "bg-gray-100 text-gray-600 border-gray-200",
+  processing:      "bg-amber-50 text-amber-600 border-amber-200",
+  shipped:         "bg-blue-50 text-blue-600 border-blue-200",
+  delivered:       "bg-green-50 text-green-700 border-green-200",
+  cancelled:       "bg-red-50 text-red-600 border-red-200",
+  failed:          "bg-red-100 text-red-700 border-red-300",
+  expired:         "bg-gray-100 text-gray-500 border-gray-200",
+};
+
+const statusDots: Record<string, string> = {
+  pending_payment: "bg-yellow-400",
+  paid:            "bg-emerald-500",
+  created:         "bg-neutral-400",
+  processing:      "bg-amber-500",
+  shipped:         "bg-blue-500",
+  delivered:       "bg-green-500",
+  cancelled:       "bg-red-500",
+  failed:          "bg-red-700",
+  expired:         "bg-gray-400",
 };
 
 const paymentMethodStyles = {
-  cod: "bg-orange-100 text-orange-700 border-orange-200",
-  online: "bg-blue-100 text-blue-700 border-blue-200",
-  codToOnline: "bg-purple-100 text-purple-700 border-purple-200",
+  cod: "bg-orange-50 text-orange-700 border-orange-200",
+  online: "bg-blue-50 text-blue-700 border-blue-200",
+  codToOnline: "bg-purple-50 text-purple-700 border-purple-200",
 };
 
 // Helper function to safely format dates
@@ -544,90 +580,92 @@ export default function AdminOrdersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedOrders.map((order: any) => (
-                  <TableRow key={order.id} className="border-neutral-50 hover:bg-neutral-50/50 transition-colors">
-                    <TableCell className="font-mono text-[11px] text-neutral-400 py-6 px-8">
-                      {order.id.slice(0, 14)}…
-                    </TableCell>
-                    <TableCell className="py-6 px-8">
-                      <div className="space-y-1.5">
-                        <p className="text-xs font-bold text-neutral-500 uppercase tracking-tighter truncate max-w-[220px]">
-                          {order.recipient?.name || order.userId}
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {(order.items || []).map((item: any, i: number) => (
-                            <Badge key={i} variant="outline" className="text-[10px] font-medium border-neutral-200 text-neutral-600 bg-white">
-                              {item.name}
-                              {item.selectedSize ? ` / ${item.selectedSize}` : ""} × {item.quantity}
-                            </Badge>
-                          ))}
+                paginatedOrders.map((order: any) => {
+                  const customerName = order.recipient?.name || order.userName || "Customer";
+                  const itemCount = (order.items || []).length;
+                  const statusKey = order.status || "created";
+                  const paymentLabel = order.isCOD ? "COD" : order.codPaymentRazorpayOrderId ? "COD→Online" : "Online";
+                  const paymentStyle = order.isCOD ? paymentMethodStyles.cod : order.codPaymentRazorpayOrderId ? paymentMethodStyles.codToOnline : paymentMethodStyles.online;
+                  return (
+                    <TableRow key={order.id} className="group/row border-neutral-100 hover:bg-neutral-50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
+                      {/* ORDER ID */}
+                      <TableCell className="py-5 px-6">
+                        <div className="flex items-center">
+                          <div>
+                            <p className="font-mono text-xs font-bold text-neutral-800">#ORD-{order.id.slice(-6).toUpperCase()}</p>
+                            <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(order.createdAt)}</p>
+                          </div>
+                          <CopyButton text={order.id} />
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-6 px-8">
-                      <span className="text-lg font-black text-neutral-900">₹{order.total}</span>
-                    </TableCell>
-                    <TableCell className="py-6 px-8">
-                      <div className="flex flex-col gap-1.5">
-                        <Badge className={cn(
-                          "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit",
-                          statusStyles[order.status] || statusStyles.created
-                        )}>
-                          {order.status?.replace("_", " ")}
+                      </TableCell>
+                      {/* CUSTOMER */}
+                      <TableCell className="py-5 px-6">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={customerName} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-neutral-900 truncate">{customerName}</p>
+                            <p className="text-[11px] text-neutral-400 truncate">{order.recipient?.email || ""}</p>
+                            {order.recipient?.phone && <p className="text-[11px] text-neutral-400">+{order.recipient.phone}</p>}
+                            <button
+                              onClick={e => { e.stopPropagation(); setSelectedOrder(order); }}
+                              className="mt-1 text-[10px] text-neutral-400 hover:text-rose-500 font-medium transition-colors"
+                            >
+                              {itemCount} {itemCount === 1 ? "item" : "items"} ›
+                            </button>
+                          </div>
+                        </div>
+                      </TableCell>
+                      {/* TOTAL */}
+                      <TableCell className="py-5 px-6">
+                        <p className="text-base font-black text-neutral-900">₹{(order.total || 0).toLocaleString("en-IN")}</p>
+                        <Badge className={cn("mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border w-fit", paymentStyle)}>
+                          {paymentLabel}
                         </Badge>
-                        {order.isCOD ? (
-                          <Badge className={cn(
-                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
-                            paymentMethodStyles.cod
-                          )}>
-                            COD
-                          </Badge>
-                        ) : order.codPaymentRazorpayOrderId ? (
-                          <Badge className={cn(
-                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
-                            paymentMethodStyles.codToOnline
-                          )}>
-                            COD → Online
-                          </Badge>
-                        ) : order.status !== "pending_payment" ? (
-                          <Badge className={cn(
-                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit",
-                            paymentMethodStyles.online
-                          )}>
-                            Paid Online
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-6 px-8 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition-all"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4 text-neutral-600" />
-                        </button>
-                        <Select
-                          defaultValue={order.status}
-                          disabled={updatingId === order.id}
-                          onValueChange={val => updateStatus(order.id, val)}
-                        >
-                          <SelectTrigger className="w-[130px] rounded-xl border-neutral-200 font-bold text-xs shadow-sm bg-white">
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-neutral-200">
-                            {["created", "processing", "shipped", "delivered", "cancelled"].map(s => (
-                              <SelectItem key={s} value={s} className="text-xs font-bold capitalize">
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      {/* STATUS */}
+                      <TableCell className="py-5 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("w-2 h-2 rounded-full shrink-0", statusDots[statusKey] || "bg-neutral-300")} />
+                          <div>
+                            <Badge className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border",
+                              statusStyles[statusKey] || statusStyles.created
+                            )}>
+                              {statusKey.replace(/_/g, " ")}
+                            </Badge>
+                            {order.updatedAt && <p className="text-[10px] text-neutral-400 mt-1">{formatDate(order.updatedAt)}</p>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      {/* ACTIONS */}
+                      <TableCell className="py-5 px-6 text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="p-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 transition-all"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4 text-neutral-500" />
+                          </button>
+                          <Select
+                            defaultValue={order.status}
+                            disabled={updatingId === order.id}
+                            onValueChange={val => updateStatus(order.id, val)}
+                          >
+                            <SelectTrigger className="w-[120px] rounded-xl border-neutral-200 font-semibold text-xs bg-white">
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-neutral-200">
+                              {["created","processing","shipped","delivered","cancelled"].map(s => (
+                                <SelectItem key={s} value={s} className="text-xs font-semibold capitalize">{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
