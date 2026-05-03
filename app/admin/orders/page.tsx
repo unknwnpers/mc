@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight, Copy, CheckCheck, MoreVertical, ChevronRight as ChevronIcon } from "lucide-react";
+import { LayoutDashboard, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight, Copy, CheckCheck, MoreVertical, LayoutGrid } from "lucide-react";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -366,70 +366,70 @@ export default function AdminOrdersPage() {
               <LayoutGrid className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-neutral-900">Orders</h1>
+              <h1 className="text-4xl font-black text-neutral-100 tracking-tight">Orders</h1>
               <p className="text-neutral-500 font-medium tracking-tight">Secure — orders fetched via API</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex bg-white p-2 rounded-2xl shadow-sm border border-neutral-100 items-center">
-              <div className="px-6 py-1 border-r border-neutral-100 text-center">
-                <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-0.5">Total</p>
-                <p className="text-2xl font-black text-neutral-900 leading-none">{orders.length}</p>
+            <div className="flex bg-white p-1 rounded-3xl shadow-sm border border-neutral-100 items-center">
+              <div className="px-8 py-3 border-r border-neutral-100 text-center">
+                <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">Total</p>
+                <p className="text-3xl font-black text-neutral-900 leading-none">{orders.length}</p>
               </div>
-              <div className="px-6 py-1 text-center">
-                <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-0.5">Pending</p>
-                <p className="text-2xl font-black text-rose-500 leading-none">
+              <div className="px-8 py-3 text-center">
+                <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">Pending</p>
+                <p className="text-3xl font-black text-rose-500 leading-none">
                   {orders.filter(o => !["delivered", "cancelled"].includes(o.status)).length}
                 </p>
               </div>
             </div>
             <button
               onClick={exportOrders}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white border border-neutral-100 shadow-sm hover:bg-neutral-50 transition-all text-sm font-bold text-neutral-700"
+              className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-white border border-neutral-100 shadow-sm hover:bg-neutral-50 transition-all text-sm font-bold text-neutral-700"
             >
               <Download className="w-4 h-4" /> Export
             </button>
             <button
               onClick={fetchOrders}
               disabled={fetching}
-              className="p-3 rounded-2xl bg-white border border-neutral-100 shadow-sm hover:bg-neutral-50 transition-all disabled:opacity-50"
+              className="p-4 rounded-2xl bg-white border border-neutral-100 shadow-sm hover:bg-neutral-50 transition-all disabled:opacity-50"
             >
-              <RefreshCw className={cn("w-5 h-5 text-neutral-500", fetching && "animate-spin")} />
+              <RefreshCw className={cn("w-6 h-6 text-neutral-500", fetching && "animate-spin")} />
             </button>
           </div>
         </div>
 
         {/* Search & Filters */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-neutral-100 mb-8 space-y-4">
+        <div className="bg-white p-8 rounded-[40px] shadow-sm border border-neutral-100 mb-8 space-y-6">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-neutral-400" />
             <input
               type="text"
               placeholder="Search by order ID, customer name, email, or phone..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400 transition-all"
+              className="w-full pl-14 pr-6 py-4 rounded-2xl border border-neutral-100 bg-neutral-50/50 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-200 transition-all"
             />
           </div>
 
           {/* Filter Row */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-6">
             {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-neutral-400" />
-              <span className="text-sm font-medium text-neutral-600">Status:</span>
-              <div className="flex flex-wrap gap-1">
+            <div className="flex items-center gap-3">
+              <Filter className="w-5 h-5 text-neutral-400" />
+              <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Status:</span>
+              <div className="flex flex-wrap gap-2">
                 {ALL_STATUSES.map(s => (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
                     className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold transition-all capitalize",
+                      "px-4 py-2 rounded-full text-[11px] font-bold transition-all border capitalize",
                       statusFilter === s
-                        ? "bg-neutral-900 text-white"
-                        : "bg-neutral-50 text-neutral-500 hover:bg-neutral-100"
+                        ? "bg-neutral-900 text-white border-neutral-900"
+                        : "bg-white text-neutral-600 border-neutral-100 hover:border-neutral-200"
                     )}
                   >
                     {s.replace("_", " ")}
@@ -438,52 +438,59 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            <div className="w-px h-6 bg-neutral-200" />
+            <div className="w-px h-8 bg-neutral-100" />
 
             {/* Date Filter */}
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-neutral-400" />
-              <span className="text-sm font-medium text-neutral-600">Date:</span>
-              <select
-                value={dateFilter}
-                onChange={e => setDateFilter(e.target.value)}
-                className="px-3 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-neutral-400" />
+              <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Date:</span>
+              <div className="relative group">
+                <select
+                  value={dateFilter}
+                  onChange={e => setDateFilter(e.target.value)}
+                  className="appearance-none bg-white px-5 py-2 pr-10 rounded-xl border border-neutral-100 text-xs font-bold text-neutral-700 focus:outline-none focus:border-neutral-200 transition-all cursor-pointer"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
+              </div>
             </div>
 
-            <div className="w-px h-6 bg-neutral-200" />
+            <div className="w-px h-8 bg-neutral-100" />
 
             {/* Amount Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-neutral-600">Amount:</span>
-              <input
-                type="number"
-                placeholder="Min"
-                value={minAmount}
-                onChange={e => setMinAmount(e.target.value)}
-                className="w-20 px-2 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
-              />
-              <span className="text-neutral-400">-</span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={maxAmount}
-                onChange={e => setMaxAmount(e.target.value)}
-                className="w-20 px-2 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
-              />
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Amount:</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={minAmount}
+                  onChange={e => setMinAmount(e.target.value)}
+                  className="w-24 px-3 py-2 rounded-xl border border-neutral-100 bg-white text-xs font-bold text-neutral-700 focus:outline-none focus:border-neutral-200"
+                />
+                <span className="text-neutral-300">—</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={maxAmount}
+                  onChange={e => setMaxAmount(e.target.value)}
+                  className="w-24 px-3 py-2 rounded-xl border border-neutral-100 bg-white text-xs font-bold text-neutral-700 focus:outline-none focus:border-neutral-200"
+                />
+              </div>
             </div>
 
-            <div className="w-px h-6 bg-neutral-200" />
+            <div className="w-px h-8 bg-neutral-100" />
 
             {/* Sort */}
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4 text-neutral-400" />
-              <span className="text-sm font-medium text-neutral-600">Sort:</span>
+            <div className="flex items-center gap-3">
+              <ArrowUpDown className="w-5 h-5 text-neutral-400" />
+              <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Sort:</span>
               <button
                 onClick={() => {
                   if (sortBy === "date") {
@@ -494,10 +501,10 @@ export default function AdminOrdersPage() {
                   }
                 }}
                 className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-medium transition-all border",
+                  "px-4 py-2 rounded-xl text-[11px] font-bold transition-all border flex items-center gap-2",
                   sortBy === "date"
                     ? "bg-neutral-900 text-white border-neutral-900"
-                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
+                    : "bg-white text-neutral-600 border-neutral-100 hover:border-neutral-200"
                 )}
               >
                 Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
@@ -512,40 +519,45 @@ export default function AdminOrdersPage() {
                   }
                 }}
                 className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-medium transition-all border",
+                  "px-4 py-2 rounded-xl text-[11px] font-bold transition-all border flex items-center gap-2",
                   sortBy === "amount"
                     ? "bg-neutral-900 text-white border-neutral-900"
-                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
+                    : "bg-white text-neutral-600 border-neutral-100 hover:border-neutral-200"
                 )}
               >
                 Amount {sortBy === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
               </button>
             </div>
 
-            <div className="w-px h-6 bg-neutral-200" />
+            <div className="w-px h-8 bg-neutral-100" />
 
             {/* Payment Method Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-neutral-600">Payment:</span>
-              <select
-                value={paymentMethodFilter}
-                onChange={e => setPaymentMethodFilter(e.target.value)}
-                className="px-3 py-1 rounded-lg border border-neutral-200 text-sm text-neutral-700 focus:outline-none focus:border-neutral-400"
-              >
-                <option value="all">All Methods</option>
-                <option value="cod">Cash on Delivery</option>
-                <option value="online">Online Payment</option>
-                <option value="codToOnline">COD → Online</option>
-              </select>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Payment:</span>
+              <div className="relative group">
+                <select
+                  value={paymentMethodFilter}
+                  onChange={e => setPaymentMethodFilter(e.target.value)}
+                  className="appearance-none bg-white px-5 py-2 pr-10 rounded-xl border border-neutral-100 text-xs font-bold text-neutral-700 focus:outline-none focus:border-neutral-200 transition-all cursor-pointer"
+                >
+                  <option value="all">All Methods</option>
+                  <option value="cod">Cash on Delivery</option>
+                  <option value="online">Online Payment</option>
+                  <option value="codToOnline">COD → Online</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
+              </div>
             </div>
 
             {/* Clear Filters */}
             {(searchQuery || dateFilter !== "all" || minAmount || maxAmount || paymentMethodFilter !== "all") && (
               <button
                 onClick={() => { setSearchQuery(""); setDateFilter("all"); setMinAmount(""); setMaxAmount(""); setPaymentMethodFilter("all"); }}
-                className="ml-auto text-sm text-neutral-500 hover:text-neutral-900 flex items-center gap-1"
+                className="ml-auto text-sm font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1.5 transition-all"
               >
-                <X className="w-3.5 h-3.5" /> Clear filters
+                <X className="w-4 h-4" /> Clear filters
               </button>
             )}
           </div>
@@ -589,83 +601,65 @@ export default function AdminOrdersPage() {
                   return (
                     <TableRow key={order.id} className="group/row border-neutral-100 hover:bg-neutral-50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
                       {/* ORDER ID */}
-                      <TableCell className="py-5 px-6">
-                        <div className="flex items-center">
+                      <TableCell className="py-8 px-10">
+                        <div className="flex items-center gap-3">
                           <div>
-                            <p className="font-mono text-xs font-bold text-neutral-800 uppercase">#ORD-{order.id.slice(-6).toUpperCase()}</p>
-                            <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(order.createdAt)}</p>
+                            <p className="font-mono text-xs font-black text-neutral-800 tracking-tight">#ORD-{order.id.slice(-6).toUpperCase()}</p>
+                            <p className="text-[11px] text-neutral-400 font-medium mt-1">{formatDate(order.createdAt)}</p>
                           </div>
                           <CopyButton text={order.id} />
                         </div>
                       </TableCell>
                       {/* CUSTOMER */}
-                      <TableCell className="py-5 px-6">
-                        <div className="flex items-center gap-3">
+                      <TableCell className="py-8 px-10">
+                        <div className="flex items-center gap-4">
                           <Avatar name={customerName} />
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-neutral-900 truncate">{customerName}</p>
-                            <p className="text-[11px] text-neutral-400 truncate">{order.recipient?.email || ""}</p>
-                            {order.recipient?.phone && <p className="text-[11px] text-neutral-400">+{order.recipient.phone}</p>}
-                            <div className="flex items-center gap-1 mt-1 text-[10px] text-neutral-400 group-hover/row:text-neutral-600 transition-colors">
-                              <span>{itemCount} {itemCount === 1 ? "Item" : "Items"}</span>
-                              <ChevronRight className="w-3 h-3" />
+                            <p className="text-sm font-black text-neutral-900 truncate tracking-tight">{customerName}</p>
+                            <p className="text-[11px] text-neutral-400 font-medium truncate">{order.recipient?.email || ""}</p>
+                            {order.recipient?.phone && <p className="text-[11px] text-neutral-400 font-medium">+{order.recipient.phone}</p>}
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <span className="text-[11px] text-neutral-500 font-bold">{itemCount} {itemCount === 1 ? "item" : "items"}</span>
+                              <ChevronRight className="w-3 h-3 text-neutral-300" />
                             </div>
                           </div>
                         </div>
                       </TableCell>
                       {/* TOTAL */}
-                      <TableCell className="py-5 px-6">
-                        <p className="text-base font-black text-neutral-900">₹{(order.total || 0).toLocaleString("en-IN")}</p>
-                        <Badge className={cn("mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border w-fit", paymentStyle)}>
+                      <TableCell className="py-8 px-10">
+                        <p className="text-xl font-black text-neutral-900 tracking-tight">₹{(order.total || 0).toLocaleString("en-IN")}</p>
+                        <Badge className={cn("mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit", paymentStyle)}>
                           {paymentLabel}
                         </Badge>
                       </TableCell>
                       {/* STATUS */}
-                      <TableCell className="py-5 px-6">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("w-2 h-2 rounded-full shrink-0", statusDots[statusKey] || "bg-neutral-300")} />
+                      <TableCell className="py-8 px-10">
+                        <div className="flex items-center gap-3">
+                          <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-sm", statusDots[statusKey] || "bg-neutral-300")} />
                           <div>
                             <Badge className={cn(
-                              "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border",
+                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
                               statusStyles[statusKey] || statusStyles.created
                             )}>
                               {statusKey.replace(/_/g, " ")}
                             </Badge>
-                            {order.updatedAt && <p className="text-[10px] text-neutral-400 mt-1">{formatDate(order.updatedAt)}</p>}
+                            {order.updatedAt && <p className="text-[11px] text-neutral-400 font-medium mt-1.5">{formatDate(order.updatedAt)}</p>}
                           </div>
                         </div>
                       </TableCell>
                       {/* ACTIONS */}
-                      <TableCell className="py-5 px-6 text-right" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="py-8 px-10 text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-3">
                           <button
                             onClick={() => setSelectedOrder(order)}
-                            className="p-2.5 rounded-xl hover:bg-neutral-100 transition-all group/eye"
+                            className="p-3 rounded-2xl bg-neutral-50 hover:bg-neutral-100 transition-all text-neutral-600 hover:text-neutral-900"
                             title="View Details"
                           >
-                            <Eye className="w-5 h-5 text-neutral-400 group-hover/eye:text-neutral-900" />
+                            <Eye className="w-5 h-5" />
                           </button>
-                          
-                          <button className="p-2.5 rounded-xl hover:bg-neutral-100 transition-all group/more">
-                            <MoreVertical className="w-5 h-5 text-neutral-400 group-hover/more:text-neutral-900" />
+                          <button className="p-3 rounded-2xl bg-neutral-50 hover:bg-neutral-100 transition-all text-neutral-600 hover:text-neutral-900">
+                            <MoreVertical className="w-5 h-5" />
                           </button>
-
-                          <div className="hidden">
-                            <Select
-                              defaultValue={order.status}
-                              disabled={updatingId === order.id}
-                              onValueChange={val => updateStatus(order.id, val)}
-                            >
-                              <SelectTrigger className="w-[120px] rounded-xl border-neutral-200 font-semibold text-xs bg-white">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl border-neutral-200">
-                                {["created","processing","shipped","delivered","cancelled"].map(s => (
-                                  <SelectItem key={s} value={s} className="text-xs font-semibold capitalize">{s}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
                         </div>
                       </TableCell>
                     </TableRow>
