@@ -21,9 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight, Copy, CheckCheck, MoreVertical, ChevronDown, ChevronUp } from "lucide-react";
-
-const STATUS_UPDATE_OPTIONS = ["created","processing","shipped","delivered","cancelled"] as const;
+import { LayoutGrid, Filter, RefreshCw, Package, Search, Calendar, ArrowUpDown, Download, Eye, X, ChevronLeft, ChevronRight, Copy, CheckCheck, MoreVertical, ChevronRight as ChevronIcon } from "lucide-react";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -141,11 +139,6 @@ export default function AdminOrdersPage() {
 
   // ── Order Details Modal State ─────────────────────────────────────────────
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [expandedRows, setExpandedRows]   = useState<Set<string>>(new Set());
-  const [openMenu, setOpenMenu]           = useState<string | null>(null);
-
-  const toggleRow  = (id: string) => setExpandedRows(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleMenu = (id: string, e: React.MouseEvent) => { e.stopPropagation(); setOpenMenu(prev => prev === id ? null : id); };
 
   // Derive auth from profile role (works both "admin" and "superadmin")
   const isAdmin = profile?.role === "admin" || profile?.role === "superadmin";
@@ -370,23 +363,23 @@ export default function AdminOrdersPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div className="flex items-center gap-4">
             <div className="h-14 w-14 bg-neutral-900 rounded-2xl flex items-center justify-center shadow-lg text-white">
-              <LayoutDashboard className="w-7 h-7" />
+              <LayoutGrid className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-neutral-900">Admin Dashboard</h1>
+              <h1 className="text-4xl font-black text-neutral-900">Orders</h1>
               <p className="text-neutral-500 font-medium tracking-tight">Secure — orders fetched via API</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex bg-white p-2 rounded-2xl shadow-sm border border-neutral-100 gap-2">
-              <div className="px-6 py-2 border-r border-neutral-100">
+            <div className="flex bg-white p-2 rounded-2xl shadow-sm border border-neutral-100 items-center">
+              <div className="px-6 py-1 border-r border-neutral-100 text-center">
                 <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-0.5">Total</p>
-                <p className="text-2xl font-black text-neutral-900">{orders.length}</p>
+                <p className="text-2xl font-black text-neutral-900 leading-none">{orders.length}</p>
               </div>
-              <div className="px-6 py-2">
+              <div className="px-6 py-1 text-center">
                 <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-0.5">Pending</p>
-                <p className="text-2xl font-black text-rose-500">
+                <p className="text-2xl font-black text-rose-500 leading-none">
                   {orders.filter(o => !["delivered", "cancelled"].includes(o.status)).length}
                 </p>
               </div>
@@ -433,10 +426,10 @@ export default function AdminOrdersPage() {
                     key={s}
                     onClick={() => setStatusFilter(s)}
                     className={cn(
-                      "px-3 py-1 rounded-lg text-xs font-medium transition-all border capitalize",
+                      "px-4 py-1.5 rounded-full text-xs font-bold transition-all capitalize",
                       statusFilter === s
-                        ? "bg-neutral-900 text-white border-neutral-900"
-                        : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
+                        ? "bg-neutral-900 text-white"
+                        : "bg-neutral-50 text-neutral-500 hover:bg-neutral-100"
                     )}
                   >
                     {s.replace("_", " ")}
@@ -589,128 +582,93 @@ export default function AdminOrdersPage() {
               ) : (
                 paginatedOrders.map((order: any) => {
                   const customerName = order.recipient?.name || order.userName || "Customer";
-                  const items        = order.items || [];
-                  const itemCount    = items.length;
-                  const statusKey    = order.status || "created";
-                  const isExpanded   = expandedRows.has(order.id);
-                  const isMenuOpen   = openMenu === order.id;
+                  const itemCount = (order.items || []).length;
+                  const statusKey = order.status || "created";
                   const paymentLabel = order.isCOD ? "COD" : order.codPaymentRazorpayOrderId ? "COD→Online" : "Online";
                   const paymentStyle = order.isCOD ? paymentMethodStyles.cod : order.codPaymentRazorpayOrderId ? paymentMethodStyles.codToOnline : paymentMethodStyles.online;
                   return (
-                    <>
-                    <TableRow key={order.id} className="group/row border-neutral-100 hover:bg-neutral-50/80 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
+                    <TableRow key={order.id} className="group/row border-neutral-100 hover:bg-neutral-50 transition-colors cursor-pointer" onClick={() => setSelectedOrder(order)}>
                       {/* ORDER ID */}
-                      <TableCell className="py-4 px-6 w-[180px]">
-                        <div className="flex items-start">
+                      <TableCell className="py-5 px-6">
+                        <div className="flex items-center">
                           <div>
-                            <p className="font-mono text-[13px] font-bold text-neutral-800 tracking-tight">#ORD-{order.id.slice(-6).toUpperCase()}</p>
-                            <p className="text-[11px] text-neutral-400 mt-0.5 whitespace-nowrap">{formatDate(order.createdAt)}</p>
+                            <p className="font-mono text-xs font-bold text-neutral-800 uppercase">#ORD-{order.id.slice(-6).toUpperCase()}</p>
+                            <p className="text-[11px] text-neutral-400 mt-0.5">{formatDate(order.createdAt)}</p>
                           </div>
                           <CopyButton text={order.id} />
                         </div>
                       </TableCell>
-                      {/* CUSTOMER / ITEMS */}
-                      <TableCell className="py-4 px-6">
+                      {/* CUSTOMER */}
+                      <TableCell className="py-5 px-6">
                         <div className="flex items-center gap-3">
                           <Avatar name={customerName} />
                           <div className="min-w-0">
-                            <p className="text-[13px] font-bold text-neutral-900 truncate">{customerName}</p>
-                            <p className="text-[11px] text-neutral-400 truncate">
-                              {order.recipient?.email || ""}
-                              {order.recipient?.phone ? ` • +91 ${order.recipient.phone}` : ""}
-                            </p>
-                            <button
-                              onClick={e => { e.stopPropagation(); toggleRow(order.id); }}
-                              className="mt-1 flex items-center gap-0.5 text-[11px] text-neutral-500 hover:text-neutral-800 font-medium transition-colors"
-                            >
-                              {itemCount} {itemCount === 1 ? "item" : "items"}
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </button>
+                            <p className="text-sm font-bold text-neutral-900 truncate">{customerName}</p>
+                            <p className="text-[11px] text-neutral-400 truncate">{order.recipient?.email || ""}</p>
+                            {order.recipient?.phone && <p className="text-[11px] text-neutral-400">+{order.recipient.phone}</p>}
+                            <div className="flex items-center gap-1 mt-1 text-[10px] text-neutral-400 group-hover/row:text-neutral-600 transition-colors">
+                              <span>{itemCount} {itemCount === 1 ? "Item" : "Items"}</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </div>
                           </div>
                         </div>
                       </TableCell>
                       {/* TOTAL */}
-                      <TableCell className="py-4 px-6 w-[120px]">
-                        <p className="text-[15px] font-black text-neutral-900">₹{(order.total || 0).toLocaleString("en-IN")}</p>
-                        <Badge className={cn("mt-1 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase border w-fit tracking-wide", paymentStyle)}>
+                      <TableCell className="py-5 px-6">
+                        <p className="text-base font-black text-neutral-900">₹{(order.total || 0).toLocaleString("en-IN")}</p>
+                        <Badge className={cn("mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border w-fit", paymentStyle)}>
                           {paymentLabel}
                         </Badge>
                       </TableCell>
                       {/* STATUS */}
-                      <TableCell className="py-4 px-6 w-[180px]">
-                        <Badge className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border",
-                          statusStyles[statusKey] || statusStyles.created
-                        )}>
-                          <span className={cn("w-1.5 h-1.5 rounded-full", statusDots[statusKey] || "bg-neutral-400")} />
-                          {statusKey.replace(/_/g, " ")}
-                        </Badge>
-                        {order.updatedAt && <p className="text-[10px] text-neutral-400 mt-1">{formatDate(order.updatedAt)}</p>}
+                      <TableCell className="py-5 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("w-2 h-2 rounded-full shrink-0", statusDots[statusKey] || "bg-neutral-300")} />
+                          <div>
+                            <Badge className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border",
+                              statusStyles[statusKey] || statusStyles.created
+                            )}>
+                              {statusKey.replace(/_/g, " ")}
+                            </Badge>
+                            {order.updatedAt && <p className="text-[10px] text-neutral-400 mt-1">{formatDate(order.updatedAt)}</p>}
+                          </div>
+                        </div>
                       </TableCell>
                       {/* ACTIONS */}
-                      <TableCell className="py-4 px-6 text-right w-[100px]" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
+                      <TableCell className="py-5 px-6 text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => setSelectedOrder(order)}
-                            className="p-2 rounded-lg hover:bg-neutral-100 transition-all"
+                            className="p-2.5 rounded-xl hover:bg-neutral-100 transition-all group/eye"
                             title="View Details"
                           >
-                            <Eye className="w-4 h-4 text-neutral-500" />
+                            <Eye className="w-5 h-5 text-neutral-400 group-hover/eye:text-neutral-900" />
                           </button>
-                          {/* 3-dot menu */}
-                          <div className="relative">
-                            <button
-                              onClick={e => toggleMenu(order.id, e)}
-                              className="p-2 rounded-lg hover:bg-neutral-100 transition-all"
-                              title="Change Status"
+                          
+                          <button className="p-2.5 rounded-xl hover:bg-neutral-100 transition-all group/more">
+                            <MoreVertical className="w-5 h-5 text-neutral-400 group-hover/more:text-neutral-900" />
+                          </button>
+
+                          <div className="hidden">
+                            <Select
+                              defaultValue={order.status}
+                              disabled={updatingId === order.id}
+                              onValueChange={val => updateStatus(order.id, val)}
                             >
-                              {updatingId === order.id
-                                ? <RefreshCw className="w-4 h-4 text-neutral-400 animate-spin" />
-                                : <MoreVertical className="w-4 h-4 text-neutral-500" />}
-                            </button>
-                            {isMenuOpen && (
-                              <div className="absolute right-0 top-9 z-50 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 min-w-[150px]" onClick={e => e.stopPropagation()}>
-                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-3 py-2">Set Status</p>
-                                {STATUS_UPDATE_OPTIONS.map(s => (
-                                  <button
-                                    key={s}
-                                    onClick={() => { updateStatus(order.id, s); setOpenMenu(null); }}
-                                    className={cn(
-                                      "w-full text-left px-3 py-2 text-xs font-medium capitalize hover:bg-neutral-50 transition-colors flex items-center gap-2",
-                                      order.status === s ? "text-neutral-900 font-bold" : "text-neutral-600"
-                                    )}
-                                  >
-                                    <span className={cn("w-1.5 h-1.5 rounded-full", statusDots[s] || "bg-neutral-300")} />
-                                    {s}
-                                    {order.status === s && <span className="ml-auto text-[9px] text-neutral-400">current</span>}
-                                  </button>
+                              <SelectTrigger className="w-[120px] rounded-xl border-neutral-200 font-semibold text-xs bg-white">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-neutral-200">
+                                {["created","processing","shipped","delivered","cancelled"].map(s => (
+                                  <SelectItem key={s} value={s} className="text-xs font-semibold capitalize">{s}</SelectItem>
                                 ))}
-                              </div>
-                            )}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </TableCell>
                     </TableRow>
-                    {/* EXPANDED ITEMS ROW */}
-                    {isExpanded && (
-                      <TableRow key={`${order.id}-items`} className="bg-neutral-50/60 border-neutral-100">
-                        <TableCell colSpan={5} className="px-6 py-3">
-                          <div className="ml-[180px] space-y-2">
-                            {items.map((item: any, i: number) => (
-                              <div key={i} className="flex items-center gap-3">
-                                {item.image && <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-neutral-100 shrink-0" />}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-semibold text-neutral-900 truncate">{item.name}</p>
-                                  <p className="text-[11px] text-neutral-400">Size: {item.selectedSize || "N/A"} · Qty: {item.quantity}</p>
-                                </div>
-                                <p className="text-xs font-bold text-neutral-800 shrink-0">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    </>
                   );
                 })
               )}
