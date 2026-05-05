@@ -5,6 +5,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  initializeRecaptchaConfig,
   ConfirmationResult,
   User
 } from "firebase/auth";
@@ -55,7 +56,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
     };
   }, []);
 
-  // Setup invisible reCAPTCHA
+  // Setup invisible reCAPTCHA (compatible with reCAPTCHA Enterprise)
   const setupRecaptcha = useCallback(async () => {
     if (!getFirebaseAuth()) {
       throw new Error("Firebase Auth not initialized");
@@ -76,7 +77,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         window.recaptchaVerifier = null;
       }
 
-      // Also clear any leftover reCAPTCHA DOM elements from previous attempts
+      // Clear any leftover reCAPTCHA DOM elements from previous attempts
       const container = document.getElementById("recaptcha-container");
       if (container) {
         container.innerHTML = "";
@@ -85,6 +86,19 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const auth = getFirebaseAuth();
       if (!auth) {
         throw new Error("Auth not available");
+      }
+
+      // CRITICAL: Initialize reCAPTCHA Enterprise config BEFORE creating
+      // the RecaptchaVerifier. Without this, Firebase generates standard
+      // reCAPTCHA v2 tokens, but the project has reCAPTCHA Enterprise
+      // enabled for Auth — causing "Mismatched action (auth/invalid-recaptcha-token)".
+      // This call fetches the project's reCAPTCHA config from Firebase
+      // so the verifier generates Enterprise-compatible tokens.
+      try {
+        await initializeRecaptchaConfig(auth);
+      } catch (configErr) {
+        console.warn("[PhoneAuth] reCAPTCHA config init (non-fatal):", configErr);
+        // Continue — may work without Enterprise if not enforced
       }
 
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
@@ -98,10 +112,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         },
       });
 
-      // CRITICAL: Explicitly render the invisible reCAPTCHA widget.
-      // Firebase v12 requires this before signInWithPhoneNumber,
-      // otherwise the verifier is in an unresolved state and
-      // signInWithPhoneNumber throws auth/internal-error.
+      // Render the invisible reCAPTCHA widget before use
       await window.recaptchaVerifier.render();
 
       recaptchaInitialized.current = true;
