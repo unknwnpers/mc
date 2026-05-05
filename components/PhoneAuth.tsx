@@ -10,7 +10,7 @@ import {
   User
 } from "firebase/auth";
 import { toast } from "sonner";
-import { Phone, ArrowRight, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Phone, ArrowRight, Loader2, RefreshCw, ShieldCheck, Clock } from "lucide-react";
 
 // Extend Window type for recaptcha
 declare global {
@@ -31,16 +31,27 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [lockoutTimer, setLockoutTimer] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const recaptchaInitialized = useRef(false);
 
-  // Countdown timer for resend
+  // Countdown timer for resend and lockout
   useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
+    let interval: NodeJS.Timeout;
+    if (timer > 0 || lockoutTimer > 0) {
+      interval = setInterval(() => {
+        setTimer((t) => (t > 0 ? t - 1 : 0));
+        setLockoutTimer((lt) => (lt > 0 ? lt - 1 : 0));
+      }, 1000);
     }
-  }, [timer]);
+    return () => clearInterval(interval);
+  }, [timer, lockoutTimer]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Cleanup reCAPTCHA on unmount
   useEffect(() => {
@@ -258,6 +269,13 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
   const handleError = (err: any) => {
     const code = err.code || "";
 
+    if (code === "auth/too-many-requests") {
+      setLockoutTimer(900); // 15 minutes lockout
+      setError(`Too many attempts. Please wait ${formatTime(900)} and try again.`);
+      toast.error(`Account temporarily locked for ${formatTime(900)} due to multiple attempts.`);
+      return;
+    }
+
     const errorMessages: Record<string, string> = {
       "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
       "auth/invalid-phone-number": "Invalid phone number. Please enter a valid Indian number.",
@@ -318,14 +336,19 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
           </div>
 
           {/* Error Message */}
-          {error && (
+          {lockoutTimer > 0 ? (
+            <div className="p-4 bg-red-50 rounded-2xl border border-red-100 text-center">
+              <p className="text-red-600 font-bold text-sm">Security Lockout Active</p>
+              <p className="text-red-500 text-xs mt-1">Please try again in <span className="font-black">{formatTime(lockoutTimer)}</span></p>
+            </div>
+          ) : error && (
             <p className="text-red-500 text-sm text-center font-medium">{error}</p>
           )}
 
           {/* Send OTP Button */}
           <button
             onClick={sendOTP}
-            disabled={loading || phone.length < 10}
+            disabled={loading || phone.length < 10 || lockoutTimer > 0}
             className="group w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blush to-rose-400 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-lg shadow-blush/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
@@ -333,6 +356,11 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Sending OTP...</span>
               </>
+            ) : lockoutTimer > 0 ? (
+                <>
+                    <Clock className="w-5 h-5" />
+                    <span>Locked ({formatTime(lockoutTimer)})</span>
+                </>
             ) : (
               <>
                 <ShieldCheck className="w-5 h-5" />
@@ -388,7 +416,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
           {/* Verify Button */}
           <button
             onClick={verifyOTP}
-            disabled={loading || otp.length < 6}
+            disabled={loading || otp.length < 6 || lockoutTimer > 0}
             className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blush to-rose-400 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-lg shadow-blush/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
@@ -396,6 +424,8 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Verifying...</span>
               </>
+            ) : lockoutTimer > 0 ? (
+                <span>Locked ({formatTime(lockoutTimer)})</span>
             ) : (
               <>
                 <span>Verify OTP</span>
