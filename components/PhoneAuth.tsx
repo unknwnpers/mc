@@ -66,14 +66,20 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
     }
 
     try {
-      // Clear any existing verifier
+      // Clear any existing verifier completely
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear();
         } catch (e) {
-          // Ignore
+          // Ignore cleanup errors
         }
         window.recaptchaVerifier = null;
+      }
+
+      // Also clear any leftover reCAPTCHA DOM elements from previous attempts
+      const container = document.getElementById("recaptcha-container");
+      if (container) {
+        container.innerHTML = "";
       }
 
       const auth = getFirebaseAuth();
@@ -84,7 +90,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
         callback: () => {
-          // reCAPTCHA solved
+          // reCAPTCHA solved — signInWithPhoneNumber will proceed
         },
         "expired-callback": () => {
           setError("reCAPTCHA expired. Please try again.");
@@ -92,10 +98,18 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         },
       });
 
+      // CRITICAL: Explicitly render the invisible reCAPTCHA widget.
+      // Firebase v12 requires this before signInWithPhoneNumber,
+      // otherwise the verifier is in an unresolved state and
+      // signInWithPhoneNumber throws auth/internal-error.
+      await window.recaptchaVerifier.render();
+
       recaptchaInitialized.current = true;
       return window.recaptchaVerifier;
     } catch (err) {
       console.error("[PhoneAuth] reCAPTCHA setup failed:", err);
+      recaptchaInitialized.current = false;
+      window.recaptchaVerifier = null;
       throw new Error("Failed to initialize security verification. Please refresh and try again.");
     }
   }, []);
@@ -393,8 +407,13 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         </div>
       )}
 
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container" className="hidden" />
+      {/* reCAPTCHA container — must NOT use display:none or className="hidden".
+          Firebase RecaptchaVerifier needs the element to be in the DOM layout
+          to render the invisible widget. Using zero-size + overflow:hidden instead. */}
+      <div
+        id="recaptcha-container"
+        style={{ position: "absolute", width: 0, height: 0, overflow: "hidden", opacity: 0, pointerEvents: "none" }}
+      />
     </div>
   );
 }

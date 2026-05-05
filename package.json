@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
-
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -59,7 +58,7 @@
     "firebase-admin": "^13.7.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
-    "next": "^16.2.2",
+    "next": "^16.2.4",
     "next-themes": "^0.3.0",
     "postcss": "8.4.30",
     "razorpay": "^2.9.6",
