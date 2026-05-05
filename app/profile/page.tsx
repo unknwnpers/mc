@@ -38,11 +38,12 @@ function ProfileContent() {
 
   useEffect(() => {
     if (profile) {
-      setName(profile.name || "");
-      setPhone(profile.phone || user?.phoneNumber?.replace("+91", "") || "");
-      setEmail(profile.email || user?.email || "");
+      // Only auto-populate if the local state is empty to prevent overwriting user typing
+      if (!name) setName(profile.name || "");
+      if (!phone) setPhone(profile.phone || user?.phoneNumber?.replace("+91", "") || "");
+      if (!email) setEmail(profile.email || user?.email || "");
     }
-  }, [profile, user]);
+  }, [profile, user]); // We keep dependencies but add conditional logic inside
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -484,11 +485,6 @@ function ProfileContent() {
             </div>
           </div>
 
-
-              </div>
-            </div>
-          </div>
-
           {/* RIGHT: SAVED ITEMS & ADDRESSES */}
           <div className="flex-1 min-w-0">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -653,7 +649,7 @@ function ProfileContent() {
                     ))}
                   </div>
                 )}
-              </div>v>
+              </div>
             </div>
 
             {/* Password Change Section - only for admin users (phone users use OTP, not passwords) */}
