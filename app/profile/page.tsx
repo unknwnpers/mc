@@ -8,7 +8,7 @@ import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/fi
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { User, Mail, MapPin, Phone, Save, ArrowLeft, Loader2, Heart, Trash2, ExternalLink, ShoppingBag, Lock, Eye, EyeOff, Plus, Star, Edit2, X, Check } from "lucide-react";
+import { User, Mail, MapPin, Phone, Save, ArrowLeft, Loader2, Heart, Trash2, ExternalLink, ShoppingBag, Lock, Eye, EyeOff, Plus, Star, Edit2, X, Check, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -109,7 +109,10 @@ function ProfileContent() {
       return;
     }
 
-    if (phone && !/^[6-9]\d{9}$/.test(phone)) {
+    // Clean the phone number (remove +91 and non-digits) for validation
+    const cleanPhone = phone.replace(/\D/g, "").replace(/^91/, "");
+    
+    if (phone && !/^[6-9]\d{9}$/.test(cleanPhone)) {
       toast.error("Please enter a valid 10-digit Indian phone number (starting with 6-9)");
       return;
     }
