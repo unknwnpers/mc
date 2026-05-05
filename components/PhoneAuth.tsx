@@ -101,8 +101,11 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         // Continue — may work without Enterprise if not enforced
       }
 
+      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
+        ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
         callback: () => {
           // reCAPTCHA solved — signInWithPhoneNumber will proceed
         },

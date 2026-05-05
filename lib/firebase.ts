@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { getAuth, Auth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getAuth, Auth, setPersistence, browserLocalPersistence, initializeRecaptchaConfig } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken, CustomProvider } from "firebase/app-check";
 import { getMessaging, Messaging, isSupported as isMessagingSupported } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -51,8 +51,15 @@ export function initAppCheck() {
 
   if (appCheckInstance) return appCheckInstance;
 
-  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-  if (!siteKey) return null;
+  // Support separate V3 key for App Check, or fallback to generic key
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY || 
+                  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 
+                  process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK;
+                  
+  if (!siteKey) {
+    console.warn("[AppCheck] No site key found in env. App Check disabled.");
+    return null;
+  }
 
   const app = getFirebaseApp();
 
@@ -61,10 +68,13 @@ export function initAppCheck() {
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
 
-    // Enable debug token for local development
-    if (isLocalhost) {
+    // Handle debug tokens (like 8C928B9F...) found in user's .env
+    const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_DEBUG || process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK;
+    const isDebugToken = debugToken && debugToken.length > 20; // Debug tokens are long GUIDs
+
+    if (isLocalhost || isDebugToken) {
       // @ts-ignore
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = isDebugToken ? debugToken : true;
     }
 
     appCheckInstance = initializeAppCheck(app, {
@@ -244,10 +254,14 @@ export const db: Firestore = firebaseApp ? getFirestore(firebaseApp) : (null as 
 export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
 export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
 
-// Set auth persistence to local (survives page refresh)
+// Set auth persistence and Enterprise config
 if (typeof window !== "undefined" && auth) {
-  setPersistence(auth, browserLocalPersistence).catch(() => {
-    // Silent fail - Firebase will use default persistence
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
+  
+  // Initialize reCAPTCHA Enterprise config globally to prevent "Mismatched action" errors
+  // in projects where reCAPTCHA Enterprise is enabled for Authentication.
+  initializeRecaptchaConfig(auth).catch((err) => {
+    console.warn("[Firebase] Auth Recaptcha Enterprise config init failed:", err);
   });
 }
 
