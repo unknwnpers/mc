@@ -23,9 +23,10 @@ function normalizePhone(phone: string | null | undefined): string | null {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { uid, phone: rawPhone, email, name, provider } = body;
+    const { uid, phone: rawPhone, email: rawEmail, name, provider } = body;
     
     const phone = normalizePhone(rawPhone);
+    const email = rawEmail?.toLowerCase() || null;
 
     // Debug logging
     console.log("[API User Create] Received:", { uid, email, name, provider, phone });
@@ -37,43 +38,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user already exists by UID (primary key)
+    // 1. PRIMARY CHECK: Check if user already exists by UID
     const userRef = adminDb.collection("users").doc(uid);
     const userSnap = await userRef.get();
 
     if (userSnap.exists) {
       const existingData = userSnap.data() || {};
       
-      // Build update data - sync missing fields from auth provider
       const updateData: Record<string, any> = {
         lastLogin: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         loginCount: FieldValue.increment(1),
       };
       
-      // Sync email if missing or changed (only if provided)
-      if (email && !existingData?.email) {
-        updateData.email = email;
-      }
+      // Sync fields if missing
+      if (email && !existingData?.email) updateData.email = email;
+      if (phone && !existingData?.phone) updateData.phone = phone;
+      if (name && !existingData?.name)   updateData.name = name;
       
-      // Sync phone if missing
-      if (phone && !existingData?.phone) {
-        updateData.phone = phone;
-      }
-      
-      // Sync name if missing
-      if (name && !existingData?.name) {
-        updateData.name = name;
-      }
-      
-      // Ensure new fields exist for older users
-      if (existingData?.isActive === undefined) {
-        updateData.isActive = true;
-      }
-      if (existingData?.defaultAddressId === undefined) {
-        updateData.defaultAddressId = null;
-      }
-
       await userRef.update(updateData);
 
       return NextResponse.json({
@@ -83,33 +65,69 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // IF USER DOES NOT EXIST BY UID:
-    // Check if another account already exists with this PHONE number
-    // This handles the "Number based account already exists" requirement
-    if (phone) {
-      const existingPhoneQuery = await adminDb.collection("users")
-        .where("phone", "==", phone)
+    // 2. IDENTITY CHECK: If this is a NEW UID, check for existing profiles by Email or Phone
+    // This handles the case where a user signs in with a different provider (e.g., Phone after Google)
+    let existingProfileDoc: any = null;
+
+    // Check by Email first (highest confidence)
+    if (email) {
+      const emailQuery = await adminDb.collection("users")
+        .where("email", "==", email)
         .limit(1)
         .get();
-
-      if (!existingPhoneQuery.empty) {
-        const existingUserDoc = existingPhoneQuery.docs[0];
-        const existingUserData = existingUserDoc.data();
-        
-        console.log("[API User Create] Phone already exists under different UID:", existingUserDoc.id);
-
-        // OPTION: We could "link" them by updating the existing doc, 
-        // but since Firebase Auth UID is the primary key for client-side queries,
-        // it's safer to create the new UID doc but maybe copy some data over?
-        // For now, we'll proceed but log it. Real "linking" happens in Firebase Auth.
+      if (!emailQuery.empty) {
+        existingProfileDoc = emailQuery.docs[0];
       }
     }
 
-    // Create new user with complete profile
+    // Check by Phone if no email match
+    if (!existingProfileDoc && phone) {
+      const phoneQuery = await adminDb.collection("users")
+        .where("phone", "==", phone)
+        .limit(1)
+        .get();
+      if (!phoneQuery.empty) {
+        existingProfileDoc = phoneQuery.docs[0];
+      }
+    }
+
+    if (existingProfileDoc) {
+      const existingData = existingProfileDoc.data();
+      console.log("[API User Create] Found existing account under different UID:", existingProfileDoc.id);
+
+      // STRATEGY: Link the new UID to the existing profile data
+      // We create a new doc for the new UID but copy the profile information over
+      // OR we could potentially migrate the user, but for simplicity we'll create a 
+      // linked profile that shares the same customer data.
+      
+      const linkedUserData: Record<string, any> = {
+        ...existingData,
+        uid, // The new UID from the current provider
+        authProvider: provider || existingData.authProvider,
+        lastLogin: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        loginCount: (existingData.loginCount || 0) + 1,
+        // Ensure email/phone are synced if the new sign-in provided them
+        email: email || existingData.email,
+        phone: phone || existingData.phone,
+        linkedTo: existingProfileDoc.id, // Reference to original account
+      };
+
+      await userRef.set(linkedUserData);
+
+      return NextResponse.json({
+        success: true,
+        message: "New provider linked to existing account",
+        isNewUser: false,
+        linked: true
+      });
+    }
+
+    // 3. NEW USER CREATION: No existing account found by UID, Email, or Phone
     const userData: Record<string, any> = {
       uid,
-      email: email || null,
-      phone: phone || null,
+      email,
+      phone,
       name: name || "",
       authProvider: provider || "unknown",
       role: "customer",
@@ -122,15 +140,12 @@ export async function POST(req: NextRequest) {
       loginCount: 1,
     };
 
-    console.log("[API User Create] Creating user with data:", userData);
-
+    console.log("[API User Create] Creating brand new user profile");
     await userRef.set(userData);
-    
-    console.log("[API User Create] User created successfully");
 
     return NextResponse.json({
       success: true,
-      message: "User created successfully",
+      message: "New user created successfully",
       isNewUser: true,
     });
   } catch (error: any) {

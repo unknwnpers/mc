@@ -22,6 +22,7 @@ function ProfileContent() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [favLoading, setFavLoading] = useState(true);
@@ -39,6 +40,7 @@ function ProfileContent() {
     if (profile) {
       setName(profile.name || "");
       setPhone(profile.phone || user?.phoneNumber?.replace("+91", "") || "");
+      setEmail(profile.email || user?.email || "");
     }
   }, [profile, user]);
 
@@ -116,7 +118,8 @@ function ProfileContent() {
     try {
       await updateProfile({ 
         name: name.trim(),
-        phone: phone.trim()
+        phone: phone.trim(),
+        email: email.trim() || null
       });
       toast.success("Profile updated successfully");
       if (redirectPath) {
@@ -308,15 +311,16 @@ function ProfileContent() {
                 </div>
 
                 {/* Email: read-only for Google users, editable for phone users */}
+                {/* Email: read-only for Google users, editable for phone users who haven't set one */}
                 <div className="space-y-2">
                   <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Email</label>
-                  {isPhoneUser && !profile?.email ? (
+                  {isPhoneUser ? (
                     <div className="relative group">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
                       <input 
                         type="email" 
-                        value={profile?.email || ""}
-                        onChange={(e) => updateProfile({ email: e.target.value })}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
                         placeholder="Add email (optional)"
                       />
@@ -326,7 +330,7 @@ function ProfileContent() {
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
                       <input 
                         type="email" 
-                        value={profile?.email || user?.email || "Not provided"}
+                        value={email || "Not provided"}
                         disabled
                         className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
                       />
