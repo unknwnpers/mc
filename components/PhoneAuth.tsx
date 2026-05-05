@@ -101,7 +101,12 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         // Continue — may work without Enterprise if not enforced
       }
 
-      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || 
+                        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+      if (!v2SiteKey) {
+        console.warn("[PhoneAuth] No V2 site key found. Phone auth may fail.");
+      }
 
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",

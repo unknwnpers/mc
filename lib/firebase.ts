@@ -47,18 +47,20 @@ export function getFirebaseApp(): FirebaseApp {
 let appCheckInstance: AppCheck | null = null;
 
 export function initAppCheck() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return null;
 
   if (appCheckInstance) return appCheckInstance;
 
-  // Support separate V3 key for App Check, or fallback to generic key
+  // App Check MANDATORILY requires reCAPTCHA v3. 
+  // Do NOT use the Phone Auth (v2) key here or it will cause 400 errors.
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY || 
-                  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || 
                   process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK;
                   
-  if (!siteKey) {
-    console.warn("[AppCheck] No site key found in env. App Check disabled.");
-    return null;
+  if (!siteKey || siteKey.length < 20) {
+    console.warn("[AppCheck] No valid V3 site key found. Using V2 fallback is NOT recommended.");
+    // Final fallback to generic key if V3 is missing, but log a loud warning
+    const fallbackKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (!fallbackKey) return null;
   }
 
   const app = getFirebaseApp();
@@ -68,20 +70,22 @@ export function initAppCheck() {
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
 
-    // Handle debug tokens (like 8C928B9F...) found in user's .env
-    const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_DEBUG || process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK;
-    const isDebugToken = debugToken && debugToken.length > 20; // Debug tokens are long GUIDs
-
-    if (isLocalhost || isDebugToken) {
+    const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_DEBUG;
+    
+    if (isLocalhost && !debugToken) {
       // @ts-ignore
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = isDebugToken ? debugToken : true;
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    } else if (debugToken) {
+      // @ts-ignore
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
 
     appCheckInstance = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey),
+      provider: new ReCaptchaV3Provider(siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
       isTokenAutoRefreshEnabled: true,
     });
 
+    console.log("[AppCheck] Initialized successfully with provider:", siteKey ? "V3" : "Fallback");
     return appCheckInstance;
   } catch (err) {
     console.error("[AppCheck] Init failed:", err);
