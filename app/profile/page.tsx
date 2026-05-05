@@ -315,102 +315,136 @@ function ProfileContent() {
     }
   };
 
+  // Calculate profile completion percentage
+  const profileCompletion = (() => {
+    let score = 0;
+    if (name.trim().length >= 3) score += 33.4;
+    if (email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) score += 33.3;
+    if (phone.trim().length >= 10) score += 33.3;
+    return Math.min(100, Math.round(score));
+  })();
+
+  const isProfileComplete = profileCompletion === 100;
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FCF9F7]">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 md:px-10 py-24">
-        <div className="flex flex-col lg:flex-row gap-10">
+      <main className="max-w-7xl mx-auto px-6 md:px-10 py-32">
+        <div className="flex flex-col lg:flex-row gap-12">
           {/* LEFT: PROFILE INFO */}
-          <div className="lg:w-[320px] shrink-0">
-            <div className="bg-white p-8 rounded-3xl border border-[#F3E8E5] shadow-xl shadow-blush/5 sticky top-24">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="h-16 w-16 bg-cream rounded-2xl flex items-center justify-center text-blush shadow-inner border border-blush/5">
-                  <User className="w-8 h-8" />
+          <div className="lg:w-[360px] shrink-0">
+            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-2xl shadow-blush/5 sticky top-32 overflow-hidden">
+              {/* Decorative Background Element */}
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-cream rounded-full opacity-50 blur-3xl pointer-events-none" />
+              
+              <div className="relative flex items-center gap-5 mb-10">
+                <div className="h-20 w-20 bg-cream rounded-[30px] flex items-center justify-center text-blush shadow-inner border border-blush/5 relative">
+                  <User className="w-10 h-10" />
+                  {isProfileComplete && (
+                    <div className="absolute -bottom-1 -right-1 h-7 w-7 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white">
+                      <Check className="w-4 h-4" />
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-serif font-bold text-charcoal">My <span className="text-blush italic">Profile</span></h1>
-                  <p className="text-neutral-400 font-medium text-sm mt-1">Account & delivery</p>
+                  <h1 className="text-3xl font-serif font-bold text-charcoal tracking-tight">My <span className="text-blush italic">Profile</span></h1>
+                  <p className="text-neutral-400 font-bold uppercase tracking-[0.2em] text-[10px] mt-1.5 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blush" />
+                    Account & delivery
+                  </p>
                 </div>
               </div>
 
-              {/* Mandatory Info Notice */}
-              <div className="mb-8 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3">
-                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
-                  <strong>Mandatory:</strong> Your Name, Email, and Phone must be updated to place an order.
-                </p>
+              {/* Profile Completion Tracker */}
+              <div className="mb-10 p-6 bg-cream/30 rounded-[30px] border border-blush/5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black text-charcoal uppercase tracking-wider">Profile Setup</span>
+                  <span className={`text-xs font-black ${isProfileComplete ? 'text-emerald-600' : 'text-blush'}`}>{profileCompletion}%</span>
+                </div>
+                <div className="h-2 w-full bg-white rounded-full overflow-hidden shadow-inner border border-blush/5">
+                  <div 
+                    className={`h-full transition-all duration-1000 ease-out rounded-full ${isProfileComplete ? 'bg-emerald-500' : 'bg-gradient-to-r from-blush to-rose-400'}`}
+                    style={{ width: `${profileCompletion}%` }}
+                  />
+                </div>
+                {!isProfileComplete && (
+                  <p className="text-[10px] text-neutral-400 font-medium mt-3 leading-relaxed">
+                    Complete your details to unlock seamless <span className="text-blush font-bold">Checkout</span>
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
+              <div className="space-y-6 relative">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] ml-2">Personal Identity</label>
                   <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
                     <input 
                       type="text" 
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
-                      placeholder="Enter your name"
+                      className="w-full pl-12 pr-5 py-5 bg-neutral-50 border-none rounded-[24px] focus:ring-2 focus:ring-blush/20 transition-all font-bold text-charcoal placeholder:text-neutral-300 shadow-sm text-sm"
+                      placeholder="Your Full Name"
                     />
                   </div>
                 </div>
 
-                {/* Email: read-only for Google users, editable for phone users */}
-                {/* Email: read-only for Google users, editable for phone users who haven't set one */}
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Email</label>
-                  {isPhoneUser ? (
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] ml-2">Contact Email</label>
+                  {/* Allow editing if: 
+                      1. User is a Phone user
+                      2. OR if the profile doesn't have an email yet (even for Google users)
+                  */}
+                  {(isPhoneUser || !profile?.email) ? (
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
                       <input 
                         type="email" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
-                        placeholder="Add email (optional)"
+                        className="w-full pl-12 pr-5 py-5 bg-neutral-50 border-none rounded-[24px] focus:ring-2 focus:ring-blush/20 transition-all font-bold text-charcoal placeholder:text-neutral-300 shadow-sm text-sm"
+                        placeholder="Add email for receipts"
                       />
                     </div>
                   ) : (
-                    <div className="relative opacity-50">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
+                    <div className="relative group opacity-60">
+                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
                       <input 
                         type="email" 
                         value={email || "Not provided"}
                         disabled
-                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
+                        className="w-full pl-12 pr-5 py-5 bg-neutral-50 border-none rounded-[24px] font-bold text-charcoal text-sm cursor-not-allowed"
                       />
                     </div>
                   )}
                 </div>
 
-                {/* Phone: read-only for phone-auth users (it's their verified identity) */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Phone</label>
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-3 ml-2">
+                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em]">Mobile Number</label>
                     {isPhoneUser && (
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Verified</span>
+                      <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-widest border border-emerald-100">Verified</span>
                     )}
                   </div>
                   {isPhoneUser ? (
-                    <div className="relative opacity-50">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
+                    <div className="relative group opacity-60">
+                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
                       <input 
                         type="tel" 
                         value={phone}
                         disabled
-                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
+                        className="w-full pl-12 pr-5 py-5 bg-neutral-50 border-none rounded-[24px] font-bold text-charcoal text-sm cursor-not-allowed"
                       />
                     </div>
                   ) : (
                     <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
                       <input 
                         type="tel" 
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                        className="w-full pl-12 pr-5 py-5 bg-neutral-50 border-none rounded-[24px] focus:ring-2 focus:ring-blush/20 transition-all font-bold text-charcoal placeholder:text-neutral-300 shadow-sm text-sm"
                         placeholder="10-digit number"
                       />
                     </div>
@@ -418,31 +452,37 @@ function ProfileContent() {
                 </div>
 
                 {/* Auth provider badge */}
-                <div className="flex items-center gap-2 px-2">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                    Signed in with
+                <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-[24px] border border-neutral-100/50">
+                  <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+                    Linked to
                   </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    isPhoneUser ? 'text-blue-600 bg-blue-50' : 'text-rose-600 bg-rose-50'
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm border ${
+                    isPhoneUser ? 'text-blue-600 bg-blue-50 border-blue-100' : 'text-rose-600 bg-rose-50 border-rose-100'
                   }`}>
-                    {isPhoneUser ? 'Phone OTP' : isGoogleUser ? 'Google' : 'Email'}
-                  </span>
+                    {isPhoneUser ? <Phone className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                    <span className="text-[9px] font-black uppercase tracking-widest">
+                        {isPhoneUser ? 'Phone Identity' : isGoogleUser ? 'Google Cloud' : 'Email Account'}
+                    </span>
+                  </div>
                 </div>
 
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="w-full bg-blush text-white py-4 rounded-2xl font-bold hover:bg-[#f48c82] transition-all shadow-lg shadow-blush/20 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group"
+                  className="w-full bg-charcoal text-white py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs hover:bg-blush transition-all shadow-xl shadow-charcoal/10 flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50 group mt-8"
                 >
                   {isSaving ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
                       <Save className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                      Save Changes
+                      Update Identity
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
 
 
               </div>
@@ -505,91 +545,115 @@ function ProfileContent() {
                   </Link>
                 )}
               </div>
-
               {/* Saved Addresses Column */}
               <div>
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-blush" />
-                    <h2 className="text-xl font-serif font-bold text-charcoal">Saved <span className="text-blush italic">Addresses</span></h2>
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blush/5 rounded-xl border border-blush/10">
+                      <MapPin className="w-5 h-5 text-blush" />
+                    </div>
+                    <h2 className="text-2xl font-serif font-bold text-charcoal tracking-tight">Delivery <span className="text-blush italic">Hub</span></h2>
                   </div>
                   <button
                     onClick={() => { setShowAddressForm(true); setEditingAddress(null); }}
-                    className="flex items-center gap-1 px-3 py-2 bg-blush text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-blush/90 transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blush text-white rounded-full font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blush/90 transition-all shadow-lg shadow-blush/20 active:scale-95"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add
+                    <Plus className="w-3.5 h-3.5" /> Add New
                   </button>
                 </div>
 
                 {addressesLoading ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {[1, 2].map((i) => (
-                      <div key={i} className="animate-pulse bg-neutral-100 rounded-xl p-4">
-                        <div className="h-4 bg-neutral-200 rounded w-24 mb-2"></div>
-                        <div className="h-3 bg-neutral-200 rounded w-32"></div>
+                      <div key={i} className="animate-pulse bg-white rounded-3xl p-6 border border-[#F3E8E5]">
+                        <div className="h-4 bg-neutral-100 rounded-full w-24 mb-4"></div>
+                        <div className="space-y-2">
+                          <div className="h-3 bg-neutral-100 rounded-full w-full"></div>
+                          <div className="h-3 bg-neutral-100 rounded-full w-2/3"></div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : addresses.length === 0 ? (
-                  <div className="bg-white border border-[#D4AF37]/40 shadow-lg shadow-[#D4AF37]/5 rounded-2xl p-10 text-center flex flex-col items-center justify-center">
-                    <MapPin className="w-8 h-8 text-[#D4AF37] mx-auto mb-4" />
-                    <p className="text-neutral-600 font-medium mb-6">No saved addresses</p>
+                  <div className="bg-white border border-[#F3E8E5] shadow-xl shadow-blush/5 rounded-[40px] p-16 text-center flex flex-col items-center justify-center">
+                    <div className="w-20 h-20 bg-cream rounded-full flex items-center justify-center mb-6 border border-blush/5">
+                      <MapPin className="w-10 h-10 text-blush/40" />
+                    </div>
+                    <p className="text-charcoal font-serif text-xl font-bold mb-2">No Delivery Points</p>
+                    <p className="text-neutral-400 text-sm mb-8 max-w-[200px] mx-auto leading-relaxed">Save your delivery locations for faster checkout experience.</p>
                     <button
                       onClick={() => { setShowAddressForm(true); setEditingAddress(null); }}
-                      className="px-6 py-2.5 bg-blush text-white rounded-xl font-bold shadow-lg shadow-blush/20 hover:bg-blush/90 transition-all"
+                      className="px-8 py-4 bg-charcoal text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-charcoal/10 hover:bg-blush transition-all active:scale-95"
                     >
-                      Add Address
+                      Setup First Address
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {addresses.map((address) => (
                       <div 
                         key={address.id}
-                        className={`relative bg-neutral-50 rounded-xl p-4 ${address.isDefault ? 'ring-2 ring-blush' : ''}`}
+                        className={`group relative bg-white rounded-[32px] p-6 border transition-all duration-300 hover:shadow-xl hover:shadow-blush/5 ${address.isDefault ? 'border-blush/30 bg-gradient-to-br from-white to-cream/30' : 'border-[#F3E8E5]'}`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-charcoal">{address.name}</span>
-                              <span className="text-xs px-2 py-0.5 bg-white rounded-full text-neutral-500 uppercase">{address.label}</span>
+                            <div className="flex items-center gap-3 mb-3">
+                              <span className="font-bold text-charcoal tracking-tight">{address.name}</span>
+                              <span className="text-[9px] px-3 py-1 bg-neutral-100 rounded-full text-neutral-500 uppercase font-black tracking-widest">{address.label}</span>
                               {address.isDefault && (
-                                <Star className="w-3.5 h-3.5 text-blush fill-current" />
+                                <div className="flex items-center gap-1 text-[9px] font-black text-blush uppercase tracking-widest bg-blush/5 px-2 py-1 rounded-full">
+                                  <Star className="w-3 h-3 fill-current" />
+                                  Default
+                                </div>
                               )}
                             </div>
-                            <p className="text-sm text-neutral-500">+91 {address.phone}</p>
-                            <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
-                              {address.addressLine1}, {address.city} - {address.pincode}
-                            </p>
+                            
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-neutral-400">
+                                    <Phone className="w-3 h-3" />
+                                    <span className="text-xs font-bold">+91 {address.phone}</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-neutral-600">
+                                    <MapPin className="w-3 h-3 mt-1 shrink-0 text-blush/40" />
+                                    <p className="text-xs font-medium leading-relaxed">
+                                        {address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ''}<br />
+                                        {address.city}, {address.state} — {address.pincode}
+                                    </p>
+                                </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 ml-2">
+                          
+                          <div className="flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => { setEditingAddress(address); setShowAddressForm(true); }}
-                              className="p-1.5 text-neutral-400 hover:text-charcoal transition-colors"
+                              className="p-3 bg-neutral-50 text-neutral-400 hover:text-blush hover:bg-blush/5 rounded-2xl transition-all"
+                              title="Edit Address"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => deleteAddress(address.id)}
-                              className="p-1.5 text-neutral-400 hover:text-rose-500 transition-colors"
+                              className="p-3 bg-neutral-50 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
+                              title="Delete Address"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
+
                         {!address.isDefault && (
                           <button
                             onClick={() => setDefaultAddress(address.id)}
-                            className="mt-2 text-xs font-bold text-blush hover:underline"
+                            className="mt-6 w-full py-2.5 bg-neutral-50 text-neutral-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blush/5 hover:text-blush transition-all"
                           >
-                            Set as default
+                            Set as primary
                           </button>
                         )}
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
+              </div>v>
             </div>
 
             {/* Password Change Section - only for admin users (phone users use OTP, not passwords) */}
