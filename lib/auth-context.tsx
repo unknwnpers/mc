@@ -149,6 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             userRole = data.role;
           }
         } else {
+          // New user — profile doesn't exist in Firestore yet
           // SECURITY: Only auto-promote known admin email to superadmin if email is valid
           const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
           
@@ -156,19 +157,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
           const userEmail = u.email || googleProvider?.email || null;
           const userDisplayName = u.displayName || googleProvider?.displayName || null;
+          const userPhone = u.phoneNumber || null;
           
-          const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
-          // SECURITY: Default to customer unless email explicitly matches admin email
-          const role = isValidAdminEmail ? "superadmin" : "customer";
-
-          // SECURITY: Reject users without email (check both locations)
-          if (!userEmail) {
-            console.error("[Auth] No email found in user object or providerData:", {
+          // Phone-based users won't have an email — that's valid.
+          // Only reject if there's NO identifier at all (neither email nor phone).
+          if (!userEmail && !userPhone) {
+            console.error("[Auth] No email or phone found:", {
               uid: u.uid,
               email: u.email,
+              phone: u.phoneNumber,
               providerData: u.providerData
             });
-            toast.error("Authentication failed: No email provided");
+            toast.error("Authentication failed: No email or phone provided");
             const authInstance = getFirebaseAuth();
             if (authInstance) {
               await authInstance.signOut();
@@ -178,13 +178,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
+          const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
+          // SECURITY: Default to customer unless email explicitly matches admin email
+          const role = isValidAdminEmail ? "superadmin" : "customer";
+
           const newProfile: UserProfile = {
             uid: u.uid,
             name: userDisplayName || "",
             email: userEmail,
+            phone: userPhone?.replace("+91", "") || "",
             role,
             addressLine1: "",
-            phone: "",
             blocked: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()

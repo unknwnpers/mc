@@ -30,12 +30,17 @@ function ProfileContent() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<SavedAddress | null>(null);
 
+  // Detect auth provider
+  const isPhoneUser = user?.providerData?.some(p => p.providerId === 'phone') || false;
+  const isGoogleUser = user?.providerData?.some(p => p.providerId === 'google.com') || false;
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'superadmin';
+
   useEffect(() => {
     if (profile) {
       setName(profile.name || "");
-      setPhone(profile.phone || "");
+      setPhone(profile.phone || user?.phoneNumber?.replace("+91", "") || "");
     }
-  }, [profile]);
+  }, [profile, user]);
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -302,31 +307,75 @@ function ProfileContent() {
                   </div>
                 </div>
 
+                {/* Email: read-only for Google users, editable for phone users */}
                 <div className="space-y-2">
                   <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Email</label>
-                  <div className="relative opacity-50">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
-                    <input 
-                      type="email" 
-                      value={profile?.email || user?.email || ""}
-                      disabled
-                      className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
-                    />
-                  </div>
+                  {isPhoneUser && !profile?.email ? (
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                      <input 
+                        type="email" 
+                        value={profile?.email || ""}
+                        onChange={(e) => updateProfile({ email: e.target.value })}
+                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                        placeholder="Add email (optional)"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative opacity-50">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
+                      <input 
+                        type="email" 
+                        value={profile?.email || user?.email || "Not provided"}
+                        disabled
+                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
+                      />
+                    </div>
+                  )}
                 </div>
 
+                {/* Phone: read-only for phone-auth users (it's their verified identity) */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Phone</label>
-                  <div className="relative group">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
-                    <input 
-                      type="tel" 
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
-                      placeholder="10-digit number"
-                    />
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Phone</label>
+                    {isPhoneUser && (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Verified</span>
+                    )}
                   </div>
+                  {isPhoneUser ? (
+                    <div className="relative opacity-50">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
+                      <input 
+                        type="tel" 
+                        value={phone}
+                        disabled
+                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl font-medium text-charcoal"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300 group-focus-within:text-blush transition-colors" />
+                      <input 
+                        type="tel" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full pl-11 pr-4 py-4 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-medium text-charcoal placeholder:text-neutral-300"
+                        placeholder="10-digit number"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Auth provider badge */}
+                <div className="flex items-center gap-2 px-2">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Signed in with
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    isPhoneUser ? 'text-blue-600 bg-blue-50' : 'text-rose-600 bg-rose-50'
+                  }`}>
+                    {isPhoneUser ? 'Phone OTP' : isGoogleUser ? 'Google' : 'Email'}
+                  </span>
                 </div>
 
                 <button 
@@ -492,8 +541,8 @@ function ProfileContent() {
               </div>
             </div>
 
-            {/* Password Change Section */}
-            <PasswordChangeSection />
+            {/* Password Change Section - only for admin users (phone users use OTP, not passwords) */}
+            {isAdmin && <PasswordChangeSection />}
 
           </div>
         </div>
