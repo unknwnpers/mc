@@ -15,20 +15,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const snapshot = await adminDb
-      .collection("users")
-      .doc(auth.uid)
-      .collection("addresses")
-      .orderBy("createdAt", "desc")
-      .get();
+    // UNIFIED ACCOUNT LOGIC: Check if this account is linked to another profile
+    const userDoc = await adminDb.collection("users").doc(auth.uid).get();
+    const userData = userDoc.data();
+    const targetUids = [auth.uid];
+    
+    if (userData?.linkedTo) {
+      targetUids.push(userData.linkedTo);
+    }
 
-    const addresses = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.() || data.createdAt,
-      };
+    // Fetch addresses from all relevant UIDs (current and linked)
+    const snapshots = await Promise.all(
+      targetUids.map(uid => 
+        adminDb.collection("users").doc(uid).collection("addresses").get()
+      )
+    );
+
+    const addressMap = new Map();
+    snapshots.forEach(snapshot => {
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        addressMap.set(doc.id, {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        });
+      });
+    });
+
+    const addresses = Array.from(addressMap.values()).sort((a: any, b: any) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeB - timeA;
     });
 
     return NextResponse.json({ success: true, addresses });

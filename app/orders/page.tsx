@@ -45,7 +45,7 @@ const getLabel = (dateStr: string) => {
 export default function OrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
 
     // Calculate stats excluding cancelled and expired orders
     const activeOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'expired');
@@ -71,33 +71,46 @@ export default function OrdersPage() {
 
         setLoading(true);
         try {
-            // Use query with explicit UID
-            const q = query(
-                collection(db, "orders"),
-                where("userId", "==", user.uid),
-                orderBy("createdAt", "desc")
-            );
+            // UNIFIED ACCOUNT LOGIC: 
+            // Fetch orders matching UID OR Email OR Phone to ensure history persists across providers
+            const queries = [
+                query(collection(db, "orders"), where("userId", "==", user.uid))
+            ];
 
-            const snapshot = await getDocs(q);
+            if (user.email) {
+                queries.push(query(collection(db, "orders"), where("recipient.email", "==", user.email.toLowerCase())));
+            }
 
-            setOrders(snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })));
+            // Also check profile phone if available (from auth context)
+            const userPhone = profile?.phone || user.phoneNumber?.replace("+91", "");
+            if (userPhone) {
+                queries.push(query(collection(db, "orders"), where("recipient.phone", "==", userPhone)));
+            }
+
+            // Execute all queries in parallel
+            const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+            
+            // Merge and de-duplicate results
+            const orderMap = new Map();
+            snapshots.forEach(snapshot => {
+                snapshot.docs.forEach(doc => {
+                    orderMap.set(doc.id, { id: doc.id, ...doc.data() });
+                });
+            });
+
+            const allOrders = Array.from(orderMap.values());
+
+            // Sort by creation date (descending)
+            allOrders.sort((a: any, b: any) => {
+                const timeA = a.createdAt?.seconds || 0;
+                const timeB = b.createdAt?.seconds || 0;
+                return timeB - timeA;
+            });
+
+            setOrders(allOrders);
         } catch (error) {
             console.error("Orders Fetch Error:", error);
-            // Fallback for missing index or other error
-            try {
-                const fallbackQ = query(
-                    collection(db, "orders"),
-                    where("userId", "==", user.uid)
-                );
-                const snapshot = await getDocs(fallbackQ);
-                setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            } catch (err) {
-                console.error("Fallback Fetch Error:", err);
-                setOrders([]);
-            }
+            setOrders([]);
         } finally {
             setLoading(false);
         }

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile, Product, SavedAddress } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, limit } from "firebase/firestore";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -119,16 +119,52 @@ function ProfileContent() {
 
     setIsSaving(true);
     try {
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedPhone = phone.trim();
+
+      // 1. Uniqueness check for Email (if changed)
+      if (trimmedEmail && trimmedEmail !== profile?.email?.toLowerCase()) {
+        const emailQuery = query(
+          collection(db, "users"), 
+          where("email", "==", trimmedEmail),
+          limit(1)
+        );
+        const emailSnapshot = await getDocs(emailQuery);
+        
+        if (!emailSnapshot.empty && emailSnapshot.docs[0].id !== user.uid) {
+          toast.error("This email is already associated with another account.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // 2. Uniqueness check for Phone (if changed)
+      if (trimmedPhone && trimmedPhone !== profile?.phone) {
+        const phoneQuery = query(
+          collection(db, "users"), 
+          where("phone", "==", trimmedPhone),
+          limit(1)
+        );
+        const phoneSnapshot = await getDocs(phoneQuery);
+        
+        if (!phoneSnapshot.empty && phoneSnapshot.docs[0].id !== user.uid) {
+          toast.error("This phone number is already associated with another account.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
       await updateProfile({ 
         name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim() || null
+        phone: trimmedPhone,
+        email: trimmedEmail || null
       });
       toast.success("Profile updated successfully");
       if (redirectPath) {
         router.push(redirectPath);
       }
     } catch (err) {
+      console.error("Profile update error:", err);
       toast.error("Failed to update profile. Please check your connection.");
     } finally {
       setIsSaving(false);
