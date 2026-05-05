@@ -118,27 +118,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           // Get email/name from either user object or providerData (Google sometimes only populates providerData)
           const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
+          const phoneProvider = u.providerData?.find(p => p.providerId === 'phone');
           const userEmail = u.email || googleProvider?.email || data.email;
           const userDisplayName = u.displayName || googleProvider?.displayName || data.name;
+          const userPhone = u.phoneNumber || phoneProvider?.phoneNumber || data.phone;
           
           // Check if we need to sync email from Firebase Auth
           const needsEmailSync = userEmail && !data.email;
           const needsNameSync = userDisplayName && !data.name;
+          const needsPhoneSync = userPhone && !data.phone;
           
           // SECURITY: Only auto-promote to superadmin if email matches AND user has valid email
           const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
           const needsRoleUpgrade = isValidAdminEmail && data.role !== "superadmin" && data.role !== "admin";
-          const needsFieldFill   = !data.addressLine1 || !data.phone;
+          const needsFieldFill   = !data.addressLine1;
 
-          if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync) {
+          if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync || needsPhoneSync) {
             const updated: UserProfile = {
               ...data,
               email: userEmail || data.email,
               name: userDisplayName || data.name || "",
               addressLine1: data.addressLine1 || "",
-              phone:   data.phone   || "",
+              phone: (userPhone?.replace("+91", "") || data.phone || "").replace(/\D/g, ""),
               // SECURITY: Never upgrade role if email is missing or doesn't match
-              role:    (needsRoleUpgrade && userEmail) ? "superadmin" : data.role,
+              role: (needsRoleUpgrade && userEmail) ? "superadmin" : data.role,
               updated_at: new Date().toISOString(),
             };
             await setDoc(profileRef, updated, { merge: true });
@@ -149,54 +152,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             userRole = data.role;
           }
         } else {
-          // New user — profile doesn't exist in Firestore yet
-          // SECURITY: Only auto-promote known admin email to superadmin if email is valid
-          const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
+          // PROFILE MISSING: Delegate to backend API for identity linking and profile creation
+          console.log("[Auth] Profile missing, triggering backend sync for UID:", u.uid);
           
-          // Get email from either user.email or providerData (Google sometimes only populates providerData)
-          const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
-          const userEmail = u.email || googleProvider?.email || null;
-          const userDisplayName = u.displayName || googleProvider?.displayName || null;
-          const userPhone = u.phoneNumber || null;
-          
-          // Phone-based users won't have an email — that's valid.
-          // Only reject if there's NO identifier at all (neither email nor phone).
-          if (!userEmail && !userPhone) {
-            console.error("[Auth] No email or phone found:", {
-              uid: u.uid,
-              email: u.email,
-              phone: u.phoneNumber,
-              providerData: u.providerData
+          try {
+            const token = await u.getIdToken();
+            const res = await fetch("/api/user/create", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                uid: u.uid,
+                email: u.email,
+                phone: u.phoneNumber,
+                name: u.displayName,
+                provider: u.providerData[0]?.providerId || "unknown"
+              })
             });
-            toast.error("Authentication failed: No email or phone provided");
-            const authInstance = getFirebaseAuth();
-            if (authInstance) {
-              await authInstance.signOut();
+
+            if (res.ok) {
+              // Fetch the newly created/linked profile
+              const newSnap = await getDoc(profileRef);
+              if (newSnap.exists()) {
+                const newData = newSnap.data() as UserProfile;
+                setProfile(newData);
+                userRole = newData.role;
+              }
+            } else {
+              throw new Error("Backend sync failed");
             }
-            setUser(null);
-            setLoading(false);
-            return;
+          } catch (err) {
+            console.error("[Auth] Backend profile sync failed:", err);
+            toast.error("Failed to sync your profile. Please refresh.");
           }
-
-          const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
-          // SECURITY: Default to customer unless email explicitly matches admin email
-          const role = isValidAdminEmail ? "superadmin" : "customer";
-
-          const newProfile: UserProfile = {
-            uid: u.uid,
-            name: userDisplayName || "",
-            email: userEmail,
-            phone: userPhone?.replace("+91", "") || "",
-            role,
-            addressLine1: "",
-            blocked: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          await setDoc(profileRef, newProfile);
-          setProfile(newProfile);
-          userRole = role;
-        }
+        }   
         
         // Create admin session if user is admin/superadmin
         if (userRole === "admin" || userRole === "superadmin") {
