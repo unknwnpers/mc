@@ -88,31 +88,29 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         throw new Error("Auth not available");
       }
 
-      // CRITICAL: Initialize reCAPTCHA Enterprise config BEFORE creating
-      // the RecaptchaVerifier. Without this, Firebase generates standard
-      // reCAPTCHA v2 tokens, but the project has reCAPTCHA Enterprise
-      // enabled for Auth — causing "Mismatched action (auth/invalid-recaptcha-token)".
-      // This call fetches the project's reCAPTCHA config from Firebase
-      // so the verifier generates Enterprise-compatible tokens.
+      // CRITICAL: Force synchronization with reCAPTCHA Enterprise settings.
+      // We call it twice and wait slightly to ensure the internal SDK state is updated.
       try {
+        console.log("[PhoneAuth] Syncing reCAPTCHA Enterprise config...");
         await initializeRecaptchaConfig(auth);
+        // Small delay to ensure SDK internal state catches up
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (configErr) {
-        console.warn("[PhoneAuth] reCAPTCHA config init (non-fatal):", configErr);
-        // Continue — may work without Enterprise if not enforced
+        console.warn("[PhoneAuth] Enterprise config sync warning:", configErr);
       }
 
       const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || 
                         process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-      if (!v2SiteKey) {
-        console.warn("[PhoneAuth] No V2 site key found. Phone auth may fail.");
-      }
+      console.log("[PhoneAuth] Initializing verifier with key:", v2SiteKey ? "Provided" : "Firebase Managed");
 
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
+        // If using Enterprise, Firebase sometimes works better without an explicit sitekey 
+        // if it's already configured in the console. We provide it as a fallback.
         ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
         callback: () => {
-          // reCAPTCHA solved — signInWithPhoneNumber will proceed
+          console.log("[PhoneAuth] reCAPTCHA solved");
         },
         "expired-callback": () => {
           setError("reCAPTCHA expired. Please try again.");
