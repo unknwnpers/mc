@@ -38,9 +38,11 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    // Check for required delivery info (structured address)
-    if (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone) {
-      return NextResponse.json({ error: "Complete delivery profile required (address, city, pincode, phone)" }, { status: 400 });
+    // Check for required delivery info (MANDATORY FIELDS)
+    if (!profile?.addressLine1 || !profile?.city || !profile?.pincode || !profile?.phone || !profile?.email || !profile?.name) {
+      return NextResponse.json({ 
+        error: "Complete delivery profile required (Name, Email, Phone, Address, City, Pincode)" 
+      }, { status: 400 });
     }
 
     for (const item of cart) {

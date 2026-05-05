@@ -57,7 +57,7 @@ export default function CartPage() {
             }
         }
         // Fall back to profile address check
-        return !!(profile?.addressLine1 && profile?.city && profile?.pincode && profile?.phone);
+        return !!(profile?.addressLine1 && profile?.city && profile?.pincode && profile?.phone && profile?.email && profile?.name);
     })();
 
     // Get the delivery profile (selected address or profile)
@@ -604,9 +604,9 @@ export default function CartPage() {
                                 <div className="mb-8 p-6 bg-cream/50 rounded-3xl border border-blush/10 flex items-start gap-4">
                                     <Info className="w-6 h-6 text-blush shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Delivery Address Required</p>
+                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Profile Information Required</p>
                                         <p className="text-sm text-charcoal/60 leading-relaxed font-sans">
-                                            Please add a delivery address to proceed with checkout.
+                                            Please ensure your profile has a valid <strong>Name, Email, Phone, and Address</strong> to proceed with checkout.
                                         </p>
                                     </div>
                                 </div>
@@ -636,9 +636,9 @@ export default function CartPage() {
                                     // Get the delivery profile (selected address or profile)
                                     const deliveryProfile = getDeliveryProfile();
 
-                                    // Check if delivery info is available
-                                    if (!deliveryProfile?.addressLine1 || !deliveryProfile?.city || !deliveryProfile?.pincode || !deliveryProfile?.phone) {
-                                        toast.warning("Please add a delivery address first");
+                                    // Check if complete profile info is available (MANDATORY)
+                                    if (!deliveryProfile?.addressLine1 || !deliveryProfile?.city || !deliveryProfile?.pincode || !deliveryProfile?.phone || !deliveryProfile?.email || !deliveryProfile?.name) {
+                                        toast.warning("Incomplete profile. Name, Email, Phone, and Address are mandatory for purchase.");
                                         router.push("/profile?redirect=/cart");
                                         return;
                                     }

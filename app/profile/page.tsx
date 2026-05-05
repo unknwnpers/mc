@@ -295,6 +295,14 @@ function ProfileContent() {
                 </div>
               </div>
 
+              {/* Mandatory Info Notice */}
+              <div className="mb-8 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3">
+                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                  <strong>Mandatory:</strong> Your Name, Email, and Phone must be updated to place an order.
+                </p>
+              </div>
+
               <div className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-xs font-black text-neutral-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
