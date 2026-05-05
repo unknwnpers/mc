@@ -113,12 +113,15 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || 
                         process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-      console.log("[PhoneAuth] Initializing verifier with key:", v2SiteKey ? "Provided" : "Firebase Managed");
+      console.log("[PhoneAuth] Initializing RecaptchaVerifier...");
 
+      // For reCAPTCHA Enterprise, it is often better to NOT pass a sitekey 
+      // if the domain is authorized in Firebase Console. This allows Firebase 
+      // to use its internal managed configuration.
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
-        // If using Enterprise, Firebase sometimes works better without an explicit sitekey 
-        // if it's already configured in the console. We provide it as a fallback.
+        // We only pass the sitekey if it's explicitly required (fallback mode)
+        // Many Enterprise projects work best when this is left to the SDK
         ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
         callback: () => {
           console.log("[PhoneAuth] reCAPTCHA solved");
