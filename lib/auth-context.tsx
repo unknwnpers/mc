@@ -116,32 +116,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
-          // Get email/name from either user object or providerData (Google sometimes only populates providerData)
+          // Get email/name from either user object or providerData
           const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
           const phoneProvider = u.providerData?.find(p => p.providerId === 'phone');
-          const userEmail = u.email || googleProvider?.email || data.email;
-          const userDisplayName = u.displayName || googleProvider?.displayName || data.name;
-          const userPhone = u.phoneNumber || phoneProvider?.phoneNumber || data.phone;
+
+          // Handle missing fields gracefully for different providers
+          const userEmail = u.email || googleProvider?.email || data.email || null;
+          const userDisplayName = u.displayName || googleProvider?.displayName || data.name || "";
+          const userPhone = u.phoneNumber || phoneProvider?.phoneNumber || data.phone || "";
           
-          // Check if we need to sync email from Firebase Auth
+          // Check if we need to sync from Firebase Auth
           const needsEmailSync = userEmail && !data.email;
           const needsNameSync = userDisplayName && !data.name;
           const needsPhoneSync = userPhone && !data.phone;
           
           // SECURITY: Only auto-promote to superadmin if email matches AND user has valid email
-          const isValidAdminEmail = userEmail && userEmail === ADMIN_EMAIL;
+          const isValidAdminEmail = !!(userEmail && userEmail === ADMIN_EMAIL);
           const needsRoleUpgrade = isValidAdminEmail && data.role !== "superadmin" && data.role !== "admin";
-          const needsFieldFill   = !data.addressLine1;
+          const needsFieldFill   = !data.addressLine1 && userEmail; // Only require field fill for email users usually
 
           if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync || needsPhoneSync) {
             const updated: UserProfile = {
               ...data,
-              email: userEmail || data.email,
-              name: userDisplayName || data.name || "",
+              email: userEmail || data.email || null,
+              name: userDisplayName || data.name || "User",
               addressLine1: data.addressLine1 || "",
               phone: (userPhone?.replace("+91", "") || data.phone || "").replace(/\D/g, ""),
-              // SECURITY: Never upgrade role if email is missing or doesn't match
-              role: (needsRoleUpgrade && userEmail) ? "superadmin" : data.role,
+              role: (needsRoleUpgrade && userEmail) ? "superadmin" : (data.role || "customer"),
               updated_at: new Date().toISOString(),
             };
             await setDoc(profileRef, updated, { merge: true });

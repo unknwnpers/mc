@@ -55,9 +55,9 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
   };
 
   /**
-   * 2. Stable reCAPTCHA Initialization (ON MOUNT ONLY)
-   * We follow the "Firebase Managed" approach: DO NOT pass a manual sitekey.
-   * Firebase automatically handles the sitekey internally for Phone Auth.
+   * 2. Stable reCAPTCHA Initialization
+   * We re-initialize whenever the component mounts to ensure it's attached
+   * to the CURRENT 'recaptcha-container' div in the DOM.
    */
   useEffect(() => {
     let isMounted = true;
@@ -66,58 +66,42 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const auth = getFirebaseAuth();
       if (!auth || typeof window === "undefined") return;
 
-      const container = document.getElementById("recaptcha-container");
-      if (!container) {
-        console.error("[PhoneAuth] reCAPTCHA container missing on mount");
-        return;
+      // Always clear existing window-level verifier to prevent stale DOM references
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch (e) {}
+        window.recaptchaVerifier = null;
       }
 
-      // Avoid double initialization
-      if (window.recaptchaVerifier || verifierRef.current) {
-        console.log("[PhoneAuth] reCAPTCHA already initialized, skipping...");
-        setIsVerifierReady(true);
-        return;
-      }
+      const container = document.getElementById("recaptcha-container");
+      if (!container) return;
+      container.innerHTML = ""; // Clear any leftover widgets
 
       try {
-        console.log("[PhoneAuth] Initializing Firebase Managed RecaptchaVerifier...");
+        console.log("[PhoneAuth] Initializing RecaptchaVerifier for domain:", window.location.hostname);
 
-        /**
-         * CRITICAL FIX: We do NOT pass 'sitekey' here.
-         * Providing NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY manually often leads to
-         * 'auth/missing-recaptcha-token' because of backend verification mismatches.
-         */
         const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible", // Firebase will trigger a popup challenge if needed
-          callback: (response: any) => {
-            console.log("[PhoneAuth] reCAPTCHA challenge solved successfully");
+          size: "normal", // Visible for troubleshooting
+          callback: () => {
+            console.log("[PhoneAuth] reCAPTCHA challenge solved");
+            setIsVerifierReady(true);
           },
           'expired-callback': () => {
             console.warn("[PhoneAuth] reCAPTCHA expired, resetting...");
-            toast.error("Verification expired. Please try again.");
-            // Reset verifier on expiration
-            if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
-            window.recaptchaVerifier = null;
-            verifierRef.current = null;
             setIsVerifierReady(false);
-            initVerifier(); // Re-init
           }
         });
 
-        // Ensure it's rendered and ready
         await verifier.render();
 
         if (isMounted) {
-          verifierRef.current = verifier;
           window.recaptchaVerifier = verifier;
+          verifierRef.current = verifier;
           setIsVerifierReady(true);
-          console.log("[PhoneAuth] Firebase Managed reCAPTCHA is ready");
+          console.log("[PhoneAuth] reCAPTCHA is ready and rendered");
         }
       } catch (err: any) {
         console.error("[PhoneAuth] Verifier initialization failed:", err);
-        if (isMounted) {
-          setError("Failed to initialize security verification. Please check your internet and refresh.");
-        }
+        if (isMounted) setError("Security check failed to load. Please refresh.");
       }
     }
 
@@ -125,7 +109,10 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
     return () => {
       isMounted = false;
-      // Note: We keep the verifier alive on window to survive hot-reloads
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch (e) {}
+        window.recaptchaVerifier = null;
+      }
     };
   }, []);
 
