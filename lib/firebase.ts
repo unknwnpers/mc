@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getAuth, Auth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, AppCheck, getToken } from "firebase/app-check";
 import { getMessaging, Messaging, isSupported as isMessagingSupported } from "firebase/messaging";
 
 // ─── Firebase Config ─────────────────────────────────────────────────────────
@@ -82,11 +82,11 @@ export function initAppCheck(): AppCheck | null {
 
   try {
     appCheckInstance = initializeAppCheck(getFirebaseApp(), {
-      provider: new ReCaptchaV3Provider(siteKey),
+      provider: new ReCaptchaEnterpriseProvider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
 
-    console.log("[AppCheck] Initialized with V3 key.");
+    console.log("[AppCheck] Initialized with Enterprise provider.");
     return appCheckInstance;
   } catch (err) {
     console.error("[AppCheck] Initialization failed:", err);
