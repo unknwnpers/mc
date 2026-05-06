@@ -42,8 +42,12 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
     if (!window.recaptchaVerifier) {
       console.log("[PhoneAuth] Initializing singleton RecaptchaVerifier");
+
+      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY;
+
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
         size: "invisible",
+        ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
         callback: () => {
           console.log("[PhoneAuth] reCAPTCHA verified");
         }

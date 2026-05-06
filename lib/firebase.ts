@@ -69,34 +69,24 @@ if (typeof window !== "undefined" && auth) {
 
 let appCheckInstance: AppCheck | null = null;
 
-// Google's public demo/test key — only valid on localhost, not a production key.
-const RECAPTCHA_TEST_KEY = "6LeIqbAsAAAAAB7rBp8s504biTN1edFhsUg_KXPb";
-
 export function initAppCheck(): AppCheck | null {
   if (typeof window === "undefined") return null;
   if (appCheckInstance) return appCheckInstance;
 
-  // Only initialize App Check with a genuine reCAPTCHA V3 production key.
-  // The test key (6LeIqbAs...) is NOT valid on real domains.
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY;
-  const isRealKey = !!(siteKey && siteKey.startsWith("6L") && siteKey !== RECAPTCHA_TEST_KEY);
 
-  if (!isRealKey) {
-    console.warn(
-      "[AppCheck] No real reCAPTCHA V3 production key found — App Check not initialized.\n" +
-      "Create a V3 key at https://www.google.com/recaptcha/admin and set NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY.\n" +
-      "If App Check enforcement is ON in Firebase Console, also switch it to 'Monitor' mode until a real key is configured."
-    );
+  if (!siteKey) {
+    console.warn("[AppCheck] NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY not set — App Check not initialized.");
     return null;
   }
 
   try {
     appCheckInstance = initializeAppCheck(getFirebaseApp(), {
-      provider: new ReCaptchaV3Provider(siteKey!),
+      provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
 
-    console.log("[AppCheck] Initialized — Production reCAPTCHA V3");
+    console.log("[AppCheck] Initialized with V3 key.");
     return appCheckInstance;
   } catch (err) {
     console.error("[AppCheck] Initialization failed:", err);
