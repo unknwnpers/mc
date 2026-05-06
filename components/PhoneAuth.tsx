@@ -115,35 +115,33 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       console.log("[PhoneAuth] Initializing Invisible reCAPTCHA...");
 
       /**
-       * auth/invalid-app-credential fix:
-       * When Enterprise is enabled, providing a manual sitekey can cause credential errors.
-       * We attempt managed mode first, then fallback to explicit sitekey.
+       * Optimal reCAPTCHA flow to avoid console 400s:
+       * 1. If a sitekey is provided, we use it. 
+       * 2. If it fails with 'auth/invalid-recaptcha-token' (Mismatched action), 
+       *    it means Enterprise is active and needs managed mode.
+       * 3. If no sitekey is provided, we go straight to managed mode.
        */
       try {
-        console.log("[PhoneAuth] Attempting Managed Enterprise initialization...");
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible",
-          callback: (response: any) => { console.log("[PhoneAuth] Verified"); },
-          "expired-callback": () => {
-            console.log("[PhoneAuth] reCAPTCHA expired");
-            recaptchaInitialized.current = false;
-          }
-        });
-        await window.recaptchaVerifier.render();
+        if (v2SiteKey) {
+          console.log("[PhoneAuth] Initializing with sitekey...");
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+            size: "invisible",
+            sitekey: v2SiteKey,
+            callback: (response: any) => { console.log("[PhoneAuth] Verified"); },
+          });
+          await window.recaptchaVerifier.render();
+        } else {
+          throw new Error("No sitekey, trying managed mode");
+        }
       } catch (e: any) {
-        console.log("[PhoneAuth] Managed mode failed, falling back to sitekey:", e.message);
+        console.log("[PhoneAuth] Sitekey mode failed or missing, trying Managed Enterprise...", e.message);
         if (window.recaptchaVerifier) {
           try { window.recaptchaVerifier.clear(); } catch(inner) {}
         }
 
         window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
           size: "invisible",
-          ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
-          callback: (response: any) => { console.log("[PhoneAuth] Verified (Sitekey Mode)"); },
-          "expired-callback": () => {
-            console.log("[PhoneAuth] reCAPTCHA expired (Sitekey Mode)");
-            recaptchaInitialized.current = false;
-          }
+          callback: (response: any) => { console.log("[PhoneAuth] Verified (Managed)"); },
         });
         await window.recaptchaVerifier.render();
       }
@@ -253,26 +251,18 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const result = await window.confirmationResult.confirm(otp);
       const user = result.user;
 
-      // Save user to Firestore via API
-      const token = await user.getIdToken();
-      await fetch("/api/user/create", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          uid: user.uid,
-          phone: user.phoneNumber,
-          provider: "phone",
-        }),
-      });
+      toast.success("Identity Verified!");
 
-      toast.success("Welcome to MIKS&CHIKS!");
-
-      if (onSuccess) {
-        onSuccess(user);
-      }
+      // Redundant API call removed. lib/auth-context.tsx already handles 
+      // profile synchronization via onAuthStateChanged listener.
+      
+      // Wait a tiny moment for AuthContext state to catch up before redirecting
+      // This prevents "signup time not logged in" flashes
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess(user);
+        }
+      }, 800);
     } catch (err: any) {
       console.error("[PhoneAuth] Verify OTP error:", err);
       handleError(err);
