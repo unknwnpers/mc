@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getAuth, Auth, setPersistence, browserLocalPersistence, initializeRecaptchaConfig } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken, CustomProvider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider, AppCheck, getToken, CustomProvider } from "firebase/app-check";
 import { getMessaging, Messaging, isSupported as isMessagingSupported } from "firebase/messaging";
 
 const firebaseConfig = {
@@ -81,7 +81,7 @@ export function initAppCheck() {
     }
 
     appCheckInstance = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
+      provider: new ReCaptchaEnterpriseProvider(siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
       isTokenAutoRefreshEnabled: true,
     });
 
