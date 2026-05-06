@@ -115,25 +115,38 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       console.log("[PhoneAuth] Initializing Invisible reCAPTCHA...");
 
       /**
-       * TO MAKE RECAPTCHA V2 INVISIBLE:
-       * 1. Set size: "invisible"
-       * 2. Provide the sitekey if available.
-       * 3. Ensure initializeRecaptchaConfig was called if the project uses Enterprise.
+       * auth/invalid-app-credential fix:
+       * When Enterprise is enabled, providing a manual sitekey can cause credential errors.
+       * We attempt managed mode first, then fallback to explicit sitekey.
        */
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-        ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
-        callback: (response: any) => {
-          console.log("[PhoneAuth] Invisible reCAPTCHA verified");
-        },
-        "expired-callback": () => {
-          console.log("[PhoneAuth] reCAPTCHA expired");
-          recaptchaInitialized.current = false;
+      try {
+        console.log("[PhoneAuth] Attempting Managed Enterprise initialization...");
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+          size: "invisible",
+          callback: (response: any) => { console.log("[PhoneAuth] Verified"); },
+          "expired-callback": () => {
+            console.log("[PhoneAuth] reCAPTCHA expired");
+            recaptchaInitialized.current = false;
+          }
+        });
+        await window.recaptchaVerifier.render();
+      } catch (e: any) {
+        console.log("[PhoneAuth] Managed mode failed, falling back to sitekey:", e.message);
+        if (window.recaptchaVerifier) {
+          try { window.recaptchaVerifier.clear(); } catch(inner) {}
         }
-      });
 
-      // Render the invisible widget
-      await window.recaptchaVerifier.render();
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+          size: "invisible",
+          ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
+          callback: (response: any) => { console.log("[PhoneAuth] Verified (Sitekey Mode)"); },
+          "expired-callback": () => {
+            console.log("[PhoneAuth] reCAPTCHA expired (Sitekey Mode)");
+            recaptchaInitialized.current = false;
+          }
+        });
+        await window.recaptchaVerifier.render();
+      }
 
       recaptchaInitialized.current = true;
       return window.recaptchaVerifier;
