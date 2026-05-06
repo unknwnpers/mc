@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getFirebaseAuth } from "@/lib/firebase";
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
-  initializeRecaptchaConfig,
   ConfirmationResult,
   User
 } from "firebase/auth";
@@ -57,7 +56,8 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
   /**
    * 2. Stable reCAPTCHA Initialization (ON MOUNT ONLY)
-   * This prevents "missing-recaptcha-token" errors caused by resetting the verifier
+   * We follow the "Firebase Managed" approach: DO NOT pass a manual sitekey.
+   * Firebase automatically handles the sitekey internally for Phone Auth.
    */
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +72,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         return;
       }
 
-      // Avoid double initialization in React StrictMode
+      // Avoid double initialization
       if (window.recaptchaVerifier || verifierRef.current) {
         console.log("[PhoneAuth] reCAPTCHA already initialized, skipping...");
         setIsVerifierReady(true);
@@ -80,37 +80,44 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       }
 
       try {
-        const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY;
-        if (!v2SiteKey) {
-          throw new Error("Phone Auth configuration (V2 Site Key) is missing");
-        }
+        console.log("[PhoneAuth] Initializing Firebase Managed RecaptchaVerifier...");
 
-        console.log("[PhoneAuth] Initializing stable RecaptchaVerifier...");
-
+        /**
+         * CRITICAL FIX: We do NOT pass 'sitekey' here.
+         * Providing NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY manually often leads to
+         * 'auth/missing-recaptcha-token' because of backend verification mismatches.
+         */
         const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible",
-          sitekey: v2SiteKey,
+          size: "invisible", // Firebase will trigger a popup challenge if needed
           callback: (response: any) => {
             console.log("[PhoneAuth] reCAPTCHA challenge solved successfully");
           },
           'expired-callback': () => {
-            console.warn("[PhoneAuth] reCAPTCHA expired, please try again");
+            console.warn("[PhoneAuth] reCAPTCHA expired, resetting...");
             toast.error("Verification expired. Please try again.");
+            // Reset verifier on expiration
+            if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+            window.recaptchaVerifier = null;
+            verifierRef.current = null;
+            setIsVerifierReady(false);
+            initVerifier(); // Re-init
           }
         });
 
-        // Wait for rendering to complete before allowing usage
+        // Ensure it's rendered and ready
         await verifier.render();
 
         if (isMounted) {
           verifierRef.current = verifier;
           window.recaptchaVerifier = verifier;
           setIsVerifierReady(true);
-          console.log("[PhoneAuth] reCAPTCHA is ready and rendered");
+          console.log("[PhoneAuth] Firebase Managed reCAPTCHA is ready");
         }
       } catch (err: any) {
         console.error("[PhoneAuth] Verifier initialization failed:", err);
-        if (isMounted) setError(err.message);
+        if (isMounted) {
+          setError("Failed to initialize security verification. Please check your internet and refresh.");
+        }
       }
     }
 
@@ -118,9 +125,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
     return () => {
       isMounted = false;
-      // We DO NOT clear the verifier here because Next.js sometimes triggers
-      // fast-refresh or double-mounts that would break the lifecycle.
-      // The singleton check above handles reuse.
+      // Note: We keep the verifier alive on window to survive hot-reloads
     };
   }, []);
 
@@ -135,7 +140,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
   };
 
   /**
-   * 3. Send OTP with authorative verifier check
+   * 3. Send OTP
    */
   const sendOTP = async () => {
     setError(null);
@@ -148,11 +153,6 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
     const appVerifier = window.recaptchaVerifier || verifierRef.current;
     if (!appVerifier || !isVerifierReady) {
       toast.error("Security verification is not ready. Please refresh the page.");
-      console.error("[PhoneAuth] Attempted to send OTP before verifier was ready", {
-        windowObj: !!window.recaptchaVerifier,
-        refObj: !!verifierRef.current,
-        readyState: isVerifierReady
-      });
       return;
     }
 
@@ -163,10 +163,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       if (!auth) throw new Error("Auth instance not found");
 
       const formattedPhone = validation.formatted;
-      console.log("[PhoneAuth] Initiating OTP send to:", formattedPhone);
-
-      // Verify the state of the verifier before proceeding
-      // (Optional: can call await appVerifier.verify() if debugging missing tokens)
+      console.log("[PhoneAuth] Requesting OTP for:", formattedPhone);
 
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       window.confirmationResult = result;
@@ -176,7 +173,23 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       toast.success("OTP sent to your mobile");
     } catch (err: any) {
       console.error("[PhoneAuth] sendOTP error:", err.code, err.message);
+
+      // Reset verifier on failure to prevent stale tokens (Step 4 of analysis)
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch(e) {}
+        window.recaptchaVerifier = null;
+        verifierRef.current = null;
+        setIsVerifierReady(false);
+      }
+
       handleError(err);
+
+      // Attempt to re-initialize verifier for a clean retry
+      const container = document.getElementById("recaptcha-container");
+      if (container) container.innerHTML = "";
+      // The useEffect singleton logic will skip if we don't clear verifierRef,
+      // but we cleared it above, so we might need a manual trigger or state flip.
+      window.location.reload(); // Hard refresh is safest on reCAPTCHA failure
     } finally {
       setLoading(false);
     }
@@ -223,7 +236,8 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       "auth/invalid-verification-code": "Incorrect OTP. Please check and try again.",
       "auth/code-expired": "OTP has expired. Please request a new one.",
       "auth/captcha-check-failed": "Security check failed. Please refresh.",
-      "auth/missing-recaptcha-token": "Security token missing. Please refresh and try again.",
+      "auth/missing-recaptcha-token": "Security token missing or invalid key. Please refresh.",
+      "auth/invalid-app-credential": "App credential invalid. Ensure domain is authorized in Firebase Console.",
     };
 
     const message = errorMessages[code] || err.message || "An unexpected error occurred.";
@@ -274,7 +288,7 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
             ) : lockoutTimer > 0 ? (
                 <span>Wait {formatTime(lockoutTimer)}</span>
             ) : !isVerifierReady ? (
-                <span>Loading security...</span>
+                <span>Initializing security...</span>
             ) : (
               <>
                 <ShieldCheck className="w-5 h-5" />
@@ -324,9 +338,9 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       )}
 
       {/*
-          CRITICAL: Persistent reCAPTCHA container.
-          Must stay in DOM for the entire lifecycle of the verifier.
-          Positioned slightly visible to ensure challenge puzzles can render if needed.
+          CRITICAL: reCAPTCHA container.
+          We use a standard centered div. For 'invisible' size, this is where
+          the challenge puzzle will render if Firebase flags the user.
       */}
       <div
         id="recaptcha-container"
