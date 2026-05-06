@@ -67,92 +67,45 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
     };
   }, []);
 
-  // Setup invisible reCAPTCHA (compatible with reCAPTCHA Enterprise)
+  // Setup invisible reCAPTCHA
   const setupRecaptcha = useCallback(async () => {
-    if (!getFirebaseAuth()) {
-      throw new Error("Firebase Auth not initialized");
-    }
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error("Firebase Auth not initialized");
 
-    if (recaptchaInitialized.current && window.recaptchaVerifier) {
+    if (window.recaptchaVerifier) {
       return window.recaptchaVerifier;
     }
 
     try {
-      // Clear any existing verifier completely
-      if (window.recaptchaVerifier) {
-        try {
-          window.recaptchaVerifier.clear();
-        } catch (e) {
-          // Ignore cleanup errors
+      // Use the specific V2 Invisible key for Phone Auth
+      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY;
+
+      if (!v2SiteKey) {
+        console.error("[PhoneAuth] NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY is missing!");
+        setError("Security configuration error. Please contact support.");
+        toast.error("Phone Auth configuration missing.");
+        return null;
+      }
+
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        sitekey: v2SiteKey,
+        callback: (response: any) => {
+          // reCAPTCHA solved
+        },
+        'expired-callback': () => {
+          setError("reCAPTCHA expired. Please try again.");
+          if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
         }
-        window.recaptchaVerifier = null;
-      }
+      });
 
-      // Clear any leftover reCAPTCHA DOM elements from previous attempts
-      const container = document.getElementById("recaptcha-container");
-      if (container) {
-        container.innerHTML = "";
-      }
-
-      const auth = getFirebaseAuth();
-      if (!auth) {
-        throw new Error("Auth not available");
-      }
-
-      // CRITICAL: For reCAPTCHA Enterprise, we MUST sync config before verifier init.
-      // This prevents the 'Mismatched action' error.
-      try {
-        await initializeRecaptchaConfig(auth);
-        // Small delay to ensure internal SDK state is ready
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (configErr) {
-        console.warn("[PhoneAuth] Enterprise config sync warning:", configErr);
-      }
-
-      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || 
-                        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-
-      console.log("[PhoneAuth] Initializing Invisible reCAPTCHA...");
-
-      /**
-       * Optimal reCAPTCHA flow to avoid console 400s:
-       * 1. If a sitekey is provided, we use it. 
-       * 2. If it fails with 'auth/invalid-recaptcha-token' (Mismatched action), 
-       *    it means Enterprise is active and needs managed mode.
-       * 3. If no sitekey is provided, we go straight to managed mode.
-       */
-      try {
-        if (v2SiteKey) {
-          console.log("[PhoneAuth] Initializing with sitekey...");
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-            size: "invisible",
-            sitekey: v2SiteKey,
-            callback: (response: any) => { console.log("[PhoneAuth] Verified"); },
-          });
-          await window.recaptchaVerifier.render();
-        } else {
-          throw new Error("No sitekey, trying managed mode");
-        }
-      } catch (e: any) {
-        console.log("[PhoneAuth] Sitekey mode failed or missing, trying Managed Enterprise...", e.message);
-        if (window.recaptchaVerifier) {
-          try { window.recaptchaVerifier.clear(); } catch(inner) {}
-        }
-
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible",
-          callback: (response: any) => { console.log("[PhoneAuth] Verified (Managed)"); },
-        });
-        await window.recaptchaVerifier.render();
-      }
-
-      recaptchaInitialized.current = true;
+      await window.recaptchaVerifier.render();
       return window.recaptchaVerifier;
     } catch (err) {
       console.error("[PhoneAuth] reCAPTCHA setup failed:", err);
-      recaptchaInitialized.current = false;
       window.recaptchaVerifier = null;
-      throw new Error("Failed to initialize security verification. Please refresh and try again.");
+      throw new Error("Security verification failed. Please refresh the page.");
     }
   }, []);
 
@@ -460,14 +413,10 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         </div>
       )}
 
-      {/* reCAPTCHA container — must NOT use display:none or className="hidden".
-          Firebase RecaptchaVerifier needs the element to be in the DOM layout
-          to render the invisible widget. Using a fixed, small, nearly invisible 
-          container at the bottom of the screen for best compatibility. */}
+      {/* reCAPTCHA container — Invisible mode */}
       <div
         id="recaptcha-container"
-        className="fixed bottom-0 right-0 w-[1px] h-[1px] opacity-0 pointer-events-none overflow-hidden z-[-1]"
-        aria-hidden="true"
+        className="flex justify-center"
       />
     </div>
   );

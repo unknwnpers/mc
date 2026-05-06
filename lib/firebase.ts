@@ -258,15 +258,17 @@ export const db: Firestore = firebaseApp ? getFirestore(firebaseApp) : (null as 
 export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
 export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
 
-// Set auth persistence and Enterprise config
+// Set auth persistence
 if (typeof window !== "undefined" && auth) {
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   
-  // Initialize reCAPTCHA Enterprise config globally to prevent "Mismatched action" errors
-  // in projects where reCAPTCHA Enterprise is enabled for Authentication.
-  initializeRecaptchaConfig(auth).catch((err) => {
-    console.warn("[Firebase] Auth Recaptcha Enterprise config init failed:", err);
-  });
+  // NOTE: initializeRecaptchaConfig is primarily for reCAPTCHA Enterprise.
+  // We initialize it here but catch errors to avoid breaking standard v2 Phone Auth.
+  if (process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_PROJECT_ID) {
+    initializeRecaptchaConfig(auth).catch((err) => {
+      console.warn("[Firebase] Auth reCAPTCHA Enterprise config init failed (expected if not using Enterprise):", err);
+    });
+  }
 }
 
 // Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
