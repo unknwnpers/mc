@@ -76,15 +76,21 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       return window.recaptchaVerifier;
     }
 
+    // CRITICAL: Sync Enterprise config to prevent "Mismatched action" errors
+    try {
+      await initializeRecaptchaConfig(auth);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (e) {
+      console.warn("[PhoneAuth] Enterprise sync skipped:", e);
+    }
+
     try {
       // Use the specific V2 Invisible key for Phone Auth
-      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY;
+      const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || 
+                        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
       if (!v2SiteKey) {
-        console.error("[PhoneAuth] NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY is missing!");
-        setError("Security configuration error. Please contact support.");
-        toast.error("Phone Auth configuration missing.");
-        return null;
+        throw new Error("Security configuration error: Site key missing.");
       }
 
       window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
@@ -102,10 +108,10 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
       await window.recaptchaVerifier.render();
       return window.recaptchaVerifier;
-    } catch (err) {
+    } catch (err: any) {
       console.error("[PhoneAuth] reCAPTCHA setup failed:", err);
       window.recaptchaVerifier = null;
-      throw new Error("Security verification failed. Please refresh the page.");
+      throw new Error(err.message || "Security verification failed. Please refresh the page.");
     }
   }, []);
 
