@@ -73,38 +73,39 @@ export function initAppCheck(): AppCheck | null {
   if (typeof window === "undefined") return null;
   if (appCheckInstance) return appCheckInstance;
 
-  // App Check requires a reCAPTCHA V3 site key.
-  // NEVER use the Phone Auth (V2 Invisible) key here — it will cause token errors.
-  const siteKey =
-    process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY ||
-    process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK ||
-    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  // App Check requires a real reCAPTCHA V3 site key (starts with '6L').
+  // NEXT_PUBLIC_FIREBASE_APP_CHECK is a UUID debug token — NOT a site key.
+  // NEVER pass a UUID or V2 key to ReCaptchaV3Provider.
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY;
 
-  if (!siteKey) {
-    console.warn("[AppCheck] No reCAPTCHA V3 site key found. App Check will not be initialized.");
+  // The debug token (UUID) is set separately to FIREBASE_APPCHECK_DEBUG_TOKEN
+  const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_DEBUG ||
+                     process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK;
+
+  const isLocalhost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
+  // On localhost: use debug token (UUID) if available, else auto-generate one.
+  // Firebase will print the generated token to the console — register it at:
+  //   Firebase Console → App Check → Apps → Manage Debug Tokens
+  if (isLocalhost || debugToken) {
+    // @ts-ignore
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken || true;
+  }
+
+  // If no real V3 reCAPTCHA site key is available, skip App Check entirely.
+  // Phone Auth will still work via RecaptchaVerifier (V2 Invisible).
+  if (!siteKey || !siteKey.startsWith("6L")) {
+    console.warn(
+      "[AppCheck] No real reCAPTCHA V3 site key found (NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY).\n" +
+      "App Check will not be initialized. Phone Auth will use its own V2 verifier."
+    );
     return null;
   }
 
   try {
     const firebaseApp = getFirebaseApp();
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-
-    const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_DEBUG;
-
-    // In local development: use the debug token from .env if provided,
-    // otherwise set to `true` so Firebase auto-generates one and prints it
-    // to the console. You must then register that token in the Firebase Console
-    // under App Check > Apps > Manage Debug Tokens.
-    if (isLocalhost) {
-      // @ts-ignore
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken || true;
-    } else if (debugToken) {
-      // Allow debug token on non-localhost (e.g. staging) if explicitly set
-      // @ts-ignore
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
-    }
 
     appCheckInstance = initializeAppCheck(firebaseApp, {
       provider: new ReCaptchaV3Provider(siteKey),
