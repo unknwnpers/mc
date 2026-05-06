@@ -6,12 +6,18 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
-  User
+  User,
 } from "firebase/auth";
 import { toast } from "sonner";
-import { Phone, ArrowRight, Loader2, RefreshCw, ShieldCheck, Clock, AlertCircle } from "lucide-react";
+import {
+  Phone,
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  AlertCircle,
+} from "lucide-react";
 
-// Extend Window type for recaptcha
 declare global {
   interface Window {
     recaptchaVerifier: RecaptchaVerifier | null;
@@ -24,7 +30,7 @@ interface PhoneAuthProps {
   redirectPath?: string;
 }
 
-export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthProps) {
+export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -32,159 +38,151 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
   const [timer, setTimer] = useState(0);
   const [lockoutTimer, setLockoutTimer] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isVerifierReady, setIsVerifierReady] = useState(false);
 
-  const verifierRef = useRef<RecaptchaVerifier | null>(null);
+  const isMounted = useRef(true);
 
-  // 1. Countdown timer for resend and lockout
+  // Countdown timer
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (timer > 0 || lockoutTimer > 0) {
-      interval = setInterval(() => {
-        setTimer((t) => (t > 0 ? t - 1 : 0));
-        setLockoutTimer((lt) => (lt > 0 ? lt - 1 : 0));
-      }, 1000);
-    }
+    if (timer <= 0 && lockoutTimer <= 0) return;
+    const interval = setInterval(() => {
+      setTimer((t) => Math.max(0, t - 1));
+      setLockoutTimer((lt) => Math.max(0, lt - 1));
+    }, 1000);
     return () => clearInterval(interval);
   }, [timer, lockoutTimer]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  /**
-   * 2. Stable reCAPTCHA Initialization
-   * We re-initialize whenever the component mounts to ensure it's attached
-   * to the CURRENT 'recaptcha-container' div in the DOM.
-   */
+  // Initialize invisible reCAPTCHA once on mount
   useEffect(() => {
-    let isMounted = true;
-
-    async function initVerifier() {
-      const auth = getFirebaseAuth();
-      if (!auth || typeof window === "undefined") return;
-
-      // Always clear existing window-level verifier to prevent stale DOM references
-      if (window.recaptchaVerifier) {
-        try { window.recaptchaVerifier.clear(); } catch (e) {}
-        window.recaptchaVerifier = null;
-      }
-
-      const container = document.getElementById("recaptcha-container");
-      if (!container) return;
-      container.innerHTML = ""; // Clear any leftover widgets
-
-      try {
-        console.log("[PhoneAuth] Initializing RecaptchaVerifier for domain:", window.location.hostname);
-
-        const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "normal", // Visible for troubleshooting
-          callback: () => {
-            console.log("[PhoneAuth] reCAPTCHA challenge solved");
-            setIsVerifierReady(true);
-          },
-          'expired-callback': () => {
-            console.warn("[PhoneAuth] reCAPTCHA expired, resetting...");
-            setIsVerifierReady(false);
-          }
-        });
-
-        await verifier.render();
-
-        if (isMounted) {
-          window.recaptchaVerifier = verifier;
-          verifierRef.current = verifier;
-          setIsVerifierReady(true);
-          console.log("[PhoneAuth] reCAPTCHA is ready and rendered");
-        }
-      } catch (err: any) {
-        console.error("[PhoneAuth] Verifier initialization failed:", err);
-        if (isMounted) setError("Security check failed to load. Please refresh.");
-      }
-    }
-
+    isMounted.current = true;
     initVerifier();
 
     return () => {
-      isMounted = false;
-      if (window.recaptchaVerifier) {
-        try { window.recaptchaVerifier.clear(); } catch (e) {}
-        window.recaptchaVerifier = null;
-      }
+      isMounted.current = false;
+      clearVerifier();
     };
   }, []);
 
-  // Validate Indian phone number
-  const validatePhone = (phone: string): { valid: boolean; formatted: string; error?: string } => {
-    const digits = phone.replace(/\D/g, "");
-    if (digits.startsWith("91") && digits.length === 12) return { valid: true, formatted: `+${digits}` };
-    if (digits.length === 10 && /^[6-9]/.test(digits)) return { valid: true, formatted: `+91${digits}` };
-    if (digits.length < 10) return { valid: false, formatted: "", error: "Phone number is too short" };
-    if (digits.length > 12) return { valid: false, formatted: "", error: "Phone number is too long" };
-    return { valid: false, formatted: "", error: "Invalid Indian phone number" };
-  };
+  function clearVerifier() {
+    if (window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier.clear();
+      } catch (_) {}
+      window.recaptchaVerifier = null;
+    }
+    const el = document.getElementById("recaptcha-container");
+    if (el) el.innerHTML = "";
+  }
 
-  /**
-   * 3. Send OTP
-   */
-  const sendOTP = async () => {
+  async function initVerifier() {
+    const auth = getFirebaseAuth();
+    if (!auth || typeof window === "undefined") return;
+
+    clearVerifier();
+
+    const siteKey =
+      process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY ||
+      process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+    if (!siteKey) {
+      console.error("[PhoneAuth] No reCAPTCHA site key found in environment variables.");
+      return;
+    }
+
+    try {
+      const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",           // INVISIBLE — no checkbox shown to user
+        sitekey: siteKey,
+        callback: () => {
+          console.log("[PhoneAuth] reCAPTCHA solved");
+        },
+        "expired-callback": () => {
+          console.warn("[PhoneAuth] reCAPTCHA expired — re-initializing");
+          if (isMounted.current) initVerifier();
+        },
+      });
+
+      await verifier.render();
+
+      if (isMounted.current) {
+        window.recaptchaVerifier = verifier;
+        console.log("[PhoneAuth] Invisible reCAPTCHA ready");
+      }
+    } catch (err: any) {
+      console.error("[PhoneAuth] reCAPTCHA init failed:", err.message);
+      if (isMounted.current) {
+        setError("Security check failed to load. Please refresh the page.");
+      }
+    }
+  }
+
+  // Validate Indian phone number
+  function validatePhone(raw: string): { valid: boolean; formatted: string; error?: string } {
+    const digits = raw.replace(/\D/g, "");
+    if (digits.startsWith("91") && digits.length === 12)
+      return { valid: true, formatted: `+${digits}` };
+    if (digits.length === 10 && /^[6-9]/.test(digits))
+      return { valid: true, formatted: `+91${digits}` };
+    if (digits.length < 10) return { valid: false, formatted: "", error: "Phone number too short" };
+    return { valid: false, formatted: "", error: "Invalid Indian phone number" };
+  }
+
+  // Send OTP
+  async function sendOTP() {
     setError(null);
+
     const validation = validatePhone(phone);
     if (!validation.valid) {
       setError(validation.error || "Invalid phone number");
       return;
     }
 
-    const appVerifier = window.recaptchaVerifier || verifierRef.current;
-    if (!appVerifier || !isVerifierReady) {
-      toast.error("Security verification is not ready. Please refresh the page.");
+    if (!window.recaptchaVerifier) {
+      setError("Security check not ready. Please wait a moment and try again.");
+      // Try re-initializing
+      await initVerifier();
       return;
     }
 
     setLoading(true);
-
     try {
       const auth = getFirebaseAuth();
-      if (!auth) throw new Error("Auth instance not found");
+      if (!auth) throw new Error("Firebase Auth not initialized");
 
-      const formattedPhone = validation.formatted;
-      console.log("[PhoneAuth] Requesting OTP for:", formattedPhone);
+      console.log("[PhoneAuth] Sending OTP to:", validation.formatted);
 
-      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      // signInWithPhoneNumber handles reCAPTCHA token generation internally
+      const result = await signInWithPhoneNumber(
+        auth,
+        validation.formatted,
+        window.recaptchaVerifier
+      );
+
       window.confirmationResult = result;
-
       setStep("otp");
       setTimer(30);
-      toast.success("OTP sent to your mobile");
+      toast.success("OTP sent to your mobile!");
     } catch (err: any) {
       console.error("[PhoneAuth] sendOTP error:", err.code, err.message);
-
-      // Reset verifier on failure to prevent stale tokens (Step 4 of analysis)
-      if (window.recaptchaVerifier) {
-        try { window.recaptchaVerifier.clear(); } catch(e) {}
-        window.recaptchaVerifier = null;
-        verifierRef.current = null;
-        setIsVerifierReady(false);
-      }
-
       handleError(err);
 
-      // Attempt to re-initialize verifier for a clean retry
-      const container = document.getElementById("recaptcha-container");
-      if (container) container.innerHTML = "";
-      // The useEffect singleton logic will skip if we don't clear verifierRef,
-      // but we cleared it above, so we might need a manual trigger or state flip.
-      window.location.reload(); // Hard refresh is safest on reCAPTCHA failure
+      // Re-initialize reCAPTCHA cleanly after failure — NO page reload
+      await initVerifier();
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const verifyOTP = async () => {
+  // Verify OTP
+  async function verifyOTP() {
     if (!otp || otp.length < 6) {
       setError("Please enter the 6-digit code");
+      return;
+    }
+    if (!window.confirmationResult) {
+      setError("Session expired. Please request a new OTP.");
       return;
     }
 
@@ -192,69 +190,78 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
     setError(null);
 
     try {
-      if (!window.confirmationResult) {
-        throw new Error("Verification session expired. Please resend OTP.");
-      }
-
       const result = await window.confirmationResult.confirm(otp);
-      toast.success("Verified successfully!");
+      toast.success("Phone verified successfully!");
 
-      if (onSuccess) onSuccess(result.user);
+      // Small delay to allow AuthContext to pick up the new user state
+      setTimeout(() => {
+        if (onSuccess) onSuccess(result.user);
+      }, 500);
     } catch (err: any) {
       console.error("[PhoneAuth] verifyOTP error:", err.code, err.message);
       handleError(err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleError = (err: any) => {
-    const code = err.code || "";
+  function handleError(err: any) {
+    const code = err?.code || "";
 
     if (code === "auth/too-many-requests") {
-      setLockoutTimer(900); // 15 min
-      setError("Security block: Too many attempts. Please try again after 15 minutes.");
+      setLockoutTimer(900);
+      setError("Too many attempts. Please wait 15 minutes before trying again.");
       return;
     }
 
-    const errorMessages: Record<string, string> = {
-      "auth/invalid-phone-number": "The phone number is invalid.",
-      "auth/quota-exceeded": "SMS limit reached. Please try Google login.",
-      "auth/invalid-verification-code": "Incorrect OTP. Please check and try again.",
+    const messages: Record<string, string> = {
+      "auth/invalid-phone-number": "The phone number is not valid.",
+      "auth/quota-exceeded": "SMS quota exceeded. Please try Google sign-in.",
+      "auth/invalid-verification-code": "Incorrect OTP. Please try again.",
       "auth/code-expired": "OTP has expired. Please request a new one.",
       "auth/captcha-check-failed": "Security check failed. Please refresh.",
-      "auth/missing-recaptcha-token": "Security token missing or invalid key. Please refresh.",
-      "auth/invalid-app-credential": "App credential invalid. Ensure domain is authorized in Firebase Console.",
+      "auth/missing-recaptcha-token": "Security token missing. Refreshing security check...",
+      "auth/invalid-recaptcha-token": "Security token mismatch. Refreshing security check...",
+      "auth/invalid-app-credential": "App credential error. Ensure your domain is authorized in Firebase Console.",
     };
 
-    const message = errorMessages[code] || err.message || "An unexpected error occurred.";
+    const message = messages[code] || err.message || "An unexpected error occurred.";
     setError(message);
     toast.error(message);
-  };
+  }
 
-  const resendOTP = async () => {
+  async function resendOTP() {
     if (timer > 0) return;
     setOtp("");
-    await sendOTP();
-  };
+    setStep("phone");
+    // Wait for DOM to update before re-sending
+    setTimeout(() => sendOTP(), 100);
+  }
 
   return (
     <div className="w-full">
       {step === "phone" && (
         <div className="space-y-4">
+          {/* Phone input */}
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
               <Phone className="w-5 h-5" />
             </div>
-            <span className="absolute left-12 top-1/2 -translate-y-1/2 text-gray-600 font-medium">
+            <span className="absolute left-12 top-1/2 -translate-y-1/2 text-gray-600 font-medium text-sm">
               +91
             </span>
             <input
+              id="phone-input"
               type="tel"
+              inputMode="numeric"
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 10))}
-              placeholder="Mobile number"
+              onChange={(e) =>
+                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+              }
+              onKeyDown={(e) => e.key === "Enter" && sendOTP()}
+              placeholder="10-digit mobile number"
               className="w-full pl-20 pr-4 py-4 rounded-2xl border border-gray-200 focus:border-blush focus:ring-2 focus:ring-blush/20 outline-none text-lg font-medium transition-all"
+              autoComplete="tel"
             />
           </div>
 
@@ -266,16 +273,15 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
           )}
 
           <button
+            id="send-otp-btn"
             onClick={sendOTP}
-            disabled={loading || phone.length < 10 || lockoutTimer > 0 || !isVerifierReady}
+            disabled={loading || phone.length < 10 || lockoutTimer > 0}
             className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blush to-rose-400 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : lockoutTimer > 0 ? (
-                <span>Wait {formatTime(lockoutTimer)}</span>
-            ) : !isVerifierReady ? (
-                <span>Initializing security...</span>
+              <span>Wait {formatTime(lockoutTimer)}</span>
             ) : (
               <>
                 <ShieldCheck className="w-5 h-5" />
@@ -290,34 +296,66 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       {step === "otp" && (
         <div className="space-y-4">
           <div className="text-center mb-2">
-            <p className="text-gray-500 text-sm">Code sent to +91 {phone}</p>
-            <button onClick={() => setStep("phone")} className="text-blush text-xs font-bold hover:underline">Change number</button>
+            <p className="text-gray-500 text-sm">
+              Code sent to <span className="font-semibold">+91 {phone}</span>
+            </p>
+            <button
+              onClick={() => {
+                setStep("phone");
+                setOtp("");
+                setError(null);
+              }}
+              className="text-blush text-xs font-bold hover:underline mt-1"
+            >
+              Change number
+            </button>
           </div>
 
           <input
+            id="otp-input"
             type="text"
             inputMode="numeric"
             value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            onChange={(e) =>
+              setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
+            onKeyDown={(e) => e.key === "Enter" && verifyOTP()}
             placeholder="6-digit OTP"
             className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:border-blush outline-none text-2xl font-bold tracking-[0.5em] text-center transition-all"
             autoFocus
+            autoComplete="one-time-code"
           />
 
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <button
+            id="verify-otp-btn"
             onClick={verifyOTP}
             disabled={loading || otp.length < 6}
             className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blush to-rose-400 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Verify OTP</span>}
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <span>Verify OTP</span>
+            )}
           </button>
 
           <div className="text-center">
             {timer > 0 ? (
               <p className="text-gray-400 text-xs">Resend code in {timer}s</p>
             ) : (
-              <button onClick={resendOTP} className="text-blush text-xs font-bold flex items-center gap-1 mx-auto hover:underline">
-                <RefreshCw className="w-3 h-3" /> Resend OTP
+              <button
+                onClick={resendOTP}
+                className="text-blush text-xs font-bold flex items-center gap-1 mx-auto hover:underline"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Resend OTP
               </button>
             )}
           </div>
@@ -325,13 +363,14 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       )}
 
       {/*
-          CRITICAL: reCAPTCHA container.
-          We use a standard centered div. For 'invisible' size, this is where
-          the challenge puzzle will render if Firebase flags the user.
+        INVISIBLE reCAPTCHA container.
+        Must exist in DOM at all times. Using fixed 1×1 off-screen placement
+        so Firebase can attach the invisible widget without layout disruption.
       */}
       <div
         id="recaptcha-container"
-        className="flex justify-center my-2 min-h-[1px]"
+        className="fixed bottom-0 right-0 w-px h-px overflow-hidden opacity-0 pointer-events-none"
+        aria-hidden="true"
       />
     </div>
   );
