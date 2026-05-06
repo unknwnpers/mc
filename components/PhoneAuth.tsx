@@ -54,11 +54,10 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
   const formatTime = (s: number) =>
     `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  // Initialize invisible reCAPTCHA once on mount
+  // Initialize reCAPTCHA on mount
   useEffect(() => {
     isMounted.current = true;
     initVerifier();
-
     return () => {
       isMounted.current = false;
       clearVerifier();
@@ -67,54 +66,81 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
 
   function clearVerifier() {
     if (window.recaptchaVerifier) {
-      try {
-        window.recaptchaVerifier.clear();
-      } catch (_) {}
+      try { window.recaptchaVerifier.clear(); } catch (_) {}
       window.recaptchaVerifier = null;
     }
     const el = document.getElementById("recaptcha-container");
     if (el) el.innerHTML = "";
   }
 
-  async function initVerifier() {
+  async function initVerifier(): Promise<RecaptchaVerifier | null> {
     const auth = getFirebaseAuth();
-    if (!auth || typeof window === "undefined") return;
+    if (!auth || typeof window === "undefined") return null;
 
     clearVerifier();
 
+    const auth2 = getFirebaseAuth()!;
+
+    /**
+     * STRATEGY: Try Enterprise Managed mode first (no sitekey).
+     * Firebase projects with reCAPTCHA Enterprise REQUIRE this — passing
+     * a V2 sitekey to RecaptchaVerifier on Enterprise projects throws an error.
+     *
+     * If Enterprise isn't configured, we fall back to an explicit sitekey.
+     */
+    try {
+      console.log("[PhoneAuth] Trying Enterprise managed mode (no sitekey)...");
+      const verifier = new RecaptchaVerifier(auth2, "recaptcha-container", {
+        size: "invisible",
+        callback: () => console.log("[PhoneAuth] reCAPTCHA solved (Enterprise)"),
+        "expired-callback": () => {
+          console.warn("[PhoneAuth] reCAPTCHA expired");
+          if (isMounted.current) initVerifier();
+        },
+      });
+      await verifier.render();
+
+      if (isMounted.current) {
+        window.recaptchaVerifier = verifier;
+        console.log("[PhoneAuth] ✅ Enterprise managed reCAPTCHA ready");
+      }
+      return verifier;
+    } catch (enterpriseErr: any) {
+      console.warn("[PhoneAuth] Enterprise mode failed:", enterpriseErr.message);
+      clearVerifier();
+    }
+
+    // Fallback: use explicit V2 invisible sitekey
     const siteKey =
       process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY ||
       process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
     if (!siteKey) {
-      console.error("[PhoneAuth] No reCAPTCHA site key found in environment variables.");
-      return;
+      console.error("[PhoneAuth] No reCAPTCHA site key in environment. Set NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY.");
+      return null;
     }
 
     try {
-      const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",           // INVISIBLE — no checkbox shown to user
+      console.log("[PhoneAuth] Trying V2 invisible mode with sitekey...");
+      const verifier = new RecaptchaVerifier(auth2, "recaptcha-container", {
+        size: "invisible",
         sitekey: siteKey,
-        callback: () => {
-          console.log("[PhoneAuth] reCAPTCHA solved");
-        },
+        callback: () => console.log("[PhoneAuth] reCAPTCHA solved (V2)"),
         "expired-callback": () => {
-          console.warn("[PhoneAuth] reCAPTCHA expired — re-initializing");
+          console.warn("[PhoneAuth] reCAPTCHA expired");
           if (isMounted.current) initVerifier();
         },
       });
-
       await verifier.render();
 
       if (isMounted.current) {
         window.recaptchaVerifier = verifier;
-        console.log("[PhoneAuth] Invisible reCAPTCHA ready");
+        console.log("[PhoneAuth] ✅ V2 invisible reCAPTCHA ready");
       }
-    } catch (err: any) {
-      console.error("[PhoneAuth] reCAPTCHA init failed:", err.message);
-      if (isMounted.current) {
-        setError("Security check failed to load. Please refresh the page.");
-      }
+      return verifier;
+    } catch (v2Err: any) {
+      console.error("[PhoneAuth] V2 mode also failed:", v2Err.message);
+      return null;
     }
   }
 
@@ -125,11 +151,11 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
       return { valid: true, formatted: `+${digits}` };
     if (digits.length === 10 && /^[6-9]/.test(digits))
       return { valid: true, formatted: `+91${digits}` };
-    if (digits.length < 10) return { valid: false, formatted: "", error: "Phone number too short" };
+    if (digits.length < 10)
+      return { valid: false, formatted: "", error: "Phone number too short" };
     return { valid: false, formatted: "", error: "Invalid Indian phone number" };
   }
 
-  // Send OTP
   async function sendOTP() {
     setError(null);
 
@@ -139,25 +165,31 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
       return;
     }
 
-    if (!window.recaptchaVerifier) {
-      setError("Security check not ready. Please wait a moment and try again.");
-      // Try re-initializing
-      await initVerifier();
-      return;
-    }
-
     setLoading(true);
     try {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error("Firebase Auth not initialized");
 
+      // Ensure verifier is ready — initialize on-demand if not
+      let appVerifier = window.recaptchaVerifier;
+      if (!appVerifier) {
+        console.log("[PhoneAuth] Verifier not ready, initializing now...");
+        appVerifier = await initVerifier();
+      }
+
+      if (!appVerifier) {
+        throw new Error(
+          "Security check could not be loaded. Please check your internet connection or disable VPN/ad-blockers and try again."
+        );
+      }
+
       console.log("[PhoneAuth] Sending OTP to:", validation.formatted);
 
-      // signInWithPhoneNumber handles reCAPTCHA token generation internally
+      // Let signInWithPhoneNumber internally call reCAPTCHA with the correct action
       const result = await signInWithPhoneNumber(
         auth,
         validation.formatted,
-        window.recaptchaVerifier
+        appVerifier
       );
 
       window.confirmationResult = result;
@@ -167,15 +199,14 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
     } catch (err: any) {
       console.error("[PhoneAuth] sendOTP error:", err.code, err.message);
       handleError(err);
-
-      // Re-initialize reCAPTCHA cleanly after failure — NO page reload
-      await initVerifier();
+      // Re-init cleanly for retry — no page reload
+      clearVerifier();
+      setTimeout(() => initVerifier(), 300);
     } finally {
       setLoading(false);
     }
   }
 
-  // Verify OTP
   async function verifyOTP() {
     if (!otp || otp.length < 6) {
       setError("Please enter the 6-digit code");
@@ -192,8 +223,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
     try {
       const result = await window.confirmationResult.confirm(otp);
       toast.success("Phone verified successfully!");
-
-      // Small delay to allow AuthContext to pick up the new user state
+      // Delay to allow AuthContext to propagate the new user state
       setTimeout(() => {
         if (onSuccess) onSuccess(result.user);
       }, 500);
@@ -219,30 +249,32 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
       "auth/quota-exceeded": "SMS quota exceeded. Please try Google sign-in.",
       "auth/invalid-verification-code": "Incorrect OTP. Please try again.",
       "auth/code-expired": "OTP has expired. Please request a new one.",
-      "auth/captcha-check-failed": "Security check failed. Please refresh.",
-      "auth/missing-recaptcha-token": "Security token missing. Refreshing security check...",
-      "auth/invalid-recaptcha-token": "Security token mismatch. Refreshing security check...",
-      "auth/invalid-app-credential": "App credential error. Ensure your domain is authorized in Firebase Console.",
+      "auth/captcha-check-failed": "Security check failed. Please try again.",
+      "auth/missing-recaptcha-token": "Security token missing. Please try again.",
+      "auth/invalid-recaptcha-token": "Security token mismatch. Please try again.",
+      "auth/invalid-app-credential":
+        "Domain not authorized. Please ensure your domain is added to Firebase Console → Authentication → Settings → Authorized domains.",
     };
 
-    const message = messages[code] || err.message || "An unexpected error occurred.";
+    const message =
+      messages[code] ||
+      err.message ||
+      "An unexpected error occurred. Please try again.";
     setError(message);
     toast.error(message);
   }
 
-  async function resendOTP() {
+  function resendOTP() {
     if (timer > 0) return;
     setOtp("");
     setStep("phone");
-    // Wait for DOM to update before re-sending
-    setTimeout(() => sendOTP(), 100);
+    setTimeout(() => sendOTP(), 150);
   }
 
   return (
     <div className="w-full">
       {step === "phone" && (
         <div className="space-y-4">
-          {/* Phone input */}
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
               <Phone className="w-5 h-5" />
@@ -266,8 +298,8 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -327,8 +359,8 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
           />
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -364,8 +396,8 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
 
       {/*
         INVISIBLE reCAPTCHA container.
-        Must exist in DOM at all times. Using fixed 1×1 off-screen placement
-        so Firebase can attach the invisible widget without layout disruption.
+        Fixed 1×1 off-screen — Firebase needs it in DOM but it must not be visible.
+        DO NOT use display:none — that breaks invisible reCAPTCHA on mobile.
       */}
       <div
         id="recaptcha-container"
