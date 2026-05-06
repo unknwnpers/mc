@@ -5,6 +5,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  initializeRecaptchaConfig,
   ConfirmationResult,
   User
 } from "firebase/auth";
@@ -77,7 +78,8 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       container.innerHTML = ""; // Clear any leftover widgets
 
       try {
-        console.log("[PhoneAuth] Initializing RecaptchaVerifier for domain:", window.location.hostname);
+        console.log("[PhoneAuth] Syncing security configuration...");
+        await initializeRecaptchaConfig(auth);
 
         const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
           size: "normal", // Visible for troubleshooting
