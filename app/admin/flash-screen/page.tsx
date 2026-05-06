@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { uploadImageWithTracking, validateImageFile } from "@/lib/storage";
+import { validateImageFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { Save, UploadCloud, Link as LinkIcon, MonitorPlay, Loader2, Image as ImageIcon } from "lucide-react";
 
@@ -61,6 +61,25 @@ export default function AdminFlashScreenPage() {
     }
   };
 
+  const uploadViaServer = async (file: File, storagePath: string): Promise<string> => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("path", storagePath);
+
+    const res = await fetch("/api/admin/upload-image", {
+      method: "POST",
+      body: form,
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Upload failed");
+    }
+
+    const data = await res.json();
+    return data.url;
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -68,29 +87,21 @@ export default function AdminFlashScreenPage() {
       let finalDesktopUrl = desktopImagePreview;
       let finalMobileUrl = mobileImagePreview;
 
-      // Upload Desktop Image
+      // Upload Desktop Image via Admin SDK server route (bypasses Storage rules)
       if (desktopFile) {
-        const { url } = await uploadImageWithTracking(desktopFile, {
-          entityType: "system",
-          entityId: "flashScreen",
-          variant: "original",
-          fileName: "flash_desktop",
-        });
-        finalDesktopUrl = url;
+        const timestamp = Date.now();
+        const path = `system/flashScreen/original/${timestamp}-flash-desktop`;
+        finalDesktopUrl = await uploadViaServer(desktopFile, path);
       }
 
-      // Upload Mobile Image
+      // Upload Mobile Image via Admin SDK server route
       if (mobileFile) {
-        const { url } = await uploadImageWithTracking(mobileFile, {
-          entityType: "system",
-          entityId: "flashScreen",
-          variant: "original",
-          fileName: "flash_mobile",
-        });
-        finalMobileUrl = url;
+        const timestamp = Date.now();
+        const path = `system/flashScreen/original/${timestamp}-flash-mobile`;
+        finalMobileUrl = await uploadViaServer(mobileFile, path);
       }
 
-      // Save via secure API route to bypass Firebase permission rules
+      // Save config via secure API route
       const response = await fetch("/api/settings/flash-screen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
