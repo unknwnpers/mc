@@ -81,7 +81,7 @@ export function initAppCheck() {
     }
 
     appCheckInstance = initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
+      provider: new ReCaptchaV3Provider(siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
       isTokenAutoRefreshEnabled: true,
     });
 

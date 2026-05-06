@@ -99,13 +99,12 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
         throw new Error("Auth not available");
       }
 
-      // CRITICAL: Force synchronization with reCAPTCHA Enterprise settings.
-      // We call it once and wait slightly to ensure the internal SDK state is updated.
+      // CRITICAL: For reCAPTCHA Enterprise, we MUST sync config before verifier init.
+      // This prevents the 'Mismatched action' error.
       try {
-        console.log("[PhoneAuth] Syncing reCAPTCHA Enterprise config...");
         await initializeRecaptchaConfig(auth);
-        // Small delay to ensure SDK internal state catches up
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Small delay to ensure internal SDK state is ready
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (configErr) {
         console.warn("[PhoneAuth] Enterprise config sync warning:", configErr);
       }
@@ -113,51 +112,28 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
       const v2SiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || 
                         process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-      console.log("[PhoneAuth] Initializing RecaptchaVerifier...");
+      console.log("[PhoneAuth] Initializing Invisible reCAPTCHA...");
 
       /**
-       * Mismatched action (auth/invalid-recaptcha-token) fix:
-       * When reCAPTCHA Enterprise is enabled, providing a manual sitekey to RecaptchaVerifier
-       * can sometimes force it into 'standard' mode, which doesn't send the required
-       * 'signInWithPhoneNumber' action name. 
-       * 
-       * We first try to initialize WITHOUT a sitekey (managed Enterprise mode).
-       * If that throws a 'sitekey required' error, we fallback to using the provided sitekey.
+       * TO MAKE RECAPTCHA V2 INVISIBLE:
+       * 1. Set size: "invisible"
+       * 2. Provide the sitekey if available.
+       * 3. Ensure initializeRecaptchaConfig was called if the project uses Enterprise.
        */
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible",
-          callback: () => { console.log("[PhoneAuth] reCAPTCHA solved"); },
-          "expired-callback": () => {
-            setError("reCAPTCHA expired. Please try again.");
-            recaptchaInitialized.current = false;
-          },
-        });
-        
-        // Test render to see if it works without sitekey
-        await window.recaptchaVerifier.render();
-        console.log("[PhoneAuth] Initialized in Managed Enterprise mode (no sitekey)");
-      } catch (e: any) {
-        if (e.message?.includes("sitekey") || e.code?.includes("argument-error")) {
-          console.log("[PhoneAuth] Falling back to manual sitekey mode...");
-          if (window.recaptchaVerifier) {
-            try { window.recaptchaVerifier.clear(); } catch(inner) {}
-          }
-          
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-            size: "invisible",
-            ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
-            callback: () => { console.log("[PhoneAuth] reCAPTCHA solved"); },
-            "expired-callback": () => {
-              setError("reCAPTCHA expired. Please try again.");
-              recaptchaInitialized.current = false;
-            },
-          });
-          await window.recaptchaVerifier.render();
-        } else {
-          throw e;
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        ...(v2SiteKey ? { sitekey: v2SiteKey } : {}),
+        callback: (response: any) => {
+          console.log("[PhoneAuth] Invisible reCAPTCHA verified");
+        },
+        "expired-callback": () => {
+          console.log("[PhoneAuth] reCAPTCHA expired");
+          recaptchaInitialized.current = false;
         }
-      }
+      });
+
+      // Render the invisible widget
+      await window.recaptchaVerifier.render();
 
       recaptchaInitialized.current = true;
       return window.recaptchaVerifier;
@@ -483,10 +459,12 @@ export default function PhoneAuth({ onSuccess, redirectPath = "/" }: PhoneAuthPr
 
       {/* reCAPTCHA container — must NOT use display:none or className="hidden".
           Firebase RecaptchaVerifier needs the element to be in the DOM layout
-          to render the invisible widget. Using zero-size + overflow:hidden instead. */}
+          to render the invisible widget. Using a fixed, small, nearly invisible 
+          container at the bottom of the screen for best compatibility. */}
       <div
         id="recaptcha-container"
-        style={{ position: "absolute", width: 0, height: 0, overflow: "hidden", opacity: 0, pointerEvents: "none" }}
+        className="fixed bottom-0 right-0 w-[1px] h-[1px] opacity-0 pointer-events-none overflow-hidden z-[-1]"
+        aria-hidden="true"
       />
     </div>
   );
