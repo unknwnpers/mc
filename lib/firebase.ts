@@ -1,167 +1,188 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { getAuth, Auth, setPersistence, browserLocalPersistence, initializeRecaptchaConfig } from "firebase/auth";
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider, AppCheck, getToken, CustomProvider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider, AppCheck, getToken } from "firebase/app-check";
 import { getMessaging, Messaging, isSupported as isMessagingSupported } from "firebase/messaging";
 
+// ─── Firebase Config ─────────────────────────────────────────────────────────
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-function validateConfig() {
+function validateConfig(): boolean {
   const missing = Object.entries(firebaseConfig)
     .filter(([_, value]) => !value)
     .map(([key]) => key);
 
   if (missing.length > 0) {
+    console.error("[Firebase] Missing environment variables:", missing);
     return false;
   }
-
   return true;
 }
 
 const isConfigValid = validateConfig();
 
+// ─── Firebase App (Singleton) ─────────────────────────────────────────────────
 
 let app: FirebaseApp | null = null;
 
 export function getFirebaseApp(): FirebaseApp {
   if (!isConfigValid) {
-    throw new Error("Firebase config is invalid. Check env variables.");
+    throw new Error("Firebase config is invalid. Check your .env file.");
   }
-
   if (!app) {
     app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   }
-
   return app;
 }
 
+// ─── Core Service Singletons ──────────────────────────────────────────────────
+// These are eagerly initialized so that Firestore, Auth, and Storage
+// are always the same instances throughout the app. We do NOT use Proxy
+// wrappers because Firebase's internal checks (instanceof, _delegate, etc.)
+// will break if the real instances are wrapped.
+
+const firebaseApp = isConfigValid ? getFirebaseApp() : null;
+
+export const db:      Firestore       = firebaseApp ? getFirestore(firebaseApp) : (null as any);
+export const auth:    Auth            = firebaseApp ? getAuth(firebaseApp)      : (null as any);
+export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp)  : (null as any);
+
+// Convenience aliases used across the codebase
+export const getFirebaseAuth  = (): Auth      => auth;
+export const getDbInstance    = (): Firestore => db;
+
+// Set persistent auth session on the client
+if (typeof window !== "undefined" && auth) {
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
+}
+
+// ─── Firebase App Check ───────────────────────────────────────────────────────
 
 let appCheckInstance: AppCheck | null = null;
 
-export function initAppCheck() {
+export function initAppCheck(): AppCheck | null {
   if (typeof window === "undefined") return null;
-
   if (appCheckInstance) return appCheckInstance;
 
-  // App Check MANDATORILY requires reCAPTCHA v3. 
-  // Do NOT use the Phone Auth (v2) key here or it will cause 400 errors.
-  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY || 
-                  process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK;
-                  
-  if (!siteKey || siteKey.length < 20) {
-    console.warn("[AppCheck] No valid V3 site key found. Using V2 fallback is NOT recommended.");
-    // Final fallback to generic key if V3 is missing, but log a loud warning
-    const fallbackKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-    if (!fallbackKey) return null;
+  // App Check requires a reCAPTCHA V3 site key.
+  // NEVER use the Phone Auth (V2 Invisible) key here — it will cause token errors.
+  const siteKey =
+    process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE_KEY ||
+    process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK ||
+    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  if (!siteKey) {
+    console.warn("[AppCheck] No reCAPTCHA V3 site key found. App Check will not be initialized.");
+    return null;
   }
 
-  const app = getFirebaseApp();
-
   try {
+    const firebaseApp = getFirebaseApp();
     const isLocalhost =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
 
     const debugToken = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_DEBUG;
-    
-    if (isLocalhost && !debugToken) {
+
+    // In local development: use the debug token from .env if provided,
+    // otherwise set to `true` so Firebase auto-generates one and prints it
+    // to the console. You must then register that token in the Firebase Console
+    // under App Check > Apps > Manage Debug Tokens.
+    if (isLocalhost) {
       // @ts-ignore
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken || true;
     } else if (debugToken) {
+      // Allow debug token on non-localhost (e.g. staging) if explicitly set
       // @ts-ignore
       self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken;
     }
 
-    appCheckInstance = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""),
+    appCheckInstance = initializeAppCheck(firebaseApp, {
+      provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
 
-    console.log("[AppCheck] Initialized successfully with provider:", siteKey ? "V3" : "Fallback");
+    console.log("[AppCheck] Initialized successfully.");
     return appCheckInstance;
   } catch (err) {
-    console.error("[AppCheck] Init failed:", err);
+    console.error("[AppCheck] Initialization failed:", err);
     return null;
   }
 }
 
-// Track first token fetch per session
+// Eagerly initialize App Check on the client so the token is ready
+// before the first Firestore/Auth/Storage request is made.
+if (typeof window !== "undefined") {
+  initAppCheck();
+}
+
+// ─── App Check Token Helpers ──────────────────────────────────────────────────
+
+// Track whether we've force-refreshed once this session
 let firstTokenFetch = true;
 
 /**
- * Get App Check token for API requests
- * First call forces refresh, subsequent calls use cache
+ * Returns a valid App Check token string, or null if unavailable.
+ * Forces a refresh on the first call to avoid stale cached tokens.
  */
 export async function getAppCheckToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
 
   const appCheck = initAppCheck();
-  if (!appCheck) {
-    console.warn("[Firebase] App Check not initialized");
-    return null;
-  }
+  if (!appCheck) return null;
 
   try {
-    // 🔥 First call after refresh → FORCE refresh
-    // Subsequent calls → allow cached
     const forceRefresh = firstTokenFetch;
     firstTokenFetch = false;
-    
     const tokenResult = await getToken(appCheck, forceRefresh);
     return tokenResult.token;
   } catch (err) {
-    console.warn("[Firebase] Token fetch failed, retrying with force...", err);
-    
-    // Retry once with force refresh
+    console.warn("[AppCheck] Token fetch failed, retrying with force refresh...", err);
     try {
       const retryResult = await getToken(appCheck, true);
       firstTokenFetch = false;
       return retryResult.token;
     } catch (retryErr) {
-      console.error("[Firebase] Token fetch failed completely:", retryErr);
+      console.error("[AppCheck] Token fetch failed after retry:", retryErr);
       return null;
     }
   }
 }
 
-/**
- * Ensure App Check is ready before making API calls
- * Use this before critical API calls on app load
- */
+/** Returns true if App Check is ready and a valid token was obtained. */
 export async function ensureAppCheckReady(): Promise<boolean> {
   const token = await getAppCheckToken();
   return !!token;
 }
 
+// ─── Fetch Helpers ────────────────────────────────────────────────────────────
+
 /**
- * Headers helper: Adds App Check token to request headers
+ * Merges App Check token into a headers object.
  */
-export async function withAppCheckHeaders(headers: HeadersInit = {}): Promise<HeadersInit> {
-  const token = await getAppCheckToken();
+export async function withAppCheckHeaders(
+  headers: HeadersInit = {}
+): Promise<Record<string, string>> {
   const result: Record<string, string> = {};
 
-  // Copy existing headers
   if (headers instanceof Headers) {
-    headers.forEach((value, key) => {
-      result[key] = value;
-    });
+    headers.forEach((value, key) => { result[key] = value; });
   } else if (Array.isArray(headers)) {
-    headers.forEach(([key, value]) => {
-      result[key] = value;
-    });
+    headers.forEach(([key, value]) => { result[key] = value; });
   } else {
     Object.assign(result, headers);
   }
 
-  // Add App Check token if available
+  const token = await getAppCheckToken();
   if (token) {
     result["X-Firebase-AppCheck"] = token;
   }
@@ -170,99 +191,48 @@ export async function withAppCheckHeaders(headers: HeadersInit = {}): Promise<He
 }
 
 /**
- * API fetch helper with automatic App Check and Auth tokens
- * Use this instead of raw fetch for all API calls
+ * Drop-in replacement for `fetch` that automatically attaches:
+ *  - Firebase App Check token (X-Firebase-AppCheck)
+ *  - Firebase Auth ID token (Authorization: Bearer)
  */
 export async function apiFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
   const headers = await withAppCheckHeaders(options.headers);
-  
-  // Add Firebase Auth token if user is logged in
-  const { getAuth } = await import("firebase/auth");
-  const auth = getAuth();
-  if (auth.currentUser) {
+
+  // Use the module-level auth singleton — no need for a dynamic import
+  if (auth?.currentUser) {
     try {
-      const authToken = await auth.currentUser.getIdToken();
-      (headers as Record<string, string>)["Authorization"] = `Bearer ${authToken}`;
-    } catch (e) {
-      // Continue without auth token if failed
+      const idToken = await auth.currentUser.getIdToken();
+      headers["Authorization"] = `Bearer ${idToken}`;
+    } catch {
+      // Continue without auth token if retrieval fails
     }
   }
-  
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+
+  return fetch(url, { ...options, headers });
 }
 
-
-// Initialize Firebase services lazily
-function getDB(): Firestore {
-  return getFirestore(getFirebaseApp());
-}
-
-function getAuthInstance(): Auth {
-  return getAuth(getFirebaseApp());
-}
-
-function getStorageInstance(): FirebaseStorage {
-  return getStorage(getFirebaseApp());
-}
+// ─── Firebase Cloud Messaging ─────────────────────────────────────────────────
 
 let messagingInstance: Messaging | null = null;
 
 /**
- * Get Firebase Cloud Messaging instance
- * Must be called AFTER getFirebaseApp() is initialized
- * Returns null if messaging is not supported (e.g., Safari, some browsers)
+ * Returns the FCM Messaging instance, or null if not supported.
+ * Must be called after the Firebase app is initialized.
  */
 export async function getMessagingInstance(): Promise<Messaging | null> {
-  if (typeof window === "undefined") return null; // SSR guard
-
+  if (typeof window === "undefined") return null;
   if (messagingInstance) return messagingInstance;
 
-  // Check browser support BEFORE initializing
   const supported = await isMessagingSupported();
   if (!supported) {
-    console.warn("[Firebase] Messaging not supported in this browser");
+    console.warn("[Firebase] Cloud Messaging is not supported in this browser.");
     return null;
   }
 
-  // Initialize messaging AFTER app is ready
-  const app = getFirebaseApp();
-  messagingInstance = getMessaging(app);
-  console.log("[Firebase] Messaging initialized");
+  messagingInstance = getMessaging(getFirebaseApp());
+  console.log("[Firebase] Cloud Messaging initialized.");
   return messagingInstance;
 }
-
-export { getDB, getAuthInstance, getStorageInstance };
-
-// ─── Direct singleton exports ──────────────────────────────────────────────
-// All files that import from firebase.ts are "use client" components, so this
-// module ONLY runs in the browser. We can safely export real instances.
-//
-// NO PROXY for auth or db — Firebase uses instanceof / _delegate / prototype
-// chain checks internally. Any Proxy wrapper silently breaks:
-//   - collection(db, ...) → "Expected first argument to be FirebaseFirestore"
-//   - signInWithPopup(auth, ...) → auth/internal-error
-//   - new RecaptchaVerifier(auth, ...) → runtime failure
-// ──────────────────────────────────────────────────────────────────────────
-
-// Eagerly initialize Firebase app FIRST, then services
-// This ensures proper initialization order and avoids auth/internal-error
-const firebaseApp = isConfigValid ? getFirebaseApp() : null;
-
-export const db: Firestore = firebaseApp ? getFirestore(firebaseApp) : (null as any);
-export const auth: Auth = firebaseApp ? getAuth(firebaseApp) : (null as any);
-export const storage: FirebaseStorage = firebaseApp ? getStorage(firebaseApp) : (null as any);
-
-// Set auth persistence
-if (typeof window !== "undefined" && auth) {
-  setPersistence(auth, browserLocalPersistence).catch(() => {});
-}
-
-// Keep getFirebaseAuth() and getDbInstance() as aliases for callers that were updated
-export const getFirebaseAuth = (): Auth => auth;
-export const getDbInstance = (): Firestore => db;
