@@ -626,19 +626,25 @@ export default function OrderDetailPage() {
                                     <div className="mt-12 pt-12 border-t border-[#F3E8E5] space-y-5">
                                         <div className="flex justify-between items-center text-charcoal/60 font-bold text-xs uppercase tracking-widest px-4">
                                             <span>Subtotal</span>
-                                            <span className="font-serif text-lg text-charcoal">₹{order.subtotal || order.total}</span>
+                                            <span className="font-serif text-lg text-charcoal">₹{order.paymentBreakdown?.mrpTotal || order.subtotal || order.total}</span>
                                         </div>
-                                        {order.discount > 0 && (
+                                        {(order.discount > 0 || order.paymentBreakdown?.discountAmount > 0) && (
                                             <div className="flex justify-between items-center text-green-600 font-bold text-xs uppercase tracking-widest px-4">
-                                                <span>Discount</span>
-                                                <span className="font-serif text-lg">-₹{order.discount}</span>
+                                                <span>Total Savings</span>
+                                                <span className="font-serif text-lg">-₹{order.paymentBreakdown?.discountAmount || order.discount}</span>
+                                            </div>
+                                        )}
+                                        {(order.paymentBreakdown?.convenienceFee || order.paymentBreakdown?.platformFee) && (
+                                            <div className="flex justify-between items-center text-charcoal/60 font-bold text-xs uppercase tracking-widest px-4">
+                                                <span>Convenience Fee</span>
+                                                <span className="font-serif text-lg text-charcoal">₹{order.paymentBreakdown?.convenienceFee || order.paymentBreakdown?.platformFee}</span>
                                             </div>
                                         )}
                                         {order.paymentBreakdown?.shipping !== undefined && (
                                             <div className="flex justify-between items-center text-charcoal/60 font-bold text-xs uppercase tracking-widest px-4">
                                                 <span>Shipping</span>
-                                                <span className={order.paymentBreakdown.shipping === 0 ? "text-green-600 font-bold" : "font-serif text-lg text-charcoal"}>
-                                                    {order.paymentBreakdown.shipping === 0 ? "FREE" : `₹${order.paymentBreakdown.shipping}`}
+                                                <span className={(order.paymentBreakdown.shipping === 0 || order.paymentBreakdown.shippingFee === 0) ? "text-green-600 font-bold" : "font-serif text-lg text-charcoal"}>
+                                                    {(order.paymentBreakdown.shipping === 0 || order.paymentBreakdown.shippingFee === 0) ? "FREE" : `₹${order.paymentBreakdown.shipping || order.paymentBreakdown.shippingFee}`}
                                                 </span>
                                             </div>
                                         )}

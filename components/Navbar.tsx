@@ -245,7 +245,7 @@ export default function Navbar() {
                 <Link href="/profile" onClick={() => setIsOpen(false)} className="block text-xl font-bold text-charcoal uppercase tracking-widest">My Profile</Link>
                 <Link href="/orders" onClick={() => setIsOpen(false)} className="block text-xl font-bold text-charcoal uppercase tracking-widest">My Orders</Link>
                 <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full bg-blush text-white py-5 rounded-3xl font-black text-lg uppercase tracking-widest shadow-2xl shadow-blush/20">Logout</button>
-              </>
+              </div>
             ) : (
               <Link href="/login" onClick={() => setIsOpen(false)} className="block w-full bg-blush text-white py-5 rounded-3xl font-black text-lg text-center uppercase tracking-widest shadow-2xl shadow-blush/20">Login / Register</Link>
             )}
