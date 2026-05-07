@@ -192,11 +192,11 @@ export async function POST(req: Request) {
     // Security: Validate client-provided breakdown if present
     if (clientBreakdown) {
       const tolerance = 1; // Allow ₹1 difference for rounding
-      const isValid = 
-        Math.abs(clientBreakdown.subtotal     - paymentBreakdown.subtotal)     <= tolerance &&
-        Math.abs(clientBreakdown.platformFee  - paymentBreakdown.platformFee)  <= tolerance &&
-        Math.abs(clientBreakdown.codCharge    - paymentBreakdown.codCharge)    <= tolerance &&
-        Math.abs(clientBreakdown.totalAmount  - paymentBreakdown.totalAmount)  <= tolerance;
+      const clientConvFee = clientBreakdown.convenienceFee ?? clientBreakdown.platformFee ?? 0;
+      const isValid =
+        Math.abs(clientBreakdown.totalAmount  - paymentBreakdown.totalAmount)  <= tolerance &&
+        Math.abs(clientConvFee                - paymentBreakdown.convenienceFee) <= tolerance &&
+        Math.abs(clientBreakdown.codCharge    - paymentBreakdown.codCharge)    <= tolerance;
       
       if (!isValid) {
         await auditLog("WARN", {
@@ -204,7 +204,6 @@ export async function POST(req: Request) {
           userId,
           details: { clientTotal: clientBreakdown.totalAmount, serverTotal: paymentBreakdown.totalAmount },
         });
-        // Continue with server-calculated values (never trust client)
       }
     }
 
@@ -259,12 +258,13 @@ export async function POST(req: Request) {
       isCOD,
       paymentExpiresAt: isCOD || isMock ? null : paymentExpiresAt, // Only for pending payment orders
       paymentBreakdown: {
-        platformFee:   paymentBreakdown.platformFee,
-        codCharge:     paymentBreakdown.codCharge,
-        shippingFee:   paymentBreakdown.shippingFee,
-        shippingLabel: paymentBreakdown.shippingLabel,
-        discountAmount: paymentBreakdown.discountAmount,
-        taxIncluded:   true,
+        convenienceFee: paymentBreakdown.convenienceFee,
+        codCharge:      paymentBreakdown.codCharge,
+        shippingFee:    paymentBreakdown.shippingFee,
+        shippingLabel:  paymentBreakdown.shippingLabel,
+        discountAmount: paymentBreakdown.totalSavings,
+        mrpTotal:       paymentBreakdown.mrpTotal,
+        taxIncluded:    true,
       },
       recipient: {
         name:  profile.name  || "",
