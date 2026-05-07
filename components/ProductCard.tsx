@@ -10,7 +10,7 @@ import type { Product } from '@/lib/types';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Loader2, Tag } from 'lucide-react';
+import { Loader2, Tag, Heart, ShoppingBag, Star } from 'lucide-react';
 
 interface AppliedOffer {
   hasOffer: boolean;
@@ -26,18 +26,10 @@ interface AppliedOffer {
   savings: number;
 }
 
-/**
- * Get thumbnail URL from original image URL
- * Since we only upload 'original' variant currently, return the original URL directly.
- * When thumbnail generation is added, this can convert:
- *   .../original/123-image.jpg → .../thumbnail/123-image.jpg
- */
 function getThumbnailUrl(originalUrl: string): string {
   if (!originalUrl || originalUrl === '/placeholder.svg') {
     return '/placeholder.svg';
   }
-  
-  // Return original URL - thumbnails are not currently generated during upload
   return originalUrl;
 }
 
@@ -51,20 +43,14 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isFav, setIsFav] = useState(false);
   const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
 
-  // Get image from images array (first image) or fallback
   const originalImage = product.images?.[0] || '/placeholder.svg';
-  // Use thumbnail for faster loading in card view
   const displayImage = getThumbnailUrl(originalImage);
-
-  // Get price from first variant or fallback to 0
   const displayPrice = product.variants?.[0]?.price ?? 0;
-
-  // Get stock from first variant or fallback to 0
   const displayStock = product.variants?.[0]?.stock ?? 0;
 
-  // Fetch offer data
   useEffect(() => {
     if (displayPrice > 0 && product.id) {
       fetch('/api/offers', {
@@ -88,7 +74,6 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
     if (!user) {
       toast.info("Please login to add items to cart");
       router.push(`/login?redirect=/products/${product.id}`);
@@ -98,23 +83,17 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
     const variants = product.variants;
     const hasVariants = variants && variants.length > 0;
 
-    // If product has multiple variants, force selection on detail page
     if (hasVariants && variants.length > 1) {
-      toast.info("Please select a size first");
       router.push(`/products/${product.id}`);
       return;
     }
 
     setIsAdding(true);
-
     try {
-      // If product has exactly one variant, use it directly
       if (hasVariants && variants.length === 1) {
         const variant = variants[0];
-        
-        // Check stock
         if (variant.stock <= 0) {
-          toast.error("Sorry, this item is out of stock");
+          toast.error("Out of stock");
           return;
         }
 
@@ -129,13 +108,10 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
           sku: variant.sku,
           selectedSize: variant.options?.Size || variant.sku,
         });
-        
-        // Navigate to cart after successful add
-        router.push('/cart');
+        toast.success("Added to cart!");
         return;
       }
 
-      // Fallback for products without variants (legacy)
       await addToCart({
         id: product.id,
         name: product.name,
@@ -147,9 +123,7 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
         sku: product.id,
         selectedSize: "Free Size"
       });
-      
-      // Navigate to cart after successful add
-      router.push('/cart');
+      toast.success("Added to cart!");
     } catch (error) {
       toast.error("Failed to add to cart");
     } finally {
@@ -158,63 +132,92 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md transition duration-300 flex flex-col h-full">
+    <div className="group bg-white rounded-[40px] overflow-hidden border border-[#F3E8E5] hover:shadow-2xl hover:shadow-rose-100/30 transition-all duration-700 flex flex-col h-full relative hover:-translate-y-2">
+      {/* Wishlist Button */}
+      <button
+        onClick={(e) => { e.preventDefault(); setIsFav(!isFav); }}
+        className={cn(
+          "absolute top-6 right-6 z-20 p-3 rounded-2xl backdrop-blur-md border transition-all active:scale-90",
+          isFav ? "bg-blush border-blush text-white" : "bg-white/80 border-white/50 text-neutral-400 hover:text-blush"
+        )}
+      >
+        <Heart className={cn("w-5 h-5", isFav && "fill-current")} />
+      </button>
+
       {/* Image Section */}
-      <Link href={`/products/${product.id}`} className="relative overflow-hidden aspect-[4/5] block">
+      <Link href={`/products/${product.id}`} className="relative overflow-hidden aspect-[4/5] block bg-cream/30">
         {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
-        
         <Image
           src={displayImage}
           alt={product.name}
           fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           loading="lazy"
           onLoad={() => setImgLoading(false)}
           className={cn(
-            "object-cover group-hover:scale-105 transition duration-500",
+            "object-cover transition-transform duration-[2s] ease-out group-hover:scale-110",
             imgLoading ? "opacity-0" : "opacity-100",
             displayStock <= 0 && "grayscale opacity-50"
           )}
         />
 
         {displayStock <= 0 && (
-          <span className="absolute top-3 left-3 bg-black text-white text-xs uppercase font-bold px-2 py-1 rounded tracking-widest z-20">
-            Out of Stock
-          </span>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] z-10">
+            <span className="bg-white/90 text-charcoal text-[10px] uppercase font-black px-4 py-2 rounded-xl tracking-[0.2em] shadow-xl">
+              Out of Stock
+            </span>
+          </div>
         )}
+
+        {/* Quick Add Overlay */}
+        <div className="absolute bottom-6 left-6 right-6 translate-y-20 group-hover:translate-y-0 transition-transform duration-500 z-20 hidden md:block">
+           <button
+             onClick={handleAddToCart}
+             disabled={displayStock <= 0 || isAdding}
+             className="w-full bg-white/95 backdrop-blur-xl py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-charcoal hover:bg-blush hover:text-white transition-all shadow-2xl shadow-black/10 flex items-center justify-center gap-3"
+           >
+             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
+             Quick Add
+           </button>
+        </div>
       </Link>
 
       {/* Info Section */}
-      <div className="p-5 flex flex-col flex-1">
-        <Link href={`/products/${product.id}`} className="block group/title">
-          <h3 className="font-serif font-bold text-charcoal text-xl line-clamp-1 group-hover/title:text-blush transition-colors leading-tight">
+      <div className="p-8 flex flex-col flex-1">
+        <div className="flex items-center justify-between mb-3">
+           <p className="text-[10px] text-neutral-400 uppercase tracking-[0.2em] font-black">
+              {product.category_slug || "Premium Collection"}
+           </p>
+           <div className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-amber-400 fill-current" />
+              <span className="text-[10px] font-black text-charcoal">4.8</span>
+           </div>
+        </div>
+
+        <Link href={`/products/${product.id}`} className="block group/title mb-4">
+          <h3 className="font-serif font-bold text-charcoal text-2xl line-clamp-1 group-hover/title:text-blush transition-colors leading-tight">
             {product.name}
           </h3>
         </Link>
 
-        <p className="text-xs text-gray-400 mt-2 uppercase tracking-[0.2em] font-bold">
-          {product.category_slug || "Collection"}
-        </p>
-
-        <div className="flex items-center justify-between mt-auto pt-4 flex-wrap gap-2 min-w-0">
-          <div className="flex-1 min-w-0 pr-2">
+        <div className="flex items-end justify-between mt-auto pt-4 border-t border-[#F3E8E5]">
+          <div className="flex flex-col gap-1">
             {offerData?.hasOffer ? (
-              <div className="flex flex-col gap-1 items-start w-full min-w-0">
-                <span className="text-[10px] font-bold text-green-600 bg-green-50/80 px-2 py-0.5 rounded border border-green-200/50 max-w-full truncate flex items-center gap-1" title={offerData.offer?.displayText || `SAVE ₹${offerData.savings}`}>
-                  <Tag className="w-3 h-3 shrink-0" />
-                  <span className="truncate">{offerData.offer?.displayText || `SAVE ₹${offerData.savings}`}</span>
-                </span>
-                <div className="flex items-end gap-2">
-                  <span className="font-bold text-blush text-xl tracking-tight leading-none">
+              <>
+                <div className="flex items-center gap-2">
+                   <span className="font-serif font-bold text-blush text-3xl tracking-tighter">
                     ₹{offerData.discountedPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-gray-400 line-through text-xs font-medium mb-0.5">
+                  <span className="text-neutral-300 line-through text-sm font-medium mb-1">
                     ₹{displayPrice.toLocaleString('en-IN')}
                   </span>
                 </div>
-              </div>
+                <span className="text-[9px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100 w-fit uppercase tracking-widest">
+                  {offerData.offer?.displayText || `Save ₹${offerData.savings}`}
+                </span>
+              </>
             ) : (
-              <span className="font-bold text-blush text-xl tracking-tight">
+              <span className="font-serif font-bold text-blush text-3xl tracking-tighter">
                 ₹{displayPrice.toLocaleString('en-IN')}
               </span>
             )}
@@ -224,24 +227,15 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
             onClick={handleAddToCart}
             disabled={displayStock <= 0 || isAdding}
             className={cn(
-              "text-sm px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blush/10 flex items-center gap-2",
+              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-blush/10 md:hidden lg:flex",
               displayStock <= 0 
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                ? "bg-neutral-100 text-neutral-300"
                 : isAdding
-                  ? "bg-blush/80 text-white cursor-wait"
+                  ? "bg-blush/80 text-white"
                   : "bg-blush text-white hover:bg-[#f48c82]"
             )}
           >
-            {isAdding ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Adding...
-              </>
-            ) : displayStock <= 0 ? (
-              "Out of Stock"
-            ) : (
-              "Add"
-            )}
+            {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShoppingBag className="w-5 h-5" />}
           </button>
         </div>
       </div>
