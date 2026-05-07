@@ -85,7 +85,7 @@ export default function CartPage() {
     // Fetch payment breakdown from server
     useEffect(() => {
         const fetchBreakdown = async () => {
-            if (!user || total === 0) {
+            if (!user || (total || 0) === 0) {
                 setPaymentBreakdown(null);
                 return;
             }
@@ -338,7 +338,7 @@ export default function CartPage() {
                                 {/* Subtotal */}
                                 <div className="flex justify-between text-charcoal/60 font-medium">
                                     <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-                                    <span>₹{paymentBreakdown?.subtotal ?? total}</span>
+                                    <span>₹{paymentBreakdown?.subtotal ?? total ?? 0}</span>
                                 </div>
 
                                 {/* Shipping */}

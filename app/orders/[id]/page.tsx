@@ -650,8 +650,8 @@ export default function OrderDetailPage() {
                                         )}
                                         {order.paymentBreakdown?.gst?.total > 0 && (
                                             <div className="flex justify-between items-center text-charcoal/60 font-bold text-xs uppercase tracking-widest px-4">
-                                                <span>GST ({order.paymentBreakdown.gst.rate || '18%'})</span>
-                                                <span className="font-serif text-lg text-charcoal">₹{order.paymentBreakdown.gst.total}</span>
+                                                <span>GST ({order.paymentBreakdown.gst?.rate || '18%'})</span>
+                                                <span className="font-serif text-lg text-charcoal">₹{order.paymentBreakdown.gst?.total}</span>
                                             </div>
                                         )}
                                         {order.paymentBreakdown?.codCharge > 0 && (
