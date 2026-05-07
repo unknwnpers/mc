@@ -5,7 +5,7 @@ import { adminDb, verifyAppCheckWithReplayProtection } from "@/lib/firebase-admi
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { reserveStock } from "@/lib/inventory";
 import { auditLog } from "@/lib/logger";
-import { calculatePaymentBreakdown } from "@/lib/payment-calculator";
+import { calculatePaymentBreakdown, calculateSellingPrice } from "@/lib/payment-calculator";
 
 export async function POST(req: Request) {
   try {
@@ -55,8 +55,39 @@ export async function POST(req: Request) {
 
     // ── 2. Server-side price calculation & validation (single transaction) ─
     let calculatedTotal = 0;
+    let calculatedMrpTotal = 0;
     const validatedItems: any[] = [];
     
+    // Fetch all active offers once to apply them server-side
+    const offersSnapshot = await adminDb.collection('offers').where('isActive', '==', true).get();
+    const now = new Date();
+    const allActiveOffers = offersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const getBestOffer = (price: number, categorySlug?: string, productId?: string) => {
+      const applicable = allActiveOffers.filter((offer: any) => {
+        const getOfferDate = (dateValue: any): Date | null => {
+          if (!dateValue) return null;
+          if (dateValue.toDate) return dateValue.toDate();
+          if (dateValue.seconds) return new Date(dateValue.seconds * 1000);
+          const d = new Date(dateValue);
+          return isNaN(d.getTime()) ? null : d;
+        };
+        const startDate = getOfferDate(offer.startDate);
+        const endDate = getOfferDate(offer.endDate);
+        if (startDate && startDate > now) return false;
+        if (endDate && endDate < now) return false;
+        if (offer.appliesTo === 'all') return true;
+        if (categorySlug && offer.appliesTo === 'category' && offer.categorySlug === categorySlug) return true;
+        if (productId && offer.appliesTo === 'product' && offer.productIds?.includes(productId)) return true;
+        return false;
+      }).sort((a: any, b: any) => {
+        const savingsA = a.type === 'percentage' ? price * (a.value / 100) : a.value;
+        const savingsB = b.type === 'percentage' ? price * (b.value / 100) : b.value;
+        return savingsB - savingsA;
+      });
+      return applicable[0] as any;
+    };
+
     // First validate all products exist and get pricing
     const productChecks = await Promise.all(
       cart.map(async (item: any) => {
@@ -73,7 +104,18 @@ export async function POST(req: Request) {
         if (!variant) {
           return { error: `SKU "${item.sku}" is not available for "${data.name}"`, status: 409 };
         }
-        
+
+        // Canonical price calculation: Apply product-level offers
+        const mrp = variant.price;
+        const bestOffer = getBestOffer(mrp, data.category_slug, item.id);
+
+        let sellingPrice = mrp;
+        if (bestOffer) {
+          sellingPrice = bestOffer.type === 'percentage'
+            ? calculateSellingPrice(mrp, bestOffer.value)
+            : Math.max(0, mrp - bestOffer.value);
+        }
+
         // Get the correct size from variant options, not from frontend selectedSize
         const correctSize = variant.options?.Size || item.sku;
         
@@ -81,10 +123,11 @@ export async function POST(req: Request) {
           success: true, 
           item: { 
             ...item, 
-            price: variant.price,
-            selectedSize: correctSize  // Override with correct size from backend
+            price: sellingPrice,
+            selectedSize: correctSize
           },
-          price: variant.price 
+          mrp,
+          sellingPrice
         };
       })
     );
@@ -94,8 +137,10 @@ export async function POST(req: Request) {
       if ('error' in check) {
         return NextResponse.json({ error: check.error }, { status: check.status });
       }
-      validatedItems.push(check.item);
-      calculatedTotal += check.price * check.item.quantity;
+      const c = check as any;
+      validatedItems.push(c.item);
+      calculatedTotal += c.sellingPrice * c.item.quantity;
+      calculatedMrpTotal += c.mrp * c.item.quantity;
     }
 
     // ── 2.5. Server-side discount validation ──────────────────────────────
@@ -137,39 +182,33 @@ export async function POST(req: Request) {
     }
 
     // ── 2.6. Server-side payment calculation (authoritative) ───────────────
-    const businessState = process.env.BUSINESS_STATE || "Karnataka";
-    const userState = profile?.state || profile?.address?.state;
-    
     const paymentBreakdown = calculatePaymentBreakdown({
-      subtotal: calculatedTotal,
-      discount: discountAmount,
+      subtotal:        calculatedTotal,
+      mrpTotal:        calculatedMrpTotal,
+      couponDiscount:  discountAmount,
       isCOD,
-      userState,
-      businessState,
     });
 
     // Security: Validate client-provided breakdown if present
     if (clientBreakdown) {
       const tolerance = 1; // Allow ₹1 difference for rounding
       const isValid = 
-        Math.abs(clientBreakdown.subtotal - paymentBreakdown.subtotal) <= tolerance &&
-        Math.abs(clientBreakdown.shipping - paymentBreakdown.shipping) <= tolerance &&
-        Math.abs(clientBreakdown.handlingFee - paymentBreakdown.handlingFee) <= tolerance &&
-        Math.abs(clientBreakdown.gst.total - paymentBreakdown.gst.total) <= tolerance &&
-        Math.abs(clientBreakdown.codCharge - paymentBreakdown.codCharge) <= tolerance &&
-        Math.abs(clientBreakdown.total - paymentBreakdown.total) <= tolerance;
+        Math.abs(clientBreakdown.subtotal     - paymentBreakdown.subtotal)     <= tolerance &&
+        Math.abs(clientBreakdown.platformFee  - paymentBreakdown.platformFee)  <= tolerance &&
+        Math.abs(clientBreakdown.codCharge    - paymentBreakdown.codCharge)    <= tolerance &&
+        Math.abs(clientBreakdown.totalAmount  - paymentBreakdown.totalAmount)  <= tolerance;
       
       if (!isValid) {
         await auditLog("WARN", {
           event: "PAYMENT_BREAKDOWN_MISMATCH",
           userId,
-          details: { clientTotal: clientBreakdown.total, serverTotal: paymentBreakdown.total },
+          details: { clientTotal: clientBreakdown.totalAmount, serverTotal: paymentBreakdown.totalAmount },
         });
-        // Continue with server-calculated values (don't trust client)
+        // Continue with server-calculated values (never trust client)
       }
     }
 
-    const finalTotal = paymentBreakdown.total;
+    const finalTotal = paymentBreakdown.totalAmount;
 
     // ── 3. Atomic stock reservation (fails entire cart if any item OOS) ─────
     let reservationId: string;
@@ -220,10 +259,12 @@ export async function POST(req: Request) {
       isCOD,
       paymentExpiresAt: isCOD || isMock ? null : paymentExpiresAt, // Only for pending payment orders
       paymentBreakdown: {
-        shipping: paymentBreakdown.shipping,
-        handlingFee: paymentBreakdown.handlingFee,
-        gst: paymentBreakdown.gst,
-        codCharge: paymentBreakdown.codCharge,
+        platformFee:   paymentBreakdown.platformFee,
+        codCharge:     paymentBreakdown.codCharge,
+        shippingFee:   paymentBreakdown.shippingFee,
+        shippingLabel: paymentBreakdown.shippingLabel,
+        discountAmount: paymentBreakdown.discountAmount,
+        taxIncluded:   true,
       },
       recipient: {
         name:  profile.name  || "",

@@ -53,6 +53,8 @@ export default function ProductDetailsPage() {
   const [openSections, setOpenSections] = useState<string[]>(['description']);
   const [stats, setStats] = useState({ viewers: 0, inCart: 0 });
   const [availableStock, setAvailableStock] = useState<Record<string, number>>({});
+  // Prevents double-clicks and race conditions on "Add to Cart"
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { addToCart } = useCart();
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -304,8 +306,11 @@ export default function ProductDetailsPage() {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
+
+    // GUARD: Prevent double-clicks and concurrent submissions
+    if (isAddingToCart) return;
 
     if (!user) {
       toast.info("Please login to add items to cart");
@@ -313,32 +318,27 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    // Check if product has size options
     const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
     const hasSizeOption = variants && variants.length > 0;
 
-    // CRITICAL: If product has sizes, require selection
     if (hasSizeOption && !selectedSize) {
       toast.error("Please select a size first");
       return;
     }
 
-    // Find the selected variant
-    const variant = hasSizeOption 
+    const variant = hasSizeOption
       ? variants.find((v: any) => v.sku === selectedSize)
       : null;
 
-    // Validate variant exists
     if (hasSizeOption && !variant) {
       toast.error("Invalid size selection");
       return;
     }
 
-    // Backend Purchase Logic using real-time availableStock
+    // Use real-time stock from stats API, fall back to variant stock
     const raw_stock = availableStock[variant?.sku ?? ''] ?? (variant?.stock ?? 0);
     const reserve = Math.ceil(0.2 * raw_stock);
     const sellable_stock = Math.max(0, raw_stock - reserve);
-    // Max per customer = sellable stock, capped at 10
     const max_per_customer = Math.min(10, sellable_stock);
 
     if (variant && max_per_customer <= 0) {
@@ -348,18 +348,22 @@ export default function ProductDetailsPage() {
 
     const finalQty = Math.min(quantity, Math.max(1, max_per_customer));
 
-    // Add to cart with correct variant data
-    addToCart({
-      id: product.id,
-      name: product.name,
-      sku: variant?.sku || "ONE-SIZE",
-      selectedSize: variant?.options?.Size || selectedSize || "Free Size",
-      price: offerData?.hasOffer ? offerData.discountedPrice : (variant?.price ?? ((product as any).variants?.[0]?.price || 0)),
-      image: (product as any).images?.[0] || '/placeholder.svg',
-      quantity: finalQty,
-    });
-
-    toast.success(`Added ${finalQty} item(s) to cart!`);
+    setIsAddingToCart(true);
+    try {
+      // await so errors from Firestore surface correctly
+      // cart-context already shows its own success toast — no duplicate here
+      await addToCart({
+        id: product.id,
+        name: product.name,
+        sku: variant?.sku || "ONE-SIZE",
+        selectedSize: variant?.options?.Size || selectedSize || "Free Size",
+        price: offerData?.hasOffer ? offerData.discountedPrice : (variant?.price ?? ((product as any).variants?.[0]?.price || 0)),
+        image: (product as any).images?.[0] || '/placeholder.svg',
+        quantity: finalQty,
+      });
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   if (loading) {
@@ -882,20 +886,29 @@ export default function ProductDetailsPage() {
                     <>
                       <button
                         onClick={handleAddToCart}
-                        disabled={needsSizeSelection || !!isOutOfStock}
+                        disabled={needsSizeSelection || !!isOutOfStock || isAddingToCart}
                         className={cn(
                           "flex-1 px-8 py-5 rounded-2xl transition-all shadow-xl font-bold text-lg active:scale-95 flex items-center justify-center gap-3 group relative overflow-hidden",
                           needsSizeSelection
                             ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
                             : isOutOfStock
                               ? "bg-red-50 text-red-400 cursor-not-allowed shadow-none border-2 border-red-100"
-                              : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
+                              : isAddingToCart
+                                ? "bg-gradient-to-r from-blush to-rose-400 text-white opacity-80 cursor-wait"
+                                : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
                         )}
                       >
-                        {!isOutOfStock && <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />}
-                        <ShoppingCart className={cn("w-6 h-6 relative z-10 transition-transform", !isOutOfStock && "group-hover:scale-110")} />
+                        {!isOutOfStock && !isAddingToCart && <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />}
+                        {isAddingToCart ? (
+                          <svg className="w-5 h-5 animate-spin relative z-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          <ShoppingCart className={cn("w-6 h-6 relative z-10 transition-transform", !isOutOfStock && "group-hover:scale-110")} />
+                        )}
                         <span className="relative z-10">
-                          {needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : !user ? "Login to Add to Cart" : `Add ${currentQty} to Cart`}
+                          {isAddingToCart ? "Adding..." : needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : !user ? "Login to Add to Cart" : `Add ${currentQty} to Cart`}
                         </span>
                       </button>
                       <button 

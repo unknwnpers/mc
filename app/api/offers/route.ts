@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
+import { calculateSellingPrice } from '@/lib/payment-calculator';
 
 // Force dynamic rendering - this route uses request data
 export const dynamic = 'force-dynamic';
@@ -154,11 +155,12 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    const savings = bestOffer.type === 'percentage' 
-      ? Math.round(price * (bestOffer.value / 100))
-      : bestOffer.value;
+    // Use canonical backend calculation
+    const discountedPrice = bestOffer.type === 'percentage'
+      ? calculateSellingPrice(price, bestOffer.value)
+      : Math.max(0, price - bestOffer.value);
     
-    const discountedPrice = Math.max(0, price - savings);
+    const savings = Math.max(0, price - discountedPrice);
     
     return NextResponse.json({
       success: true,

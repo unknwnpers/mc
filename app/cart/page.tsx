@@ -93,15 +93,16 @@ export default function CartPage() {
             setBreakdownLoading(true);
             try {
                 const token = await user.getIdToken();
-                const res = await fetch("/api/cart/calculate", {
+        const res = await fetch("/api/cart/calculate", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        subtotal: total,
-                        discount,
+                        subtotal:        total,
+                        mrpTotal:        total, // same as subtotal; per-item discount already applied
+                        couponDiscount:  discount,
                         isCOD,
                     }),
                 });
@@ -109,7 +110,7 @@ export default function CartPage() {
                 const data = await res.json();
                 if (data.success) {
                     setPaymentBreakdown(data.data);
-                    setFinalAmount(data.data.total);
+                    setFinalAmount(data.data.totalAmount);
                 }
             } catch (err) {
                 console.error("Error fetching payment breakdown:", err);
@@ -337,7 +338,7 @@ export default function CartPage() {
                                 {/* Subtotal */}
                                 <div className="flex justify-between text-charcoal/60 font-medium">
                                     <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-                                    <span>₹{total}</span>
+                                    <span>₹{paymentBreakdown?.subtotal ?? total}</span>
                                 </div>
 
                                 {/* Shipping */}
@@ -345,56 +346,19 @@ export default function CartPage() {
                                     <div className="flex items-center gap-1">
                                         <Truck className="w-3.5 h-3.5" />
                                         <span>Shipping</span>
-                                        {paymentBreakdown?.shipping === 0 && total > 0 && (
-                                            <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full ml-1">FREE</span>
-                                        )}
+                                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full ml-1">FREE</span>
                                     </div>
-                                    <span className={paymentBreakdown?.shipping === 0 ? "text-green-600 font-bold" : ""}>
-                                        {breakdownLoading ? "..." : paymentBreakdown ? `₹${paymentBreakdown.shipping}` : "₹0"}
-                                    </span>
+                                    <span className="text-green-600 font-bold">FREE</span>
                                 </div>
 
-                                {/* Handling Fee */}
-                                {paymentBreakdown && paymentBreakdown.handlingFee > 0 && (
+                                {/* Platform Fee */}
+                                {paymentBreakdown && (
                                     <div className="flex justify-between text-charcoal/60 font-medium text-sm">
                                         <div className="flex items-center gap-1">
                                             <Package className="w-3.5 h-3.5" />
-                                            <span>Handling Fee</span>
+                                            <span>Platform Fee</span>
                                         </div>
-                                        <span>₹{paymentBreakdown.handlingFee}</span>
-                                    </div>
-                                )}
-
-                                {/* GST Breakdown */}
-                                {paymentBreakdown && paymentBreakdown.gst.total > 0 && (
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-charcoal/60 font-medium text-sm">
-                                            <div className="flex items-center gap-1">
-                                                <span>GST (5%)</span>
-                                                <span className="text-[10px] text-neutral-400">
-                                                    ({paymentBreakdown.gst.cgst > 0 ? "CGST+SGST" : "IGST"})
-                                                </span>
-                                            </div>
-                                            <span>₹{paymentBreakdown.gst.total}</span>
-                                        </div>
-                                        {paymentBreakdown.gst.cgst > 0 && (
-                                            <div className="flex justify-between text-charcoal/40 text-xs pl-4">
-                                                <span>CGST (2.5%)</span>
-                                                <span>₹{paymentBreakdown.gst.cgst}</span>
-                                            </div>
-                                        )}
-                                        {paymentBreakdown.gst.sgst > 0 && (
-                                            <div className="flex justify-between text-charcoal/40 text-xs pl-4">
-                                                <span>SGST (2.5%)</span>
-                                                <span>₹{paymentBreakdown.gst.sgst}</span>
-                                            </div>
-                                        )}
-                                        {paymentBreakdown.gst.igst > 0 && (
-                                            <div className="flex justify-between text-charcoal/40 text-xs pl-4">
-                                                <span>IGST (5%)</span>
-                                                <span>₹{paymentBreakdown.gst.igst}</span>
-                                            </div>
-                                        )}
+                                        <span>₹{breakdownLoading ? "..." : (paymentBreakdown.platformFee ?? 9)}</span>
                                     </div>
                                 )}
 
@@ -403,13 +367,18 @@ export default function CartPage() {
                                     <div className="flex justify-between text-charcoal/60 font-medium text-sm">
                                         <div className="flex items-center gap-1">
                                             <CreditCard className="w-3.5 h-3.5" />
-                                            <span>COD Fee</span>
+                                            <span>COD Charge</span>
                                         </div>
                                         <span>₹{paymentBreakdown.codCharge}</span>
                                     </div>
                                 )}
                                 
-                                {/* Coupon Applied Section */}
+                                {/* GST is included in MRP — no separate row shown */}
+                                <div className="text-[10px] text-neutral-400 text-right">
+                                    Prices inclusive of all taxes
+                                </div>
+
+                                {/* Coupon Discount */}
                                 {discount > 0 && (
                                     <>
                                         <div className="h-px bg-neutral-200 my-2" />
@@ -421,10 +390,10 @@ export default function CartPage() {
                                 )}
                                 
                                 {/* Total Savings */}
-                                {discount > 0 || (paymentBreakdown && paymentBreakdown.shipping === 0 && total < 999) && (
+                                {discount > 0 && (
                                     <div className="bg-green-50 rounded-xl p-3 text-center">
                                         <span className="text-green-700 font-semibold text-sm">
-                                            You saved ₹{(discount || 0) + (paymentBreakdown?.shipping === 0 ? 100 : 0)}!
+                                            You saved ₹{discount} on this order!
                                         </span>
                                     </div>
                                 )}
@@ -501,7 +470,7 @@ export default function CartPage() {
                                                 </div>
                                                 <p className="text-xs text-neutral-500 mt-0.5">Pay when you receive</p>
                                             </div>
-                                            <span className="text-sm font-bold text-charcoal/60">+₹50</span>
+                                        <span className="text-sm font-bold text-charcoal/60">+ Fees</span>
                                         </div>
                                         <input 
                                             type="radio" 

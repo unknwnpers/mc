@@ -1,201 +1,212 @@
 /**
- * Payment Calculation Utility
- * Calculates GST, shipping, handling fees, and COD charges
- * All calculations are done server-side for security
+ * Payment Calculation Utility — Indian/Kerala 2026 Ecommerce Standard
+ *
+ * KEY RULES (Canonical — All calculations happen in backend):
+ * 1. MRP is INCLUSIVE of GST. DO NOT add separate GST/IGST rows.
+ * 2. Selling price is derived by applying a discount % on MRP.
+ * 3. Platform Fee = 2% of selling price (Prepaid), 3% (COD).
+ * 4. COD Charge = 8% of selling price (COD only).
+ * 5. Shipping is FREE on all orders.
+ *
+ * Prepaid example (MRP ₹499, 25% discount):
+ *   sellingPrice = roundUp(499 − 25%) = 375
+ *   platformFee  = round(375 × 0.02) = ₹8
+ *   total        = 375 + 8 = ₹383
+ *
+ * COD example (same product):
+ *   sellingPrice = ₹375
+ *   platformFee  = round(375 × 0.03) = ₹11
+ *   codCharge    = round(375 × 0.08) = ₹30
+ *   total        = 375 + 11 + 30 = ₹416
  */
 
+// ─── Fee Rate Constants ──────────────────────────────────────────────
+const PLATFORM_FEE_RATE_PREPAID = 0.02; // 2% of selling price
+const PLATFORM_FEE_RATE_COD     = 0.03; // 3% of selling price
+const COD_CHARGE_RATE           = 0.08; // 8% of selling price
+const SHIPPING_FEE              = 0;    // Always FREE
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/**
+ * The canonical cart pricing response.
+ * Frontend must render ONLY these fields — no client-side recalculation allowed.
+ */
 export interface PaymentBreakdown {
-  subtotal: number;
-  shipping: number;
-  handlingFee: number;
-  gst: {
-    cgst: number;
-    sgst: number;
-    igst: number;
-    total: number;
-  };
-  codCharge: number;
-  discount: number;
-  total: number;
+  /** Sum of (sellingPrice × quantity) for all items */
+  subtotal:      number;
+  /** Total MRP before discount (informational) */
+  mrpTotal:      number;
+  /** Total discount amount applied (mrpTotal - subtotal) */
+  discountAmount: number;
+  /** Platform operational fee (2% prepaid / 3% COD) */
+  platformFee:   number;
+  /** COD-specific charge (8% of selling price) */
+  codCharge:     number;
+  /** Shipping fee (₹0 = FREE) */
+  shippingFee:   number;
+  /** Human-readable shipping label */
+  shippingLabel: string;
+  /** Grand total the customer pays */
+  totalAmount:   number;
+  /** GST is included in MRP */
+  taxIncluded:   true;
+  currency:      "INR";
+  /** Additional coupon discount */
+  couponDiscount?: number;
 }
 
 export interface CalculationParams {
-  subtotal: number;
-  discount?: number;
-  isCOD?: boolean;
-  stateCode?: string; // For determining CGST+SGST vs IGST (same state = CGST+SGST)
-  userState?: string;
-  businessState?: string; // Business registered state
+  /** Sum of (sellingPrice × quantity) for all cart items */
+  subtotal:       number;
+  /** Sum of (mrpPrice × quantity) for all cart items */
+  mrpTotal?:      number;
+  /** Additional coupon discount amount (server-validated) */
+  couponDiscount?: number;
+  isCOD?:         boolean;
 }
 
-// Constants
-const SHIPPING_THRESHOLD = 999; // Free shipping above ₹999
-const SHIPPING_FLAT_RATE = 100; // ₹100 for orders below threshold
-const HANDLING_FEE_MIN = 0;
-const HANDLING_FEE_MAX = 30;
-const COD_CHARGE = 50;
-const GST_RATE = 0.05; // 5% GST
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Calculate shipping cost based on order value
- * Free for orders above ₹999, otherwise ₹100
+ * Round to nearest rupee (standard rounding).
  */
-export function calculateShipping(subtotal: number): number {
-  if (subtotal >= SHIPPING_THRESHOLD) {
-    return 0;
+function roundRupee(n: number): number {
+  return Math.round(n);
+}
+
+/**
+ * Round UP to nearest rupee (standard for selling prices in this project).
+ */
+function roundUpRupee(n: number): number {
+  return Math.ceil(n);
+}
+
+/**
+ * Calculate sellingPrice from MRP and discount percent.
+ * MRP - discount% rounded UP.
+ *
+ * Formula: sellingPrice = round(mrp - (mrp * discountPercent / 100))
+ * Note: To match the 499 - 25% = 375 example, we use Math.ceil.
+ */
+export function calculateSellingPrice(mrp: number, discountPercent: number): number {
+  if (discountPercent < 0 || discountPercent > 100) {
+    throw new Error(`Invalid discount percent: ${discountPercent}. Must be 0–100.`);
   }
-  return SHIPPING_FLAT_RATE;
+  return roundUpRupee(mrp * (1 - discountPercent / 100));
 }
 
 /**
- * Calculate handling fee (progressive based on order value)
- * ₹0-30 range
+ * Calculate discount amount from MRP and discount percent.
  */
-export function calculateHandlingFee(subtotal: number): number {
-  // Progressive fee: lower for higher value orders
-  if (subtotal >= 2000) return 0;
-  if (subtotal >= 1000) return 10;
-  if (subtotal >= 500) return 20;
-  return HANDLING_FEE_MAX;
-}
-
-/**
- * Calculate GST breakdown
- * Same state: CGST 2.5% + SGST 2.5%
- * Different state: IGST 5%
- * GST is calculated on (subtotal + shipping + handling - discount)
- */
-export function calculateGST(
-  taxableAmount: number,
-  isSameState: boolean
-): { cgst: number; sgst: number; igst: number; total: number } {
-  const totalGST = Math.round(taxableAmount * GST_RATE);
-  
-  if (isSameState) {
-    // Split into CGST and SGST (2.5% each)
-    const halfGST = Math.round(taxableAmount * 0.025);
-    return {
-      cgst: halfGST,
-      sgst: halfGST,
-      igst: 0,
-      total: halfGST * 2,
-    };
-  } else {
-    // IGST 5%
-    return {
-      cgst: 0,
-      sgst: 0,
-      igst: totalGST,
-      total: totalGST,
-    };
+export function calculateDiscountAmount(mrp: number, discountPercent: number): number {
+  if (discountPercent < 0 || discountPercent > 100) {
+    throw new Error(`Invalid discount percent: ${discountPercent}. Must be 0–100.`);
   }
+  const sellingPrice = calculateSellingPrice(mrp, discountPercent);
+  return Math.max(0, mrp - sellingPrice);
 }
 
+// ─── Main Calculator ──────────────────────────────────────────────────────────
+
 /**
- * Main payment calculation function
- * Server-side only - never trust client calculations
+ * Main server-side payment breakdown calculator.
  */
-export function calculatePaymentBreakdown(
-  params: CalculationParams
-): PaymentBreakdown {
+export function calculatePaymentBreakdown(params: CalculationParams): PaymentBreakdown {
   const {
     subtotal,
-    discount = 0,
-    isCOD = false,
-    userState,
-    businessState = "Karnataka", // Default business state
+    mrpTotal        = subtotal,
+    couponDiscount  = 0,
+    isCOD           = false,
   } = params;
 
-  // Validate inputs
-  if (subtotal < 0) throw new Error("Subtotal cannot be negative");
-  if (discount < 0) throw new Error("Discount cannot be negative");
-  if (discount > subtotal) throw new Error("Discount cannot exceed subtotal");
-
-  // Calculate base charges
-  const shipping = calculateShipping(subtotal);
-  const handlingFee = calculateHandlingFee(subtotal);
-  
-  // Determine GST type based on state
-  const isSameState = userState === businessState;
-  
-  // Calculate taxable amount (before GST, after discount)
-  const taxableAmount = Math.max(0, subtotal + shipping + handlingFee - discount);
-  
-  // Calculate GST
-  const gst = calculateGST(taxableAmount, isSameState);
-  
-  // COD charge
-  const codCharge = isCOD ? COD_CHARGE : 0;
-  
-  // Calculate final total
-  const total = taxableAmount + gst.total + codCharge;
-
-  return {
-    subtotal: Math.round(subtotal),
-    shipping: Math.round(shipping),
-    handlingFee: Math.round(handlingFee),
-    gst,
-    codCharge: Math.round(codCharge),
-    discount: Math.round(discount),
-    total: Math.round(total),
-  };
-}
-
-/**
- * Get shipping progress message
- * Shows how much more to add for free shipping
- */
-export function getShippingProgress(subtotal: number): {
-  remaining: number;
-  hasFreeShipping: boolean;
-  message: string;
-} {
-  if (subtotal >= SHIPPING_THRESHOLD) {
-    return {
-      remaining: 0,
-      hasFreeShipping: true,
-      message: "You got FREE shipping!",
-    };
+  // ── Input validation ────────────────────────────────────────────────────────
+  if (!isFinite(subtotal) || subtotal < 0) {
+    throw new Error(`Invalid subtotal: ${subtotal}`);
   }
-  
-  const remaining = SHIPPING_THRESHOLD - subtotal;
+  if (!isFinite(mrpTotal) || mrpTotal < 0) {
+    throw new Error(`Invalid mrpTotal: ${mrpTotal}`);
+  }
+  if (couponDiscount < 0) {
+    throw new Error(`Coupon discount cannot be negative: ${couponDiscount}`);
+  }
+  if (couponDiscount > subtotal) {
+    throw new Error(`Coupon discount (${couponDiscount}) cannot exceed subtotal (${subtotal})`);
+  }
+
+  // ── Fee calculation (percentage-based on effective selling price) ───────────
+  const effectiveSubtotal = Math.max(0, subtotal - couponDiscount);
+
+  const platformFeeRate = isCOD ? PLATFORM_FEE_RATE_COD : PLATFORM_FEE_RATE_PREPAID;
+  const platformFee     = roundRupee(effectiveSubtotal * platformFeeRate);
+  const codCharge       = isCOD ? roundRupee(effectiveSubtotal * COD_CHARGE_RATE) : 0;
+  const shippingFee     = SHIPPING_FEE;
+  const shippingLabel   = shippingFee === 0 ? "FREE" : `₹${shippingFee}`;
+
+  // Grand total
+  const totalAmount = roundRupee(effectiveSubtotal + platformFee + codCharge + shippingFee);
+
+  // Discount amount = MRP total minus selling price subtotal
+  const discountAmount = Math.max(0, mrpTotal - subtotal);
+
   return {
-    remaining,
-    hasFreeShipping: false,
-    message: `Add ₹${remaining} more for FREE shipping`,
+    subtotal:        roundRupee(subtotal),
+    mrpTotal:        roundRupee(mrpTotal),
+    discountAmount:  roundRupee(discountAmount),
+    platformFee,
+    codCharge,
+    shippingFee,
+    shippingLabel,
+    totalAmount,
+    taxIncluded:     true,
+    currency:        "INR",
+    ...(couponDiscount > 0 && { couponDiscount: roundRupee(couponDiscount) }),
   };
 }
 
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
 /**
- * Format currency for display
+ * Validate that a server-recalculated breakdown matches a stored/client breakdown.
+ */
+export function validatePaymentBreakdown(
+  stored: PaymentBreakdown,
+  params: CalculationParams,
+  toleranceRupees = 1
+): boolean {
+  try {
+    const fresh = calculatePaymentBreakdown(params);
+    return (
+      Math.abs(stored.subtotal      - fresh.subtotal)     <= toleranceRupees &&
+      Math.abs(stored.platformFee   - fresh.platformFee)  <= toleranceRupees &&
+      Math.abs(stored.codCharge     - fresh.codCharge)    <= toleranceRupees &&
+      Math.abs(stored.shippingFee   - fresh.shippingFee)  <= toleranceRupees &&
+      Math.abs(stored.totalAmount   - fresh.totalAmount)  <= toleranceRupees
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Format currency for display (Indian locale).
  */
 export function formatCurrency(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 /**
- * Validate payment breakdown (security check)
- * Ensures no tampering occurred
+ * Get shipping progress message.
+ * Currently always FREE.
  */
-export function validatePaymentBreakdown(
-  breakdown: PaymentBreakdown,
-  params: CalculationParams
-): boolean {
-  try {
-    const recalculated = calculatePaymentBreakdown(params);
-    
-    // Allow small floating point differences
-    const tolerance = 1;
-    
-    return (
-      Math.abs(breakdown.subtotal - recalculated.subtotal) <= tolerance &&
-      Math.abs(breakdown.shipping - recalculated.shipping) <= tolerance &&
-      Math.abs(breakdown.handlingFee - recalculated.handlingFee) <= tolerance &&
-      Math.abs(breakdown.gst.total - recalculated.gst.total) <= tolerance &&
-      Math.abs(breakdown.codCharge - recalculated.codCharge) <= tolerance &&
-      Math.abs(breakdown.total - recalculated.total) <= tolerance
-    );
-  } catch {
-    return false;
-  }
+export function getShippingProgress(_subtotal: number): {
+  remaining:      number;
+  hasFreeShipping: boolean;
+  message:        string;
+} {
+  return {
+    remaining:       0,
+    hasFreeShipping: true,
+    message:         "FREE Shipping on this order!",
+  };
 }
