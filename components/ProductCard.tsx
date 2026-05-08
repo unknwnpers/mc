@@ -26,7 +26,6 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
   const router = useRouter();
   const [imgLoading, setImgLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
-  const [isFav, setIsFav] = useState(false);
   const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
 
   const displayImage = product.images?.[0] || '/placeholder.svg';
@@ -71,23 +70,12 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
 
   return (
     <div
+      // Cache buster: ensuring the old favorite icon is fully removed
       className="group min-w-0 w-full bg-white rounded-[28px] overflow-hidden border border-[rgba(233,137,126,0.08)] flex flex-col h-full relative transition-all duration-200 md:duration-300 ease-out hover:-translate-y-1.5"
       style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.05)' }}
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 24px 56px rgba(233,137,126,0.12)'; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 16px 40px rgba(0,0,0,0.05)'; }}
     >
-      {/* ── WISHLIST BUTTON (top-right, 44px) ── */}
-      <button
-        onClick={(e) => { e.preventDefault(); setIsFav(!isFav); }}
-        className={cn(
-          "absolute top-4 right-4 z-20 w-[44px] h-[44px] rounded-full flex items-center justify-center border transition-all duration-300 active:scale-90",
-          isFav
-            ? "bg-[#E9897E] border-[#E9897E] text-white"
-            : "bg-white/70 backdrop-blur-md border-white/50 text-[#8A8A8A] hover:text-[#E9897E] hover:border-[rgba(233,137,126,0.2)]"
-        )}
-      >
-        <Heart className={cn("w-[18px] h-[18px]", isFav && "fill-current")} />
-      </button>
 
       {/* ── DISCOUNT BADGE (top-left) ── */}
       {discountPercent && discountPercent > 0 && (

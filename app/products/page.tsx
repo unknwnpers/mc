@@ -773,7 +773,7 @@ function ProductsContent() {
                     <div key={product.id} className="relative group">
                       <ProductCard product={product} />
                       {/* Action Buttons */}
-                      <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
                         {/* Wishlist Button */}
                         <button
                           onClick={(e) => {
@@ -790,6 +790,7 @@ function ProductsContent() {
                         >
                           <Heart className={cn("w-4 h-4", isInWishlist(product.id) && "fill-current")} />
                         </button>
+
                         {/* Quick View Button */}
                         <button
                           onClick={() => {
