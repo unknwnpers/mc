@@ -9,38 +9,65 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-      },
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
-      },
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
-        serif: ['var(--font-cormorant)', 'serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
+      },
+      fontSize: {
+        // Design system typography scale
+        'hero': ['72px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        'hero-mobile': ['42px', { lineHeight: '1.1', letterSpacing: '-0.01em' }],
+        'section': ['42px', { lineHeight: '1.15', letterSpacing: '-0.015em' }],
+        'section-mobile': ['28px', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
+        'product-title': ['18px', { lineHeight: '1.35' }],
+        'body': ['16px', { lineHeight: '1.6' }],
+        'label': ['13px', { lineHeight: '1.4' }],
+        'label-sm': ['11px', { lineHeight: '1.3' }],
       },
       colors: {
+        // ── Brand Primary ──
+        brand: {
+          DEFAULT: '#E9897E',
+          dark: '#C86B5F',
+          light: '#F4B5AD',
+          muted: '#F8D5D0',
+          50: '#FFF0EE',
+          100: '#FFE0DC',
+        },
+        // ── Background Surfaces ──
+        warm: {
+          bg: '#FFF9F6',
+          card: '#F8F1EC',
+          cream: '#FFF7ED',
+        },
+        // ── Text Ink ──
+        ink: {
+          DEFAULT: '#1E1E1E',
+          muted: '#5C5C5C',
+          light: '#8A8A8A',
+          faint: '#B5B5B5',
+        },
+        // ── Functional ──
+        success: '#5FA36A',
+        // ── Backward Compatibility ──
         blush: {
-          DEFAULT: '#F8AFA6',
-          light: '#FDECEB',
-          dark: '#F472B6', // For hover
+          DEFAULT: '#E9897E',
+          light: '#FFF0EE',
+          dark: '#C86B5F',
         },
         cream: {
-          DEFAULT: '#FFF7ED',
-          dark: '#FFEDD5',
+          DEFAULT: '#FFF9F6',
+          dark: '#F8F1EC',
         },
         charcoal: {
-          DEFAULT: '#2E2E2E',
-          light: '#525252',
+          DEFAULT: '#1E1E1E',
+          light: '#5C5C5C',
         },
         gold: {
           DEFAULT: '#D4AF37',
           light: '#F0C559',
         },
+        // ── shadcn/ui Compatibility ──
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -75,30 +102,54 @@ const config: Config = {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
       },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      borderColor: {
+        brand: 'rgba(233,137,126,0.12)',
+      },
+      boxShadow: {
+        'soft': '0 10px 30px rgba(0,0,0,0.04)',
+        'soft-lg': '0 20px 50px rgba(0,0,0,0.06)',
+        'soft-hover': '0 20px 50px rgba(233,137,126,0.10)',
+        // Legacy aliases
+        'premium': '0 10px 30px rgba(0,0,0,0.04)',
+        'premium-lg': '0 20px 50px rgba(0,0,0,0.06)',
+        'premium-hover': '0 20px 50px rgba(233,137,126,0.10)',
+      },
       keyframes: {
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
         'bounce-slow': {
           '0%, 100%': { transform: 'translateY(-5%)' },
           '50%': { transform: 'translateY(0)' },
         },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
       animation: {
-        'bounce-slow': 'bounce-slow 3s ease-in-out infinite',
+        'fade-up': 'fade-up 0.5s cubic-bezier(0.22,1,0.36,1)',
+        'fade-in': 'fade-in 0.4s ease-out',
+        'bounce-slow': 'bounce-slow 4s ease-in-out infinite',
+        'float': 'float 5s ease-in-out infinite',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },

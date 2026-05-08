@@ -1,110 +1,301 @@
-import { memo } from 'react';
-import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Twitter, MessageCircle } from 'lucide-react';
-import Link from 'next/link';
+"use client";
 
-const Footer = memo(function Footer() {
-  const currentYear = new Date().getFullYear();
+import { useState } from 'react';
+import Link from 'next/link';
+import { Instagram, Facebook, Youtube, ChevronDown, Mail, Phone, MapPin, Clock, ShieldCheck, RefreshCw, Banknote, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const ease = [0.22, 1, 0.36, 1];
+
+const quickLinks = [
+  { label: "Shop All", href: "/products" },
+  { label: "Maternity Wear", href: "/products?category=maternity" },
+  { label: "Kids Wear", href: "/products?category=kids" },
+  { label: "New Arrivals", href: "/products?new=true" },
+  { label: "Best Sellers", href: "/products?featured=true" },
+];
+
+const customerCare = [
+  { label: "Track Order", href: "/orders" },
+  { label: "Shipping Policy", href: "/shipping-policy" },
+  { label: "Returns & Refunds", href: "/refund-policy" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms & Conditions", href: "/terms" },
+];
+
+const trustBadges = [
+  { icon: ShieldCheck, text: "Secure Payments" },
+  { icon: RefreshCw, text: "Easy Returns" },
+  { icon: Banknote, text: "COD Available" },
+  { icon: Star, text: "Premium Quality" },
+];
+
+const socials = [
+  { icon: Instagram, href: "https://instagram.com/miksandchiks", label: "Instagram" },
+  { icon: Facebook, href: "#", label: "Facebook" },
+  { icon: Youtube, href: "#", label: "YouTube" },
+];
+
+const instaImages = [
+  "https://images.unsplash.com/photo-1544126592-807daa215a05?q=80&w=200&h=200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=200&h=200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=200&h=200&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=200&h=200&auto=format&fit=crop",
+];
+
+function MobileAccordion({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-white/[0.06] py-4">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between text-left">
+        <span className="text-[16px] font-bold text-white">{title}</span>
+        <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease }}
+            className="overflow-hidden"
+          >
+            <div className="pt-4 pb-2">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function Footer({ socialSettings = {} }: { socialSettings?: Record<string, string> }) {
+  const dynamicSocials = [
+    { icon: Instagram, href: socialSettings.instagram || "https://instagram.com/miksandchiks", label: "Instagram" },
+    ...(socialSettings.facebook ? [{ icon: Facebook, href: socialSettings.facebook, label: "Facebook" }] : [{ icon: Facebook, href: "#", label: "Facebook" }]),
+    ...(socialSettings.youtube ? [{ icon: Youtube, href: socialSettings.youtube, label: "YouTube" }] : [{ icon: Youtube, href: "#", label: "YouTube" }]),
+    // We can also add X and Whatsapp if they exist in the settings, without breaking layout too much.
+    ...(socialSettings.x ? [{ icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px]"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>, href: socialSettings.x, label: "X" }] : []),
+    ...(socialSettings.whatsapp ? [{ icon: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><path d="M16 14.5a2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z" opacity="0"/></svg>, href: socialSettings.whatsapp, label: "WhatsApp" }] : []),
+  ];
+
+  const instagramUrl = socialSettings.instagram || "https://instagram.com/miksandchiks";
 
   return (
-    <footer className="bg-white border-t border-[#F3E8E5] relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blush/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+    <footer style={{ background: '#1F1A17' }}>
+      {/* ═══ MAIN FOOTER ═══ */}
+      <div className="max-w-[1320px] mx-auto px-4 md:px-6 pt-20 md:pt-28 pb-12 md:pb-16">
 
-      <div className="max-w-7xl mx-auto px-6 md:px-10 py-24 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-24">
+        {/* Desktop: 5-column layout */}
+        <div className="hidden lg:grid lg:grid-cols-[1.3fr_0.8fr_0.8fr_0.9fr_0.8fr] gap-12 items-start pb-16 border-b border-white/[0.08]">
 
-          {/* Brand Column */}
-          <div className="lg:col-span-4 space-y-8">
-            <Link href="/" className="inline-block">
-              <div className="h-16 w-auto">
-                <img src="/logo.png" alt="Miks & Chiks" className="h-full w-auto object-contain" />
-              </div>
+          {/* Col 1: Brand */}
+          <div className="max-w-[320px]">
+            <Link href="/" className="inline-block group">
+              <span className="font-serif text-[32px] font-bold tracking-[0.03em] text-white">
+                Miks & <span className="text-[#E9897E] italic">Chiks</span>
+              </span>
+              <span className="block text-[10px] tracking-[0.2em] text-white/40 uppercase font-medium mt-1">
+                Premium Maternity & Kids
+              </span>
             </Link>
-            <p className="text-neutral-500 text-sm leading-relaxed font-medium max-w-sm">
-              Your trusted destination for premium maternity and kids wear, crafted with love for your most precious moments. We celebrate the beauty of motherhood with soft fabrics and elegant designs.
+
+            <p className="text-[15px] leading-[1.9] text-white/[0.68] mt-6">
+              Thoughtfully designed maternity & kids wear crafted with the softest fabrics, bringing comfort and joy to every moment of motherhood.
             </p>
-            <div className="flex items-center gap-4">
-               <a href="#" className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-charcoal hover:bg-blush hover:text-white transition-all duration-300">
-                  <Instagram className="w-5 h-5" />
-               </a>
-               <a href="#" className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-charcoal hover:bg-blush hover:text-white transition-all duration-300">
-                  <Facebook className="w-5 h-5" />
-               </a>
-               <a href="#" className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-charcoal hover:bg-blush hover:text-white transition-all duration-300">
-                  <MessageCircle className="w-5 h-5" />
-               </a>
+
+            {/* Trust badges */}
+            <div className="flex flex-wrap gap-2.5 mt-6">
+              {trustBadges.map((b, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/[0.68] px-3 py-1.5 rounded-full border"
+                  style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.08)' }}
+                >
+                  <b.icon className="w-3 h-3 text-[#E9897E]" />
+                  {b.text}
+                </span>
+              ))}
+            </div>
+
+            {/* Socials */}
+            <div className="flex flex-wrap gap-3 mt-6">
+              {dynamicSocials.map((s, i) => (
+                <Link
+                  key={i}
+                  href={s.href}
+                  target="_blank"
+                  aria-label={s.label}
+                  className="w-[44px] h-[44px] rounded-full flex items-center justify-center border text-white/60 hover:text-white hover:bg-[#E9897E] hover:border-[#E9897E] hover:-translate-y-0.5 transition-all duration-300"
+                  style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)' }}
+                >
+                  <s.icon className="w-[18px] h-[18px]" />
+                </Link>
+              ))}
             </div>
           </div>
 
-          {/* Links Columns */}
-          <div className="lg:col-span-2">
-            <h4 className="text-[10px] font-black text-charcoal uppercase tracking-[0.25em] mb-8">Quick Links</h4>
+          {/* Col 2: Quick Links */}
+          <div>
+            <h3 className="text-[16px] font-bold text-white mb-6">Quick Links</h3>
             <ul className="space-y-4">
-              <li><Link href="/" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Home</Link></li>
-              <li><Link href="/products" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Shop All</Link></li>
-              <li><Link href="/products?new=true" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">New Arrivals</Link></li>
-              <li><Link href="/about" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Our Story</Link></li>
-              <li><Link href="/contact" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Contact</Link></li>
+              {quickLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          <div className="lg:col-span-2">
-            <h4 className="text-[10px] font-black text-charcoal uppercase tracking-[0.25em] mb-8">Customer Care</h4>
+          {/* Col 3: Customer Care */}
+          <div>
+            <h3 className="text-[16px] font-bold text-white mb-6">Customer Care</h3>
             <ul className="space-y-4">
-              <li><Link href="/shipping-policy" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Shipping</Link></li>
-              <li><Link href="/refund-policy" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Returns</Link></li>
-              <li><Link href="/privacy" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Privacy</Link></li>
-              <li><Link href="/terms" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">Terms</Link></li>
-              <li><Link href="/faq" className="text-neutral-400 hover:text-blush transition-all text-xs font-bold uppercase tracking-widest">FAQ</Link></li>
+              {customerCare.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Contact Column */}
-          <div className="lg:col-span-4">
-            <h4 className="text-[10px] font-black text-charcoal uppercase tracking-[0.25em] mb-8">Get In Touch</h4>
-            <ul className="space-y-6">
-              <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-cream flex items-center justify-center text-blush shrink-0"><Phone className="h-5 w-5" /></div>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Phone</p>
-                  <p className="text-charcoal font-bold text-sm">+91 96335 72427</p>
+          {/* Col 4: Contact */}
+          <div>
+            <h3 className="text-[16px] font-bold text-white mb-6">Get in Touch</h3>
+            <div className="space-y-4">
+              {[
+                { icon: Mail, content: "hello@miksandchiks.com", href: "mailto:hello@miksandchiks.com" },
+                { icon: Phone, content: "+91 9876 543 210", href: "tel:+919876543210" },
+                { icon: MapPin, content: "Kochi, Kerala, India" },
+                { icon: Clock, content: "Mon–Sat, 10AM–7PM IST" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <item.icon className="w-4 h-4 text-[#E9897E] mt-1 shrink-0" />
+                  {item.href ? (
+                    <Link href={item.href} className="text-[15px] leading-[1.8] text-white/[0.68] hover:text-[#E9897E] transition-colors duration-300">
+                      {item.content}
+                    </Link>
+                  ) : (
+                    <span className="text-[15px] leading-[1.8] text-white/[0.68]">{item.content}</span>
+                  )}
                 </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-cream flex items-center justify-center text-blush shrink-0"><Mail className="h-5 w-5" /></div>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Email</p>
-                  <p className="text-charcoal font-bold text-sm">miksandchiks@gmail.com</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-cream flex items-center justify-center text-blush shrink-0"><Clock className="h-5 w-5" /></div>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Hours</p>
-                  <p className="text-charcoal font-bold text-sm">Mon - Sat: 10:00 AM - 7:00 PM</p>
-                </div>
-              </li>
-            </ul>
+              ))}
+            </div>
+          </div>
+
+          {/* Col 5: Instagram Preview */}
+          <div>
+            <h3 className="text-[16px] font-bold text-white mb-6">Instagram</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {instaImages.map((img, i) => (
+                <Link key={i} href={instagramUrl} target="_blank" className="group relative rounded-xl overflow-hidden w-[88px] h-[88px]">
+                  <img src={img} alt="Instagram" loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                </Link>
+              ))}
+            </div>
+            <Link
+              href={instagramUrl}
+              target="_blank"
+              className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#E9897E] mt-4 hover:text-white transition-colors"
+            >
+              <Instagram className="w-3.5 h-3.5" />
+              @miksandchiks
+            </Link>
           </div>
         </div>
 
-        {/* Payment Icons */}
-        <div className="mt-20 pt-10 border-t border-neutral-100 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-6 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-             <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto" />
-             <img src="/payment/mastercard.svg" alt="Mastercard" className="h-6 w-auto" />
-             <img src="/payment/upi.svg" alt="UPI" className="h-4 w-auto" />
-             <img src="/payment/razorpay.svg" alt="Razorpay" className="h-4 w-auto" />
+        {/* ── MOBILE: Accordion layout ── */}
+        <div className="lg:hidden">
+          {/* Brand */}
+          <div className="pb-6 mb-2 border-b border-white/[0.06]">
+            <Link href="/" className="inline-block">
+              <span className="font-serif text-[28px] font-bold text-white">
+                Miks & <span className="text-[#E9897E] italic">Chiks</span>
+              </span>
+            </Link>
+            <p className="text-[14px] leading-[1.8] text-white/[0.68] mt-4 max-w-[300px]">
+              Thoughtfully designed maternity & kids wear crafted with love and the softest fabrics.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-5">
+              {dynamicSocials.map((s, i) => (
+                <Link
+                  key={i} href={s.href} target="_blank" aria-label={s.label}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-[#E9897E] transition-all"
+                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                >
+                  <s.icon className="w-4 h-4" />
+                </Link>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-col items-center md:items-end gap-2">
-            <p className="text-neutral-400 text-[10px] font-black uppercase tracking-[0.3em]">© {currentYear} Miks & Chiks. All rights reserved.</p>
-            <p className="text-neutral-300 text-[9px] font-bold uppercase tracking-widest">Designed for Modern Mothers in Kerala</p>
+          <MobileAccordion title="Quick Links">
+            <ul className="space-y-3">
+              {quickLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-[15px] text-white/[0.68]">{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </MobileAccordion>
+
+          <MobileAccordion title="Customer Care">
+            <ul className="space-y-3">
+              {customerCare.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-[15px] text-white/[0.68]">{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </MobileAccordion>
+
+          <MobileAccordion title="Get in Touch">
+            <div className="space-y-3">
+              <p className="text-[14px] text-white/[0.68] flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-[#E9897E]" /> hello@miksandchiks.com</p>
+              <p className="text-[14px] text-white/[0.68] flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-[#E9897E]" /> +91 9876 543 210</p>
+              <p className="text-[14px] text-white/[0.68] flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-[#E9897E]" /> Kochi, Kerala, India</p>
+            </div>
+          </MobileAccordion>
+        </div>
+
+        {/* ═══ PAYMENT METHODS ═══ */}
+        <div className="flex flex-wrap items-center justify-center gap-5 py-8 border-b border-white/[0.06] mt-8 lg:mt-0">
+          {["Visa", "Mastercard", "UPI", "Paytm", "Razorpay", "COD"].map((method) => (
+            <span
+              key={method}
+              className="text-[12px] font-semibold text-white/30 uppercase tracking-wider px-3 py-1.5 rounded-lg border border-white/[0.06]"
+            >
+              {method}
+            </span>
+          ))}
+        </div>
+
+        {/* ═══ BOTTOM BAR ═══ */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8">
+          <p className="text-[14px] text-white/[0.45]">
+            © {new Date().getFullYear()} Miks & Chiks. All rights reserved. Made with ❤️ in Kerala.
+          </p>
+          <div className="flex items-center gap-6">
+            {[
+              { label: "Privacy Policy", href: "/privacy" },
+              { label: "Terms", href: "/terms" },
+              { label: "Cookies", href: "/privacy" },
+            ].map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-[14px] text-white/[0.45] hover:text-white/70 transition-colors duration-300"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
     </footer>
   );
-});
-
-export default Footer;
+}
