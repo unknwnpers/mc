@@ -22,7 +22,7 @@ interface HeroSectionProps {
 export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionProps) {
   return (
     <section
-      className="relative overflow-hidden flex items-center min-h-[620px] md:min-h-[760px] pt-[130px] md:pt-[130px] pb-12 md:pb-24"
+      className="relative overflow-hidden w-full max-w-full flex items-center min-h-[620px] md:min-h-[760px] pt-[130px] md:pt-[130px] pb-12 md:pb-24"
       style={{ background: 'linear-gradient(180deg, #FFF9F6 0%, #FDF5F1 100%)' }}
     >
       {/* ── Background decoration ── */}
@@ -61,7 +61,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.25, ease }}
-              className="font-serif font-bold text-[36px] sm:text-[42px] md:text-[58px] lg:text-[72px] leading-[1.08] tracking-tight text-[#1E1E1E] mb-3"
+              className="font-serif font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[1.05] tracking-tight text-[#1E1E1E] mb-3"
             >
               {content.headline || "Softness That"}
               <span
@@ -82,7 +82,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4, ease }}
-              className="font-serif italic text-[20px] md:text-[24px] text-[#5C5C5C] mb-0"
+              className="font-serif italic text-[15px] md:text-[18px] text-[#5C5C5C] mb-0"
             >
               {content.subheadline || "Through Every Tiny Moment"}
             </motion.p>
@@ -92,7 +92,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.5, ease }}
-              className="text-[16px] md:text-[18px] leading-[1.8] text-[#5C5C5C] mt-6 max-w-[480px] mx-auto lg:ml-0"
+              className="text-[15px] md:text-[18px] leading-[1.8] text-[#5C5C5C] mt-6 max-w-[480px] mx-auto lg:ml-0"
             >
               {content.description || "Thoughtfully designed maternity & kids wear crafted with the softest fabrics, bringing comfort, elegance and joy to every moment of motherhood."}
             </motion.p>
@@ -102,18 +102,18 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6, ease }}
-              className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 mt-8"
+              className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-3 mt-8"
             >
               <Link
                 href={content.buttonLink || "/products"}
-                className="group inline-flex items-center justify-center gap-2.5 bg-[#E9897E] text-white font-semibold text-[15px] h-[54px] px-8 rounded-xl hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] hover:shadow-[0_14px_36px_rgba(233,137,126,0.30)] hover:-translate-y-0.5 transition-all duration-300"
+                className="group inline-flex items-center justify-center gap-2.5 bg-[#E9897E] text-white font-semibold text-[15px] h-[48px] md:h-[56px] w-full sm:w-auto px-8 rounded-xl hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] hover:shadow-[0_14px_36px_rgba(233,137,126,0.30)] hover:-translate-y-0.5 transition-all duration-200 md:duration-300"
               >
                 {content.buttonText || "Shop Collection"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
               <Link
                 href="/about"
-                className="inline-flex items-center justify-center bg-white text-[#1E1E1E] font-semibold text-[15px] h-[54px] px-8 rounded-xl border border-[rgba(233,137,126,0.12)] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] active:scale-[0.97] transition-all duration-300"
+                className="inline-flex items-center justify-center bg-white text-[#1E1E1E] font-semibold text-[15px] h-[48px] md:h-[56px] w-full sm:w-auto px-8 rounded-xl border border-[rgba(233,137,126,0.12)] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] active:scale-[0.97] transition-all duration-200 md:duration-300"
               >
                 Explore Story
               </Link>
@@ -124,7 +124,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.75 }}
-              className="flex flex-wrap justify-center lg:justify-start gap-x-5 md:gap-x-8 gap-y-3 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[rgba(233,137,126,0.08)]"
+              className="grid grid-cols-2 sm:flex flex-wrap justify-start gap-3 md:gap-6 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[rgba(233,137,126,0.08)]"
             >
               {[
                 { icon: Truck, text: "Free Shipping" },
@@ -149,7 +149,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
             transition={{ duration: 0.8, delay: 0.1, ease }}
             className="relative order-1 lg:order-2 flex justify-center lg:justify-end"
           >
-            <div className="relative w-full max-w-[520px] aspect-[4/5] group">
+            <div className="relative w-full max-w-[520px] aspect-[4/5] max-h-[420px] md:max-h-none group">
               {/* Main Image */}
               <div
                 className="relative w-full h-full rounded-[24px] md:rounded-[36px] overflow-hidden"

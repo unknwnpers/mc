@@ -100,7 +100,7 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
   const hasCollections = collections.length > 0;
 
   return (
-    <section className="py-16 md:py-24 relative" style={{ background: '#FFF9F6' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
       {/* Background glow */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
@@ -116,7 +116,7 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
           <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E9897E] mb-4">
             Explore Collections
           </p>
-          <h2 className="font-serif font-bold text-[30px] md:text-[48px] leading-[1.1] text-[#1E1E1E]">
+          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#1E1E1E]">
             Shop by Category
           </h2>
           <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] mt-4 md:mt-6">
@@ -163,7 +163,7 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
         )}
 
         {/* ── MOBILE: Horizontal snap scroll ── */}
-        <div className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4">
+        <div className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {(hasCollections
             ? collections.slice(0, 6).map((col) => ({
                 key: col.id,
@@ -180,7 +180,7 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
                 href: cat.href,
               }))
           ).map((item) => (
-            <div key={item.key} className="min-w-[280px] h-[360px] snap-start shrink-0">
+            <div key={item.key} className="min-w-[240px] md:min-w-0 h-[360px] snap-start shrink-0">
               <CategoryCardInline
                 title={item.title} count={item.count}
                 image={item.image} href={item.href}

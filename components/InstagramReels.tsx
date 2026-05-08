@@ -95,7 +95,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
   };
 
   return (
-    <section className="py-20 md:py-28 relative" style={{ background: '#FDF7F3' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
@@ -112,7 +112,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
             <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E9897E] mb-3">
               Our Community
             </p>
-            <h2 className="font-serif font-bold text-[30px] md:text-[48px] leading-[1.1] text-[#1E1E1E] mb-3 md:mb-4">
+            <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#1E1E1E] mb-3 md:mb-4">
               From Our Instagram
             </h2>
             <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] max-w-[560px] mt-3">
@@ -149,7 +149,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
           variants={containerVariants}
-          className="flex gap-5 md:gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:-mx-6 md:px-6"
+          className="flex gap-4 md:gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 md:-mx-6 md:px-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {REELS.map((reel) => (
             <motion.div key={reel.id} variants={itemVariants} className="snap-start shrink-0">
@@ -168,7 +168,7 @@ function ReelCard({ reel }: { reel: Reel }) {
     <Link
       href={reel.link}
       target="_blank"
-      className="group relative block w-[280px] md:w-[320px] h-[500px] md:h-[560px] rounded-[32px] overflow-hidden hover:-translate-y-1.5 transition-all duration-500 ease-out"
+      className="group relative block min-w-[220px] md:min-w-[280px] w-[220px] md:w-[320px] h-[400px] md:h-[560px] rounded-[32px] overflow-hidden hover:-translate-y-1.5 transition-all duration-300 md:duration-500 ease-out"
       style={{ boxShadow: '0 22px 55px rgba(0,0,0,0.06)' }}
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 28px 65px rgba(0,0,0,0.10)'; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 22px 55px rgba(0,0,0,0.06)'; }}

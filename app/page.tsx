@@ -227,7 +227,7 @@ export default async function Home() {
   const finalHeroImageUrl = activeHeroImage?.url || heroImage?.url || '/mother-baby.jpg';
 
   return (
-    <div className="min-h-screen bg-[#FFF9F6] font-sans">
+    <div className="w-full max-w-full overflow-x-hidden min-h-screen bg-[#FFF9F6] font-sans">
       <StructuredData />
       <Navbar />
 

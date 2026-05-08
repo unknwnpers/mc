@@ -71,7 +71,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
 
   return (
     <div
-      className="group bg-white rounded-[28px] overflow-hidden border border-[rgba(233,137,126,0.08)] flex flex-col h-full relative transition-all duration-300 ease-out hover:-translate-y-1.5"
+      className="group min-w-0 w-full bg-white rounded-[28px] overflow-hidden border border-[rgba(233,137,126,0.08)] flex flex-col h-full relative transition-all duration-200 md:duration-300 ease-out hover:-translate-y-1.5"
       style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.05)' }}
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 24px 56px rgba(233,137,126,0.12)'; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 16px 40px rgba(0,0,0,0.05)'; }}
@@ -135,7 +135,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
       </Link>
 
       {/* ── PRODUCT INFO (p-6) ── */}
-      <div className="p-5 md:p-6 flex flex-col flex-1">
+      <div className="p-3 md:p-5 flex flex-col flex-1">
         {/* Category */}
         <p className="text-[12px] font-bold tracking-[0.08em] uppercase text-[#E9897E] mb-1">
           {product.category_slug || "Premium"}
@@ -143,7 +143,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
 
         {/* Title */}
         <Link href={`/products/${product.id}`} className="block group/title">
-          <h3 className="text-[16px] md:text-[18px] font-bold leading-[1.5] text-[#1E1E1E] line-clamp-2 group-hover/title:text-[#E9897E] transition-colors duration-300 mt-1">
+          <h3 className="text-[14px] md:text-[16px] font-bold leading-5 text-[#1E1E1E] line-clamp-2 group-hover/title:text-[#E9897E] transition-colors duration-200 md:duration-300 mt-1">
             {product.name}
           </h3>
         </Link>
@@ -163,10 +163,10 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
         <div className="mt-3 flex items-baseline gap-2 flex-wrap">
           {offerData?.hasOffer ? (
             <>
-              <span className="text-[22px] md:text-[24px] font-extrabold text-[#1E1E1E]">
+              <span className="text-[18px] md:text-[24px] font-extrabold text-[#1E1E1E]">
                 ₹{offerData.discountedPrice.toLocaleString('en-IN')}
               </span>
-              <span className="text-[14px] line-through text-[#9A9A9A]">
+              <span className="text-[12px] md:text-sm line-through text-[#9A9A9A]">
                 ₹{displayPrice.toLocaleString('en-IN')}
               </span>
               <span className="text-[13px] font-bold text-[#E9897E]">
@@ -174,7 +174,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
               </span>
             </>
           ) : (
-            <span className="text-[22px] md:text-[24px] font-extrabold text-[#1E1E1E]">
+            <span className="text-[18px] md:text-[24px] font-extrabold text-[#1E1E1E]">
               ₹{displayPrice.toLocaleString('en-IN')}
             </span>
           )}
@@ -188,7 +188,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
           onClick={handleAddToCart}
           disabled={displayStock <= 0 || isAdding}
           className={cn(
-            "w-full h-[52px] rounded-xl text-[14px] font-semibold flex items-center justify-center gap-2.5 mt-4 transition-all duration-300 active:scale-[0.97]",
+            "w-full h-10 md:h-12 rounded-xl text-[12px] md:text-sm font-semibold flex items-center justify-center gap-2.5 mt-4 transition-all duration-200 md:duration-300 active:scale-[0.97]",
             displayStock <= 0
               ? "bg-[#F0F0F0] text-[#9A9A9A] cursor-not-allowed"
               : "bg-[#E9897E] text-white hover:bg-[#C86B5F] shadow-[0_6px_20px_rgba(233,137,126,0.25)] hover:shadow-[0_10px_28px_rgba(233,137,126,0.30)] hover:-translate-y-0.5"

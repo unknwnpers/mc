@@ -28,7 +28,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
   const trendingProducts = products.slice(1, 5);
 
   return (
-    <section className="py-16 md:py-24 relative" style={{ background: '#FDF7F3' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
       {/* Background glow */}
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
@@ -44,7 +44,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
           <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E9897E] mb-3">
             Just Dropped
           </p>
-          <h2 className="font-serif font-bold text-[30px] md:text-[48px] leading-[1.1] text-[#1E1E1E] mb-3 md:mb-4">
+          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#1E1E1E] mb-3 md:mb-4">
             Trending This Week
           </h2>
           <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] max-w-[560px]">
@@ -53,7 +53,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
         </motion.div>
 
         {/* ── MAIN CONTENT: Editorial Split ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-10 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-4 md:gap-6 lg:gap-8 items-stretch">
 
           {/* ═══ LEFT: Featured Campaign Card ═══ */}
           <motion.div
@@ -64,7 +64,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
           >
             <Link
               href={`/products/${campaignProduct.id}`}
-              className="group relative block rounded-[36px] overflow-hidden h-full min-h-[420px] lg:min-h-[720px]"
+              className="group relative block rounded-[36px] overflow-hidden w-full h-[420px] md:h-[520px] lg:h-[720px]"
               style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.06)' }}
             >
               <Image
@@ -87,7 +87,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
                 <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-white/60 mb-3">
                   {campaignProduct.category_slug || "New Collection"}
                 </p>
-                <h3 className="font-serif font-bold text-[36px] md:text-[52px] leading-[1.05] text-white tracking-tight mb-3">
+                <h3 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.05] text-white tracking-tight mb-3">
                   Designed for<br />
                   <span className="italic">Beautiful Beginnings</span>
                 </h3>
@@ -123,7 +123,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
               ))}
             </div>
             {/* Mobile: horizontal scroll */}
-            <div className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4">
+            <div className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {products.slice(0, 6).map((product) => (
                 <div key={product.id} className="min-w-[72%] snap-start">
                   <MiniProductCard product={product} />

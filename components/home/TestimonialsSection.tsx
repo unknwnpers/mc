@@ -54,7 +54,7 @@ export default function TestimonialsSection() {
   const prev = () => setActive((p) => (p - 1 + testimonials.length) % testimonials.length);
 
   return (
-    <section className="py-20 md:py-28 relative" style={{ background: '#FFF9F6' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
       {/* Background glow */}
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
@@ -73,7 +73,7 @@ export default function TestimonialsSection() {
               Customer Love
             </p>
 
-            <h2 className="font-serif font-bold text-[30px] md:text-[52px] leading-[1.08] text-[#1E1E1E] tracking-tight">
+            <h2 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.08] text-[#1E1E1E] tracking-tight">
               Loved by Moms<br />
               Across Every <span className="italic text-[#E9897E]">Tiny Moment</span>
             </h2>
@@ -173,7 +173,7 @@ export default function TestimonialsSection() {
           {/* Mobile: Horizontal scroll */}
           <div
             ref={scrollRef}
-            className="flex lg:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4"
+            className="flex lg:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {testimonials.map((t, i) => (
               <div key={i} className="min-w-[88%] sm:min-w-[75%] snap-start">
@@ -191,7 +191,7 @@ export default function TestimonialsSection() {
 function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[0] }) {
   return (
     <div
-      className="rounded-[32px] p-7 md:p-8 border relative overflow-hidden"
+      className="rounded-[32px] p-5 md:p-8 border relative overflow-hidden"
       style={{
         background: 'rgba(255,255,255,0.92)',
         borderColor: 'rgba(233,137,126,0.08)',
@@ -214,7 +214,7 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
       </div>
 
       {/* Testimonial text */}
-      <p className="text-[15px] md:text-[16px] leading-[1.9] text-[#5C5C5C] mt-4 italic relative z-10">
+      <p className="text-[15px] leading-7 md:text-[16px] md:leading-[1.9] text-[#5C5C5C] mt-4 italic relative z-10">
         &ldquo;{t.text}&rdquo;
       </p>
 

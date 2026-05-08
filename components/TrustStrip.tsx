@@ -51,7 +51,7 @@ const itemVariants = {
 
 export default function TrustStrip() {
   return (
-    <section className="relative z-10 -mt-10 md:-mt-14 pb-8 md:pb-12">
+    <section className="relative w-full max-w-full overflow-hidden z-10 -mt-10 md:-mt-14 pb-8 md:pb-12">
       <div className="max-w-[1320px] mx-auto px-4 md:px-6">
         <motion.div
           initial="hidden"
@@ -75,81 +75,26 @@ export default function TrustStrip() {
             Loved by Thousands of Moms
           </motion.h2>
 
-          {/* Desktop: 5 columns with separators */}
-          <div className="hidden lg:grid lg:grid-cols-5">
+          {/* Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mt-6 md:mt-10">
             {features.map((feature, idx) => (
               <motion.div
                 key={idx}
                 variants={itemVariants}
-                className={`flex flex-col items-center text-center group cursor-default px-4 py-4 hover:-translate-y-1 transition-all duration-300 ease-out ${
-                  idx < features.length - 1 ? 'border-r border-[rgba(233,137,126,0.08)]' : ''
-                }`}
+                className="flex flex-col items-center text-center group cursor-default p-4 md:p-6 rounded-2xl hover:bg-[rgba(233,137,126,0.03)] hover:-translate-y-1 transition-all duration-200 md:duration-300 ease-out"
               >
-                {/* Icon */}
                 <div
-                  className="w-[72px] h-[72px] rounded-full flex items-center justify-center mb-4 group-hover:shadow-[0_8px_24px_rgba(233,137,126,0.15)] group-hover:scale-105 transition-all duration-300"
+                  className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:shadow-[0_8px_24px_rgba(233,137,126,0.15)] group-hover:scale-105 transition-all duration-200 md:duration-300"
                   style={{ background: 'rgba(233,137,126,0.10)' }}
                 >
-                  <feature.icon className="w-7 h-7 text-[#E9897E]" strokeWidth={1.8} />
+                  <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-[#E9897E]" strokeWidth={1.8} />
                 </div>
-                {/* Title */}
-                <h3 className="text-[18px] font-bold text-[#1E1E1E] mb-1.5 leading-tight">
+                <h3 className="text-sm md:text-base font-bold text-[#1E1E1E] mb-1.5 leading-tight">
                   {feature.title}
                 </h3>
-                {/* Description */}
-                <p className="text-[14px] leading-[1.7] text-[#6B6B6B] max-w-[220px]">
+                <p className="text-[13px] md:text-[14px] leading-[1.6] md:leading-[1.7] text-[#6B6B6B] max-w-[220px]">
                   {feature.desc}
                 </p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Tablet: 2-column grid */}
-          <div className="hidden md:grid md:grid-cols-2 lg:hidden gap-6">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                variants={itemVariants}
-                className="flex flex-col items-center text-center group cursor-default p-4 rounded-2xl hover:bg-[rgba(233,137,126,0.03)] hover:-translate-y-1 transition-all duration-300 ease-out"
-              >
-                <div
-                  className="w-[72px] h-[72px] rounded-full flex items-center justify-center mb-4 group-hover:shadow-[0_8px_24px_rgba(233,137,126,0.15)] group-hover:scale-105 transition-all duration-300"
-                  style={{ background: 'rgba(233,137,126,0.10)' }}
-                >
-                  <feature.icon className="w-7 h-7 text-[#E9897E]" strokeWidth={1.8} />
-                </div>
-                <h3 className="text-[18px] font-bold text-[#1E1E1E] mb-1.5 leading-tight">
-                  {feature.title}
-                </h3>
-                <p className="text-[14px] leading-[1.7] text-[#6B6B6B] max-w-[220px]">
-                  {feature.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Mobile: stacked vertical cards */}
-          <div className="flex flex-col md:hidden gap-5">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                variants={itemVariants}
-                className="flex items-start gap-4 group cursor-default p-3 rounded-2xl hover:bg-[rgba(233,137,126,0.03)] transition-all duration-300"
-              >
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(233,137,126,0.10)' }}
-                >
-                  <feature.icon className="w-6 h-6 text-[#E9897E]" strokeWidth={1.8} />
-                </div>
-                <div>
-                  <h3 className="text-[16px] font-bold text-[#1E1E1E] mb-0.5 leading-tight">
-                    {feature.title}
-                  </h3>
-                  <p className="text-[14px] leading-[1.6] text-[#6B6B6B]">
-                    {feature.desc}
-                  </p>
-                </div>
               </motion.div>
             ))}
           </div>

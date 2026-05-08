@@ -31,7 +31,7 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="py-20 md:py-28" style={{ background: '#FDF7F3' }}>
+    <section className="py-10 md:py-16 lg:py-24 w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
       <div className="max-w-[1320px] mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 28 }}
@@ -102,7 +102,7 @@ export default function NewsletterSection() {
             </div>
 
             {/* Heading */}
-            <h2 className="font-serif font-bold text-[30px] md:text-[46px] lg:text-[56px] leading-[1.08] text-[#1E1E1E] tracking-tight max-w-[680px] mx-auto">
+            <h2 className="font-serif font-bold text-[32px] md:text-[46px] lg:text-[56px] leading-[1.08] text-[#1E1E1E] tracking-tight max-w-[680px] mx-auto">
               Get Exclusive Offers,{' '}
               <span className="italic text-[#E9897E]">Mom Tips</span>
               {' '}& Early Access
@@ -157,7 +157,7 @@ export default function NewsletterSection() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
                       required
-                      className="flex-1 h-[64px] rounded-full px-7 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E9897E]/30 focus:shadow-[0_0_0_4px_rgba(233,137,126,0.08)] transition-all duration-300"
+                      className="flex-1 h-12 md:h-14 rounded-full px-7 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E9897E]/30 focus:shadow-[0_0_0_4px_rgba(233,137,126,0.08)] transition-all duration-300"
                       style={{
                         background: 'rgba(255,255,255,0.92)',
                         borderColor: 'rgba(233,137,126,0.12)',
@@ -166,7 +166,7 @@ export default function NewsletterSection() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group h-[64px] px-8 rounded-full bg-[#E9897E] text-white text-[15px] font-semibold inline-flex items-center gap-2.5 hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] hover:shadow-[0_14px_36px_rgba(233,137,126,0.30)] hover:-translate-y-0.5 transition-all duration-300 shrink-0"
+                      className="group h-12 md:h-14 px-8 rounded-full bg-[#E9897E] text-white text-[15px] font-semibold inline-flex items-center gap-2.5 hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] hover:shadow-[0_14px_36px_rgba(233,137,126,0.30)] hover:-translate-y-0.5 transition-all duration-300 shrink-0"
                     >
                       {loading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -186,7 +186,7 @@ export default function NewsletterSection() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
                       required
-                      className="w-full h-[60px] rounded-full px-6 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E9897E]/30 focus:shadow-[0_0_0_4px_rgba(233,137,126,0.08)] transition-all"
+                      className="w-full h-12 rounded-full px-6 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E9897E]/30 focus:shadow-[0_0_0_4px_rgba(233,137,126,0.08)] transition-all"
                       style={{
                         background: 'rgba(255,255,255,0.92)',
                         borderColor: 'rgba(233,137,126,0.12)',
@@ -195,7 +195,7 @@ export default function NewsletterSection() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-[60px] rounded-full bg-[#E9897E] text-white text-[15px] font-semibold flex items-center justify-center gap-2.5 hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] transition-all"
+                      className="w-full h-12 rounded-full bg-[#E9897E] text-white text-[15px] font-semibold flex items-center justify-center gap-2.5 hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] transition-all"
                     >
                       {loading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

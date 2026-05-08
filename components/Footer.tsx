@@ -43,30 +43,7 @@ const instaImages = [
   "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=200&h=200&auto=format&fit=crop",
 ];
 
-function MobileAccordion({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-b border-white/[0.06] py-4">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between text-left">
-        <span className="text-[16px] font-bold text-white">{title}</span>
-        <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease }}
-            className="overflow-hidden"
-          >
-            <div className="pt-4 pb-2">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+
 
 export default function Footer({ socialSettings = {} }: { socialSettings?: Record<string, string> }) {
   const dynamicSocials = [
@@ -81,12 +58,11 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
   const instagramUrl = socialSettings.instagram || "https://instagram.com/miksandchiks";
 
   return (
-    <footer style={{ background: '#1F1A17' }}>
+    <footer className="w-full max-w-full overflow-hidden" style={{ background: '#1F1A17' }}>
       {/* ═══ MAIN FOOTER ═══ */}
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 pt-20 md:pt-28 pb-12 md:pb-16">
 
-        {/* Desktop: 5-column layout */}
-        <div className="hidden lg:grid lg:grid-cols-[1.3fr_0.8fr_0.8fr_0.9fr_0.8fr] gap-12 items-start pb-16 border-b border-white/[0.08]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_0.8fr_0.9fr_0.8fr] gap-8 lg:gap-12 items-start pb-16 border-b border-white/[0.08]">
 
           {/* Col 1: Brand */}
           <div className="max-w-[320px]">
@@ -99,7 +75,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
               </span>
             </Link>
 
-            <p className="text-[15px] leading-[1.9] text-white/[0.68] mt-6">
+            <p className="text-sm md:text-[15px] leading-[1.9] text-white/[0.68] mt-6">
               Thoughtfully designed maternity & kids wear crafted with the softest fabrics, bringing comfort and joy to every moment of motherhood.
             </p>
 
@@ -140,7 +116,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <ul className="space-y-4">
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
+                  <Link href={link.href} className="text-sm md:text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
                     {link.label}
                   </Link>
                 </li>
@@ -154,7 +130,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <ul className="space-y-4">
               {customerCare.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
+                  <Link href={link.href} className="text-sm md:text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
                     {link.label}
                   </Link>
                 </li>
@@ -175,11 +151,11 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
                 <div key={i} className="flex items-start gap-3">
                   <item.icon className="w-4 h-4 text-[#E9897E] mt-1 shrink-0" />
                   {item.href ? (
-                    <Link href={item.href} className="text-[15px] leading-[1.8] text-white/[0.68] hover:text-[#E9897E] transition-colors duration-300">
+                    <Link href={item.href} className="text-sm md:text-[15px] leading-[1.8] text-white/[0.68] hover:text-[#E9897E] transition-colors duration-300">
                       {item.content}
                     </Link>
                   ) : (
-                    <span className="text-[15px] leading-[1.8] text-white/[0.68]">{item.content}</span>
+                    <span className="text-sm md:text-[15px] leading-[1.8] text-white/[0.68]">{item.content}</span>
                   )}
                 </div>
               ))}
@@ -208,59 +184,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
           </div>
         </div>
 
-        {/* ── MOBILE: Accordion layout ── */}
-        <div className="lg:hidden">
-          {/* Brand */}
-          <div className="pb-6 mb-2 border-b border-white/[0.06]">
-            <Link href="/" className="inline-block">
-              <span className="font-serif text-[28px] font-bold text-white">
-                Miks & <span className="text-[#E9897E] italic">Chiks</span>
-              </span>
-            </Link>
-            <p className="text-[14px] leading-[1.8] text-white/[0.68] mt-4 max-w-[300px]">
-              Thoughtfully designed maternity & kids wear crafted with love and the softest fabrics.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-5">
-              {dynamicSocials.map((s, i) => (
-                <Link
-                  key={i} href={s.href} target="_blank" aria-label={s.label}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-[#E9897E] transition-all"
-                  style={{ background: 'rgba(255,255,255,0.06)' }}
-                >
-                  <s.icon className="w-4 h-4" />
-                </Link>
-              ))}
-            </div>
-          </div>
 
-          <MobileAccordion title="Quick Links">
-            <ul className="space-y-3">
-              {quickLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-[15px] text-white/[0.68]">{link.label}</Link>
-                </li>
-              ))}
-            </ul>
-          </MobileAccordion>
-
-          <MobileAccordion title="Customer Care">
-            <ul className="space-y-3">
-              {customerCare.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-[15px] text-white/[0.68]">{link.label}</Link>
-                </li>
-              ))}
-            </ul>
-          </MobileAccordion>
-
-          <MobileAccordion title="Get in Touch">
-            <div className="space-y-3">
-              <p className="text-[14px] text-white/[0.68] flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-[#E9897E]" /> hello@miksandchiks.com</p>
-              <p className="text-[14px] text-white/[0.68] flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-[#E9897E]" /> +91 9876 543 210</p>
-              <p className="text-[14px] text-white/[0.68] flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-[#E9897E]" /> Kochi, Kerala, India</p>
-            </div>
-          </MobileAccordion>
-        </div>
 
         {/* ═══ PAYMENT METHODS ═══ */}
         <div className="flex flex-wrap items-center justify-center gap-5 py-8 border-b border-white/[0.06] mt-8 lg:mt-0">

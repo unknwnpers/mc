@@ -25,6 +25,13 @@ const playfair = Playfair_Display({
   preload: true,
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: 'Miks & Chiks | Soft Premium Maternity & Kids Wear',
   description: 'Experience the finest maternity and kids wear at Miks & Chiks. Premium quality, ultimate comfort, and effortless style for mothers and little ones in Kochi.',
@@ -65,8 +72,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${playfair.variable} font-sans`} suppressHydrationWarning>
+    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning>
+      <body className={`${inter.variable} ${playfair.variable} font-sans w-full max-w-full overflow-x-hidden`} suppressHydrationWarning>
         <RootInit />
         <Suspense fallback={null}>
           <GoogleAnalytics />

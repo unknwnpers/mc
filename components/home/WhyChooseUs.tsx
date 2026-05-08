@@ -52,13 +52,13 @@ interface WhyChooseUsProps {
 
 export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
   return (
-    <section className="py-20 md:py-28 relative" style={{ background: '#FFF9F6' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none hidden md:block" />
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#FDF5F1]/80 rounded-full blur-[80px] pointer-events-none hidden md:block" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="flex flex-col lg:flex-row gap-8 md:gap-12 items-center">
 
           {/* ═══ LEFT: Storytelling Image ═══ */}
           <motion.div
@@ -66,7 +66,7 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6, ease }}
-            className="relative order-2 lg:order-1"
+            className="relative order-2 lg:order-1 w-full lg:flex-1"
           >
             <div
               className="relative rounded-[28px] md:rounded-[40px] overflow-hidden min-h-[380px] md:min-h-[680px] lg:min-h-[760px]"
@@ -127,7 +127,7 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
           </motion.div>
 
           {/* ═══ RIGHT: Feature Content ═══ */}
-          <div className="order-1 lg:order-2 flex flex-col justify-center">
+          <div className="order-1 lg:order-2 flex flex-col justify-center w-full lg:flex-1">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -147,7 +147,7 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
               </h2>
 
               {/* Description */}
-              <p className="text-[15px] md:text-[18px] leading-[1.9] text-[#5C5C5C] mt-6 md:mt-8 max-w-[520px]">
+              <p className="text-[15px] md:text-[17px] leading-7 md:leading-8 text-[#5C5C5C] mt-6 md:mt-8 max-w-[520px]">
                 {content.description || "We believe every mother deserves products that are as thoughtful as her love. Each piece is designed from the heart — tested by moms, loved by babies."}
               </p>
             </motion.div>
@@ -178,7 +178,7 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
                     <h3 className="text-[18px] md:text-[20px] font-bold text-[#1E1E1E] mb-1 leading-tight">
                       {feature.title}
                     </h3>
-                    <p className="text-[15px] leading-[1.8] text-[#6B6B6B]">
+                    <p className="text-[14px] md:text-[15px] leading-[1.6] md:leading-[1.8] text-[#6B6B6B]">
                       {feature.desc}
                     </p>
                   </div>
