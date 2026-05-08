@@ -4,16 +4,24 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { toast } from "sonner";
-import { Loader2, Save, Upload, LayoutTemplate, HeartPulse, ImageIcon } from "lucide-react";
+import { Loader2, Save, Upload, LayoutTemplate, HeartPulse, ImageIcon, ArrowUp, ArrowDown, Trash2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+
+interface HeroImage {
+  id: string;
+  url: string;
+  active: boolean;
+}
 
 export default function HomepageSettings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingMaternity, setUploadingMaternity] = useState(false);
+  const [uploadingHero, setUploadingHero] = useState(false);
 
   const [settings, setSettings] = useState({
+    heroImages: [] as HeroImage[],
     hero: {
       headline: "Softness That",
       headlineHighlight: "Stays With You",
@@ -41,6 +49,7 @@ export default function HomepageSettings() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setSettings((prev) => ({
+            heroImages: data.heroImages || [],
             hero: { ...prev.hero, ...(data.hero || {}) },
             maternity: { ...prev.maternity, ...(data.maternity || {}) },
           }));
@@ -83,48 +92,91 @@ export default function HomepageSettings() {
     }));
   };
 
+  const handleUpload = async (file: File, subcategory: string) => {
+    if (!user) throw new Error("Unauthorized");
+    const token = await user.getIdToken();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("category", "marketing");
+    formData.append("subcategory", subcategory);
+
+    const response = await fetch("/api/admin/images/upload", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await response.json();
+    if (!data.success || !data.image?.url) throw new Error(data.error || "Upload failed");
+    return data.image.url;
+  };
+
   const handleMaternityImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
-      return;
-    }
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File size must be less than 5MB"); return; }
 
     try {
       setUploadingMaternity(true);
-      const token = await user.getIdToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("category", "marketing");
-      formData.append("subcategory", "homepage-maternity");
-
-      const response = await fetch("/api/admin/images/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.success && data.image?.url) {
-        setSettings((prev) => ({
-          ...prev,
-          maternity: { ...prev.maternity, imageUrl: data.image.url },
-        }));
-        toast.success("Image uploaded successfully!");
-      } else {
-        toast.error(data.error || "Failed to upload image");
-      }
+      const url = await handleUpload(file, "homepage-maternity");
+      setSettings((prev) => ({ ...prev, maternity: { ...prev.maternity, imageUrl: url } }));
+      toast.success("Image uploaded successfully!");
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error(error);
       toast.error("Failed to upload image");
     } finally {
       setUploadingMaternity(false);
-      e.target.value = ""; // reset input
+      e.target.value = "";
     }
+  };
+
+  const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File size must be less than 5MB"); return; }
+
+    try {
+      setUploadingHero(true);
+      const url = await handleUpload(file, "homepage-hero");
+      setSettings((prev) => ({
+        ...prev,
+        heroImages: [...prev.heroImages, { id: Date.now().toString(), url, active: true }],
+      }));
+      toast.success("Hero image uploaded successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload hero image");
+    } finally {
+      setUploadingHero(false);
+      e.target.value = "";
+    }
+  };
+
+  const moveHeroImage = (index: number, direction: 'up' | 'down') => {
+    setSettings((prev) => {
+      const newImages = [...prev.heroImages];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= newImages.length) return prev;
+      const temp = newImages[index];
+      newImages[index] = newImages[targetIndex];
+      newImages[targetIndex] = temp;
+      return { ...prev, heroImages: newImages };
+    });
+  };
+
+  const toggleHeroImage = (index: number) => {
+    setSettings((prev) => {
+      const newImages = [...prev.heroImages];
+      newImages[index].active = !newImages[index].active;
+      return { ...prev, heroImages: newImages };
+    });
+  };
+
+  const removeHeroImage = (index: number) => {
+    if (!confirm("Remove this image?")) return;
+    setSettings((prev) => ({
+      ...prev,
+      heroImages: prev.heroImages.filter((_, i) => i !== index),
+    }));
   };
 
   if (loading) {
@@ -158,6 +210,54 @@ export default function HomepageSettings() {
           <div className="flex items-center gap-3 border-b border-white/[0.06] pb-4 mb-6">
             <LayoutTemplate className="w-6 h-6 text-rose-400" />
             <h2 className="text-xl font-bold text-white">Hero Section</h2>
+          </div>
+
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-bold text-white">Hero Images Gallery</label>
+              <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all">
+                {uploadingHero ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                Add Image
+                <input type="file" accept="image/*" onChange={handleHeroImageUpload} className="hidden" disabled={uploadingHero} />
+              </label>
+            </div>
+            
+            {settings.heroImages.length === 0 ? (
+              <div className="bg-white/[0.02] border border-white/[0.05] border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-white/40">
+                <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-sm">No hero images uploaded yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {settings.heroImages.map((img, i) => (
+                  <div key={img.id} className={`flex items-center gap-4 bg-white/[0.03] border ${img.active ? 'border-rose-500/50' : 'border-white/[0.08] opacity-60'} rounded-xl p-3 transition-all`}>
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-black shrink-0 relative">
+                      <img src={img.url} alt="Hero" className="w-full h-full object-cover" />
+                      {!img.active && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><EyeOff className="w-4 h-4 text-white" /></div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{img.url.split('/').pop()?.split('?')[0] || 'Image'}</p>
+                      <p className="text-xs text-white/40">{img.active ? 'Active' : 'Inactive'} • Position {i + 1}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => toggleHeroImage(i)} className="p-2 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-colors" title={img.active ? "Deactivate" : "Activate"}>
+                        {img.active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => moveHeroImage(i, 'up')} disabled={i === 0} className="p-2 hover:bg-white/10 rounded-lg text-white/60 disabled:opacity-30 transition-colors">
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => moveHeroImage(i, 'down')} disabled={i === settings.heroImages.length - 1} className="p-2 hover:bg-white/10 rounded-lg text-white/60 disabled:opacity-30 transition-colors">
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => removeHeroImage(i)} className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-xs text-white/40 mt-2">The topmost active image will be displayed on the website.</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -222,9 +322,6 @@ export default function HomepageSettings() {
               />
             </div>
           </div>
-          <p className="text-xs text-white/40 mt-4">
-            Note: Hero image is managed automatically from the Images section (Category: marketing, Subcategory: homepage).
-          </p>
         </div>
 
         {/* MATERNITY SECTION */}

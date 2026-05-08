@@ -223,13 +223,16 @@ export default async function Home() {
     getHomepageSettings(),
   ]);
 
+  const activeHeroImage = homepageSettings?.heroImages?.find((img: any) => img.active);
+  const finalHeroImageUrl = activeHeroImage?.url || heroImage?.url || '/mother-baby.jpg';
+
   return (
     <div className="min-h-screen bg-[#FFF9F6] font-sans">
       <StructuredData />
       <Navbar />
 
       {/* 1. Hero — above fold, critical */}
-      <HeroSection heroImageUrl={heroImage?.url || '/mother-baby.jpg'} content={homepageSettings?.hero} />
+      <HeroSection heroImageUrl={finalHeroImageUrl} content={homepageSettings?.hero} />
 
       {/* 2. Trust Features — overlaps hero */}
       <TrustStrip />
