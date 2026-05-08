@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { Loader2, Save, Upload, LayoutTemplate, HeartPulse, ImageIcon, ArrowUp, ArrowDown, Trash2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -44,15 +43,22 @@ export default function HomepageSettings() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const docRef = doc(db, "settings", "homepage");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        if (!user) return; // Wait for user to be available
+        const token = await user.getIdToken();
+        const response = await fetch("/api/admin/homepage", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          const data = result.data;
           setSettings((prev) => ({
             heroImages: data.heroImages || [],
             hero: { ...prev.hero, ...(data.hero || {}) },
             maternity: { ...prev.maternity, ...(data.maternity || {}) },
           }));
+        } else {
+          throw new Error(result.error || "Failed to fetch settings");
         }
       } catch (error) {
         console.error("Error loading homepage settings:", error);
@@ -61,18 +67,31 @@ export default function HomepageSettings() {
         setLoading(false);
       }
     }
-    loadSettings();
-  }, []);
+    if (user) {
+      loadSettings();
+    }
+  }, [user]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const docRef = doc(db, "settings", "homepage");
-      await setDoc(docRef, settings, { merge: true });
+      if (!user) throw new Error("Unauthorized");
+      const token = await user.getIdToken();
+      const response = await fetch("/api/admin/homepage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(settings),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to save settings");
+
       toast.success("Homepage settings updated successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving homepage settings:", error);
-      toast.error("Failed to save settings");
+      toast.error(error.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }

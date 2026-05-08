@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { Loader2, Save, Instagram, Facebook, Youtube, Phone, Twitter } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function SocialMediaSettings() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
@@ -20,10 +21,15 @@ export default function SocialMediaSettings() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const docRef = doc(db, "settings", "social_media");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        if (!user) return;
+        const token = await user.getIdToken();
+        const response = await fetch("/api/admin/social-media", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          const data = result.data;
           setSettings({
             instagram: data.instagram || "",
             facebook: data.facebook || "",
@@ -31,6 +37,8 @@ export default function SocialMediaSettings() {
             x: data.x || "",
             youtube: data.youtube || "",
           });
+        } else {
+          throw new Error(result.error || "Failed to fetch settings");
         }
       } catch (error) {
         console.error("Error loading social media settings:", error);
@@ -39,18 +47,31 @@ export default function SocialMediaSettings() {
         setLoading(false);
       }
     }
-    loadSettings();
-  }, []);
+    if (user) {
+      loadSettings();
+    }
+  }, [user]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const docRef = doc(db, "settings", "social_media");
-      await setDoc(docRef, settings, { merge: true });
+      if (!user) throw new Error("Unauthorized");
+      const token = await user.getIdToken();
+      const response = await fetch("/api/admin/social-media", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(settings),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to save settings");
+
       toast.success("Social media links updated successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving social media settings:", error);
-      toast.error("Failed to save settings");
+      toast.error(error.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
