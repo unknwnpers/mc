@@ -27,14 +27,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Parse request body
+    // 2. Parse request body (for transient options like isCOD and coupon)
     const body = await req.json();
     const {
       couponDiscount = 0,
       isCOD = false,
     } = body;
 
-    // 3. Fetch canonical cart from Firestore
+    // 3. Fetch canonical cart from Firestore (calculations MUST happen in backend)
     const cartSnapshot = await adminDb.collection("users").doc(userId).collection("cart").get();
 
     if (cartSnapshot.empty) {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     for (const doc of cartSnapshot.docs) {
       const item = doc.data();
-      const productId = item.id;
+      const productId = item.id; // item.id is used as productId in cart-context
       const sku = item.sku;
       const quantity = item.quantity || 1;
 

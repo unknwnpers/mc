@@ -20,7 +20,6 @@ export type CartItem = {
   id: string;
   name: string;
   price: number;
-  mrp?: number;
   image: string;
   quantity: number;
   sku: string;           // variant SKU — canonical key
