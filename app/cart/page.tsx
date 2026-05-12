@@ -7,7 +7,7 @@ import { ApplyCoupon } from "@/components/ApplyCoupon";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle, Shield, RefreshCw, Headphones, AlertCircle, ShoppingBag, MapPin, Info, Loader2, Box, ChevronRight, Phone } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle, Shield, RefreshCw, Headphones, AlertCircle, ShoppingBag, MapPin, Info, Loader2, Box, ChevronRight, Phone, CheckCircle2, Lock } from "lucide-react";
 
 const MIN_ORDER_VALUE = 200;
 import Link from "next/link";
@@ -226,51 +226,51 @@ export default function CartPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 xl:gap-12 items-start">
                         {/* ITEMS LIST */}
                         <div className="space-y-6">
-                            {cart.map((item) => (
+                            {cart.map((item) => {
+                                const itemMrp = item.mrp || item.price;
+                                const hasDiscount = itemMrp > item.price;
+                                const discountPercentage = hasDiscount ? Math.round(((itemMrp - item.price) / itemMrp) * 100) : 0;
+
+                                return (
                                 <div
                                     key={`${item.id}-${item.sku}`}
-                                    className="bg-white rounded-[40px] border border-[#F3E8E5] p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
+                                    className="bg-white rounded-[32px] border border-[#F3E8E5] p-5 md:p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                                 >
-                                    <div className="flex flex-col md:flex-row gap-6 md:items-center">
+                                    <div className="flex gap-5 md:items-start">
                                         {/* Product Image */}
-                                        <div className="w-full md:w-32 h-48 md:h-32 bg-cream rounded-[32px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
+                                        <div className="w-24 md:w-32 h-24 md:h-32 bg-cream rounded-[24px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
                                             <img
                                                 src={item.image}
                                                 alt={item.name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                             />
                                         </div>
 
                                         {/* Product Info */}
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-4 mb-2">
-                                                <div>
-                                                    <h3 className="text-xl md:text-2xl font-serif font-bold text-charcoal tracking-tight truncate leading-tight">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <h3 className="text-sm md:text-lg font-serif font-bold text-charcoal truncate leading-tight mb-1">
                                                         {item.name}
                                                     </h3>
-                                                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                                                        {(() => {
-                                                            let displaySize = item.selectedSize;
-                                                            if (displaySize) {
-                                                                const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
-                                                                if (skuMatch) {
-                                                                    const num = skuMatch[1];
-                                                                    if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
-                                                                        displaySize = `${num[0]}-${num.slice(1)}Y`;
-                                                                    } else {
-                                                                        displaySize = `${num}Y`;
-                                                                    }
-                                                                }
-                                                            }
-                                                            return displaySize ? (
-                                                                <span className="text-[10px] font-black text-blush uppercase tracking-widest bg-rose-50 px-3 py-1 rounded-full border border-blush/5">
-                                                                    Size: {displaySize}
-                                                                </span>
-                                                            ) : null;
-                                                        })()}
-                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-                                                            Unit Price: ₹{item.price}
+                                                    <p className="text-[10px] md:text-[11px] font-medium text-neutral-400 mb-3">
+                                                        Size: {item.selectedSize} {item.sku.includes('-') && `| Color: ${item.sku.split('-')[1]}`}
+                                                    </p>
+
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <span className="text-lg md:text-xl font-serif font-bold text-blush">
+                                                            ₹{item.price.toLocaleString()}
                                                         </span>
+                                                        {hasDiscount && (
+                                                            <span className="text-[11px] md:text-[13px] text-neutral-300 line-through font-medium">
+                                                                ₹{itemMrp.toLocaleString()}
+                                                            </span>
+                                                        )}
+                                                        {hasDiscount && (
+                                                            <span className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
+                                                                {discountPercentage}% OFF
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <button
@@ -278,18 +278,14 @@ export default function CartPage() {
                                                         removeFromCart(item.id, item.sku);
                                                         toast.error(`${item.name} removed`);
                                                     }}
-                                                    className="p-3 text-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+                                                    className="p-2 text-neutral-300 hover:text-red-500 transition-all active:scale-90"
                                                 >
-                                                    <Trash2 className="w-5 h-5" />
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
 
-                                            <div className="flex items-center justify-between mt-6">
-                                                <p className="text-2xl font-serif font-bold text-charcoal">
-                                                    ₹{(item.price * item.quantity).toLocaleString()}
-                                                </p>
-
-                                                <div className="flex items-center gap-1 p-1 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center bg-neutral-50 rounded-xl border border-neutral-100/50">
                                                     <button
                                                         onClick={() =>
                                                             updateQuantity(
@@ -299,12 +295,12 @@ export default function CartPage() {
                                                             )
                                                         }
                                                         disabled={item.quantity <= 1}
-                                                        className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-neutral-400 hover:text-blush hover:shadow-sm transition-all disabled:opacity-30"
+                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-blush transition-all disabled:opacity-30"
                                                     >
-                                                        <Minus className="w-4 h-4" />
+                                                        <Minus className="w-3.5 h-3.5" />
                                                     </button>
 
-                                                    <span className="w-10 text-center text-sm font-black text-charcoal">
+                                                    <span className="w-6 text-center text-[13px] font-bold text-charcoal">
                                                         {item.quantity}
                                                     </span>
 
@@ -312,16 +308,17 @@ export default function CartPage() {
                                                         onClick={() =>
                                                             updateQuantity(item.id, item.quantity + 1, item.sku)
                                                         }
-                                                        className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-neutral-400 hover:text-blush hover:shadow-sm transition-all"
+                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-blush transition-all"
                                                     >
-                                                        <Plus className="w-4 h-4" />
+                                                        <Plus className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
 
                             {/* Address Selection Container */}
                             {user && cart.length > 0 && (
@@ -407,68 +404,73 @@ export default function CartPage() {
 
                         {/* ORDER SUMMARY */}
                         <div className="space-y-6 lg:sticky lg:top-40">
-                            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-charcoal/5">
-                                <h2 className="text-2xl font-serif font-bold text-charcoal mb-8 border-b border-neutral-50 pb-6">
+                            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-charcoal/5 relative overflow-hidden">
+                                <h2 className="text-2xl font-serif font-bold text-charcoal mb-8">
                                     Order <span className="text-blush italic">Summary</span>
                                 </h2>
 
-                                <div className="space-y-5 mb-8">
+                                <div className="space-y-4 mb-8">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Subtotal</span>
-                                        <span className="text-sm font-bold text-charcoal">₹{(paymentBreakdown?.subtotal ?? total ?? 0).toLocaleString()}</span>
+                                        <span className="text-[13px] font-bold text-charcoal">Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
+                                        <span className="text-[13px] font-bold text-charcoal">₹{(paymentBreakdown?.mrpTotal ?? cart.reduce((s, i) => s + (i.mrp || i.price) * i.quantity, 0)).toLocaleString()}</span>
+                                    </div>
+
+                                    {(discount > 0 || (paymentBreakdown?.discountAmount ?? 0) > 0) && (
+                                        <div className="flex justify-between items-center text-emerald-600">
+                                            <span className="text-[13px] font-bold">Discount {(discount > 0) && `(Coupon)`}</span>
+                                            <span className="text-[13px] font-bold">-₹{(discount + (paymentBreakdown?.discountAmount ?? 0)).toLocaleString()}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="h-px bg-neutral-50 my-1" />
+
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[13px] font-bold text-charcoal">Subtotal After Discount</span>
+                                        <span className="text-[13px] font-bold text-charcoal">₹{(paymentBreakdown?.subtotal ?? total ?? 0).toLocaleString()}</span>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[13px] font-bold text-charcoal">Convenience Fee</span>
+                                            <HelpCircle className="w-3.5 h-3.5 text-neutral-300 cursor-help" />
+                                        </div>
+                                        <span className="text-[13px] font-bold text-charcoal">
+                                            {breakdownLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : `₹${paymentBreakdown?.platformFee ?? 0}`}
+                                        </span>
                                     </div>
 
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
-                                            <Truck className="w-3.5 h-3.5 text-emerald-500" />
-                                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Shipping</span>
+                                            <span className="text-[13px] font-bold text-charcoal">Shipping</span>
+                                            <Truck className="w-4 h-4 text-emerald-500" />
                                         </div>
-                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Free</span>
+                                        <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Free</span>
                                     </div>
 
-                                    {paymentBreakdown && (
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-2">
-                                                <Package className="w-3.5 h-3.5 text-indigo-400" />
-                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Platform Fee</span>
+                                    <div className="pt-4 border-t border-neutral-100">
+                                        <div className="flex justify-between items-end">
+                                            <div>
+                                                <p className="text-sm font-bold text-charcoal mb-1">Total Amount</p>
+                                                <p className="text-[10px] font-medium text-neutral-400">Inclusive of all taxes</p>
                                             </div>
-                                            <span className="text-sm font-bold text-charcoal">
-                                                {breakdownLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : `₹${paymentBreakdown.platformFee ?? 9}`}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {isCOD && paymentBreakdown && paymentBreakdown.codCharge > 0 && (
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-2">
-                                                <CreditCard className="w-3.5 h-3.5 text-amber-500" />
-                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">COD Charge</span>
-                                            </div>
-                                            <span className="text-sm font-bold text-charcoal">₹{paymentBreakdown.codCharge}</span>
-                                        </div>
-                                    )}
-
-                                    {discount > 0 && (
-                                        <div className="flex justify-between items-center text-emerald-600">
-                                            <span className="text-[11px] font-bold uppercase tracking-widest">Discount</span>
-                                            <span className="text-sm font-bold">-₹{discount.toLocaleString()}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="h-px bg-neutral-50 my-2" />
-
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">Grand Total</p>
-                                            <p className="text-3xl font-serif font-bold text-charcoal tracking-tighter">
+                                            <p className="text-4xl font-serif font-bold text-blush tracking-tight">
                                                 ₹{breakdownLoading ? "..." : (finalAmount || total).toLocaleString()}
                                             </p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[8px] font-black text-neutral-300 uppercase tracking-[0.2em]">Inc. of all taxes</p>
-                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Savings Badge */}
+                                {(discount > 0 || (paymentBreakdown?.discountAmount ?? 0) > 0) && (
+                                    <div className="bg-emerald-50 border border-emerald-100/50 rounded-2xl p-4 flex items-center gap-3 mb-8">
+                                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-emerald-500 shadow-sm">
+                                            <Info className="w-4 h-4" />
+                                        </div>
+                                        <p className="text-[13px] font-bold text-emerald-600">
+                                            You saved ₹{(discount + (paymentBreakdown?.discountAmount ?? 0)).toLocaleString()} on this order
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Coupon Section */}
                                 <div className="mb-8">
@@ -477,44 +479,96 @@ export default function CartPage() {
                                         onCouponApplied={(discountAmt) => setDiscount(discountAmt)}
                                         onCouponRemoved={() => setDiscount(0)}
                                     />
+                                    <p className="text-[10px] font-medium text-blue-500 flex items-center gap-1.5 mt-3 ml-1">
+                                        <Info className="w-3 h-3" /> Discount will be calculated automatically.
+                                    </p>
                                 </div>
 
                                 {/* Payment Method Selection */}
-                                <div className="mb-8 space-y-3">
-                                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1 mb-2">Payment Mode</p>
-                                    <div className="grid grid-cols-1 gap-2">
+                                <div className="mb-8 space-y-4">
+                                    <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest ml-1">Payment Method</p>
+                                    <div className="grid grid-cols-1 gap-3">
                                         <button
                                             onClick={() => setIsCOD(false)}
                                             className={cn(
-                                                "flex items-center justify-between p-4 rounded-2xl transition-all border-2",
-                                                !isCOD ? "bg-cream/5 border-blush shadow-sm" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                                "relative flex items-center gap-4 p-5 rounded-3xl transition-all border-2 text-left",
+                                                !isCOD ? "bg-white border-blush shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
                                             )}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", !isCOD ? "bg-blush border-blush" : "border-neutral-200")}>
-                                                    {!isCOD && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                                                </div>
-                                                <span className={cn("text-xs font-bold", !isCOD ? "text-charcoal" : "text-neutral-400")}>Online Payment</span>
+                                            <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", !isCOD ? "bg-blush border-blush" : "border-neutral-300")}>
+                                                {!isCOD && <div className="w-2 h-2 rounded-full bg-white" />}
                                             </div>
-                                            <CreditCard className={cn("w-4 h-4", !isCOD ? "text-blush" : "text-neutral-300")} />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <CreditCard className={cn("w-4 h-4", !isCOD ? "text-blush" : "text-neutral-400")} />
+                                                    <span className={cn("text-[13px] font-bold", !isCOD ? "text-charcoal" : "text-neutral-500")}>Pay Online</span>
+                                                    {!isCOD && <span className="text-[9px] font-black uppercase text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded ml-auto">Recommended</span>}
+                                                </div>
+                                                <p className="text-[10px] font-medium text-neutral-400">UPI, Cards, Net Banking</p>
+                                            </div>
+                                            {!isCOD && <span className="absolute top-2 right-4 text-[8px] font-black text-emerald-500 uppercase tracking-widest">Lower Fees</span>}
                                         </button>
 
                                         <button
                                             onClick={() => setIsCOD(true)}
                                             className={cn(
-                                                "flex items-center justify-between p-4 rounded-2xl transition-all border-2",
-                                                isCOD ? "bg-cream/5 border-blush shadow-sm" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                                "relative flex items-center gap-4 p-5 rounded-3xl transition-all border-2 text-left",
+                                                isCOD ? "bg-white border-blush shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
                                             )}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", isCOD ? "bg-blush border-blush" : "border-neutral-200")}>
-                                                    {isCOD && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                                                </div>
-                                                <span className={cn("text-xs font-bold", isCOD ? "text-charcoal" : "text-neutral-400")}>Cash on Delivery</span>
+                                            <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", isCOD ? "bg-blush border-blush" : "border-neutral-300")}>
+                                                {isCOD && <div className="w-2 h-2 rounded-full bg-white" />}
                                             </div>
-                                            <Package className={cn("w-4 h-4", isCOD ? "text-blush" : "text-neutral-300")} />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <Box className={cn("w-4 h-4", isCOD ? "text-blush" : "text-neutral-400")} />
+                                                    <span className={cn("text-[13px] font-bold", isCOD ? "text-charcoal" : "text-neutral-500")}>Cash on Delivery</span>
+                                                </div>
+                                                <p className="text-[10px] font-medium text-neutral-400">Pay when you receive</p>
+                                            </div>
+                                            {isCOD && <span className="absolute top-2 right-4 text-[8px] font-black text-amber-500 uppercase tracking-widest">Additional charges apply</span>}
                                         </button>
                                     </div>
+                                </div>
+
+                                {/* Delivery Address Section */}
+                                <div className="mb-8">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest ml-1">Delivery Address</p>
+                                        {addresses.length > 0 && <Link href="/profile?tab=addresses" className="text-[9px] font-black text-blush uppercase tracking-widest hover:underline">Manage Addresses</Link>}
+                                    </div>
+
+                                    {!hasCompleteAddress ? (
+                                        <div className="bg-neutral-50 rounded-[32px] p-6 text-center border border-dashed border-neutral-200">
+                                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                                <MapPin className="w-5 h-5 text-neutral-300" />
+                                            </div>
+                                            <p className="text-xs font-bold text-neutral-400 mb-4">No delivery address added</p>
+                                            <Link
+                                                href="/profile?tab=addresses"
+                                                className="inline-flex items-center gap-2 bg-blush/10 text-blush px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blush hover:text-white transition-all shadow-sm shadow-blush/10"
+                                            >
+                                                <Plus className="w-3 h-3" /> Add Address
+                                            </Link>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-neutral-50 rounded-[32px] p-5 flex items-start gap-4">
+                                            <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-blush shadow-sm shrink-0">
+                                                <MapPin className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[13px] font-bold text-charcoal truncate">
+                                                    {getDeliveryProfile()?.name}
+                                                </p>
+                                                <p className="text-[11px] font-medium text-neutral-500 leading-relaxed line-clamp-1">
+                                                    {getDeliveryProfile()?.addressLine1}, {getDeliveryProfile()?.city}
+                                                </p>
+                                            </div>
+                                            <Link href="/profile?tab=addresses" className="p-2 text-neutral-300 hover:text-blush ml-auto">
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Checkout Button */}
@@ -641,12 +695,12 @@ export default function CartPage() {
                                             setIsCheckingOut(false);
                                         }
                                     }}
-                                    disabled={isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE}
+                                    disabled={isCheckingOut || total < MIN_ORDER_VALUE}
                                     className={cn(
-                                        "w-full py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-xl shadow-charcoal/10",
-                                        isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE
-                                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed"
-                                            : "bg-charcoal text-white hover:bg-black"
+                                        "w-full py-5 rounded-[28px] font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-xl shadow-blush/20",
+                                        isCheckingOut || total < MIN_ORDER_VALUE
+                                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
+                                            : (!hasCompleteAddress ? "bg-blush text-white hover:bg-[#f48c82]" : "bg-blush text-white hover:bg-[#f48c82]")
                                     )}
                                 >
                                     {isCheckingOut ? (
@@ -656,32 +710,39 @@ export default function CartPage() {
                                             {!user
                                                 ? "Login to Checkout"
                                                 : !hasCompleteAddress
-                                                    ? "Add Delivery Details"
+                                                    ? <><Lock className="w-3.5 h-3.5" /> Add Address to Continue</>
                                                     : total < MIN_ORDER_VALUE
                                                         ? `Min Order ₹${MIN_ORDER_VALUE}`
                                                         : `Place Order • ₹${(finalAmount || total).toLocaleString()}`
                                             }
-                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                            {hasCompleteAddress && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
                                         </>
                                     )}
                                 </button>
-                            </div>
 
-                            {/* Trust Badge */}
-                            <div className="bg-white p-6 rounded-[32px] border border-[#F3E8E5] flex items-center justify-around shadow-sm">
-                                <div className="text-center group cursor-help">
-                                    <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-                                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Secure</p>
-                                </div>
-                                <div className="h-8 w-px bg-neutral-100" />
-                                <div className="text-center group cursor-help">
-                                    <RefreshCw className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:rotate-180 transition-transform duration-500" />
-                                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Returns</p>
-                                </div>
-                                <div className="h-8 w-px bg-neutral-100" />
-                                <div className="text-center group cursor-help">
-                                    <Headphones className="w-5 h-5 text-rose-400 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-                                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Support</p>
+                                <div className="mt-6 space-y-4">
+                                    <p className="text-[10px] font-bold text-neutral-400 text-center flex items-center justify-center gap-2">
+                                        <Shield className="w-3.5 h-3.5 text-emerald-500" /> Your data is protected and safe with us.
+                                    </p>
+
+                                    <div className="flex items-center justify-around py-4 border-t border-neutral-50">
+                                        <div className="text-center group">
+                                            <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Secure Payment</p>
+                                        </div>
+                                        <div className="text-center group">
+                                            <RefreshCw className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:rotate-180 transition-all duration-700" />
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Easy Returns</p>
+                                        </div>
+                                        <div className="text-center group">
+                                            <Headphones className="w-5 h-5 text-rose-400 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">24/7 Support</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <p className="text-[9px] font-black text-neutral-300 uppercase tracking-[0.2em] mb-2">Protected by <span className="text-blue-500">Razorpay Secure</span></p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -102,7 +102,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (profileSnap.exists()) {
           const data = profileSnap.data() as UserProfile;
-          const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com";
+          const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com")
+            .split(',')
+            .map(email => email.trim().toLowerCase());
 
           if (data.blocked) {
             toast.error("Your account has been blocked. Contact support.");
@@ -131,7 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const needsPhoneSync = userPhone && !data.phone;
           
           // SECURITY: Only auto-promote to superadmin if email matches AND user has valid email
-          const isValidAdminEmail = !!(userEmail && userEmail === ADMIN_EMAIL);
+          const isValidAdminEmail = !!(userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()));
           const needsRoleUpgrade = isValidAdminEmail && data.role !== "superadmin" && data.role !== "admin";
           const needsFieldFill   = !data.addressLine1 && userEmail; // Only require field fill for email users usually
 

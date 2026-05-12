@@ -113,6 +113,7 @@ export interface CartItem {
   id: string;           // productId
   name: string;
   price: number;
+  mrp?: number;
   image: string;
   quantity: number;
   sku: string;          // variant SKU — used for reservation

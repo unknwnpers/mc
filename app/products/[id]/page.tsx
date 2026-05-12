@@ -374,6 +374,7 @@ export default function ProductDetailsPage() {
         sku: variant?.sku || "ONE-SIZE",
         selectedSize: variant?.options?.Size || selectedSize || "Free Size",
         price: offerData?.hasOffer ? offerData.discountedPrice : (variant?.price ?? ((product as any).variants?.[0]?.price || 0)),
+        mrp: variant?.price ?? ((product as any).variants?.[0]?.price || 0),
         image: (product as any).images?.[0] || '/placeholder.svg',
         quantity: finalQty,
       });
@@ -1087,9 +1088,8 @@ export default function ProductDetailsPage() {
             ))}
           </div>
         </div>
-
-        <Footer />
       </main>
+      <Footer />
 
       {/* LIGHTBOX MODAL */}
       {showLightbox && (
