@@ -14,6 +14,11 @@ interface Review {
   rating: number;
   comment: string;
   images?: string[];
+  attributes?: {
+    softness?: number;
+    quality?: number;
+    fit?: number;
+  };
   verifiedPurchase: boolean;
   createdAt: Date | null;
 }
@@ -160,15 +165,15 @@ export function ReviewsDisplay({
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#ffb4a0] to-blush rounded-full flex items-center justify-center shadow-sm">
                       <User className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">Verified Buyer</span>
+                        <span className="font-bold text-charcoal">Verified Mom/Parent</span>
                         {review.verifiedPurchase && (
-                          <Badge className="bg-green-100 text-green-700 border-green-200">
-                            Verified Purchase
+                          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5">
+                            <Star className="w-3 h-3 fill-current" /> Verified Purchase
                           </Badge>
                         )}
                       </div>
@@ -215,9 +220,30 @@ export function ReviewsDisplay({
 
                 {/* Comment */}
                 {review.comment && (
-                  <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">
+                  <p className="text-gray-700 leading-relaxed mb-6 whitespace-pre-wrap font-medium">
                     {review.comment}
                   </p>
+                )}
+
+                {/* Attributes Display */}
+                {review.attributes && Object.keys(review.attributes).length > 0 && (
+                  <div className="flex flex-wrap gap-4 mb-6 p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                    {Object.entries(review.attributes).map(([key, val]) => (
+                      <div key={key} className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{key}</span>
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <div
+                              key={s}
+                              className={`w-4 h-1 rounded-full ${
+                                s <= (val as number) ? 'bg-blush' : 'bg-neutral-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
 
                 {/* Images */}

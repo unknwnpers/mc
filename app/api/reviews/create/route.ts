@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const decoded = await getAuth().verifyIdToken(token);
     const userId = decoded.uid;
     
-    const { productId, rating, comment, images = [] } = await request.json();
+    const { productId, rating, comment, images = [], attributes = {} } = await request.json();
     const { ip, userAgent } = getClientInfo(request);
     
     // Validate rating
@@ -32,6 +32,19 @@ export async function POST(request: NextRequest) {
         { success: false, error: "Rating must be between 1 and 5" },
         { status: 400 }
       );
+    }
+
+    // Validate attributes (Softness, Quality, Fit) if provided
+    const validAttributes = ['softness', 'quality', 'fit'];
+    const sanitizedAttributes: Record<string, number> = {};
+
+    for (const attr of validAttributes) {
+      if (attributes[attr] !== undefined) {
+        const val = Number(attributes[attr]);
+        if (!isNaN(val) && val >= 1 && val <= 5) {
+          sanitizedAttributes[attr] = val;
+        }
+      }
     }
     
     if (!productId) {
@@ -86,6 +99,7 @@ export async function POST(request: NextRequest) {
       rating,
       comment: comment || "",
       images: images.slice(0, 5), // Max 5 images
+      attributes: sanitizedAttributes,
       verifiedPurchase: true,
       createdAt: new Date(),
     });

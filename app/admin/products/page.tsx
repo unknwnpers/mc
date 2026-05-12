@@ -12,7 +12,7 @@ import {
   Package, Plus, Pencil, Archive, RefreshCw, X, Save,
   Check, Loader2, Image as ImageIcon, Trash2, GripVertical, ChevronRight,
   AlertTriangle, Upload, FileSpreadsheet, Search, Filter, ArrowUpDown,
-  LayoutGrid, List, Download
+  LayoutGrid, List, Download, Star
 } from "lucide-react";
 import type { ProductVariant, ProductOption } from "@/lib/types";
 import { parseExcelFile, ParsedProduct, ImportResult, DuplicateEntry, SizeIssue } from "@/lib/excel-import";

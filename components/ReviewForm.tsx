@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
 interface ReviewFormProps {
   productId: string;
@@ -17,6 +18,11 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
   const { user } = useAuth();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [attributes, setAttributes] = useState({
+    softness: 0,
+    quality: 0,
+    fit: 0
+  });
   const [comment, setComment] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -68,6 +74,11 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   }
 
+  function getRatingLabel(val: number): string {
+    const labels = ['Poor', 'Fair', 'Good', 'Great', 'Perfect'];
+    return labels[val - 1] || '';
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -106,6 +117,7 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
           rating,
           comment: comment.trim(),
           images: imageUrls,
+          attributes,
         }),
       });
 
@@ -115,6 +127,7 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
         toast.success("Review submitted successfully!");
         setRating(0);
         setComment("");
+        setAttributes({ softness: 0, quality: 0, fit: 0 });
         setImageFiles([]);
         setImagePreviews([]);
         onSuccess?.();
@@ -166,6 +179,39 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
                 {rating === 5 && "Excellent"}
               </p>
             )}
+          </div>
+
+          {/* Product Specific Attributes */}
+          <div className="bg-neutral-50 p-4 rounded-2xl space-y-4">
+            <h4 className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Product Attributes</h4>
+            {[
+              { id: 'softness', label: 'Softness', desc: 'How soft is the fabric?' },
+              { id: 'quality', label: 'Quality', desc: 'Overall build and finish' },
+              { id: 'fit', label: 'Fit', desc: 'How well does it fit?' }
+            ].map((attr) => (
+              <div key={attr.id} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-bold text-neutral-700">{attr.label}</label>
+                  <span className="text-[10px] font-black text-blush uppercase">
+                    {(attributes as any)[attr.id] > 0 ? getRatingLabel((attributes as any)[attr.id]) : 'Select'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setAttributes(prev => ({ ...prev, [attr.id]: val }))}
+                      className={cn(
+                        "flex-1 h-2 rounded-full transition-all",
+                        (attributes as any)[attr.id] >= val ? "bg-blush" : "bg-neutral-200 hover:bg-neutral-300"
+                      )}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] text-neutral-400 italic">{attr.desc}</p>
+              </div>
+            ))}
           </div>
 
           <div>

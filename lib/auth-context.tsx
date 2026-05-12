@@ -149,7 +149,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setProfile(updated);
             userRole = updated.role;
           } else {
-            setProfile(data);
+            // Ensure state reflects at least the Auth values if Firestore is thin
+            setProfile({
+              ...data,
+              email: data.email || userEmail,
+              name: data.name || userDisplayName || "User",
+              phone: data.phone || (userPhone?.replace("+91", "") || "").replace(/\D/g, ""),
+            });
             userRole = data.role;
           }
         } else {

@@ -920,7 +920,7 @@ function ProfileContent() {
                                     placeholder="Full Name"
                                   />
                                 ) : (
-                                  <p className="text-[13px] font-bold text-charcoal">{profile?.name || 'Not set'}</p>
+                                  <p className="text-[13px] font-bold text-charcoal">{profile?.name || user?.displayName || 'Not set'}</p>
                                 )}
                             </div>
                         </div>
@@ -951,7 +951,7 @@ function ProfileContent() {
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-[13px] font-bold text-charcoal truncate">{profile?.email || 'Not set'}</p>
+                                  <p className="text-[13px] font-bold text-charcoal truncate">{profile?.email || user?.email || 'Not set'}</p>
                                 )}
                             </div>
                         </div>
@@ -990,7 +990,7 @@ function ProfileContent() {
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-[13px] font-bold text-charcoal">{profile?.phone || 'Not set'}</p>
+                                  <p className="text-[13px] font-bold text-charcoal">{profile?.phone || user?.phoneNumber?.replace("+91", "") || 'Not set'}</p>
                                 )}
                             </div>
                         </div>

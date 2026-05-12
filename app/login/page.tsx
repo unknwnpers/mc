@@ -66,8 +66,24 @@ function LoginContent() {
     }
   };
 
-  const handlePhoneSuccess = () => {
-    router.push(redirectPath);
+  const handlePhoneSuccess = async (user: any) => {
+    try {
+      const token = await user.getIdToken(true);
+      await fetch("/api/user/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          uid: user.uid,
+          phone: user.phoneNumber,
+          name: user.displayName || "User",
+          provider: "phone"
+        }),
+      });
+      router.push(redirectPath);
+    } catch (err) {
+      console.error("Phone sync failed:", err);
+      router.push(redirectPath); // Proceed anyway
+    }
   };
 
   return (
@@ -225,7 +241,7 @@ function LoginContent() {
                           <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 rotate-180" />
                           Back to options
                         </button>
-                        <PhoneAuth onSuccess={handlePhoneSuccess} redirectPath={redirectPath} />
+                        <PhoneAuth onSuccess={handlePhoneSuccess} />
                       </div>
                     )}
                   </div>

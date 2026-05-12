@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare, Package, RefreshCw, Award, Sparkles, MapPin, Calendar, X, ChevronDown, Ruler, Check, Eye, Flame, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Share2, ShieldCheck, Truck, Star, MessageSquare, Package, RefreshCw, Award, Sparkles, MapPin, Calendar, X, ChevronDown, Ruler, Check, Eye, Flame, Plus, Minus, CheckCircle2, Loader2 } from 'lucide-react';
 import { ReviewForm } from '@/components/ReviewForm';
 import { ReviewsDisplay } from '@/components/ReviewsDisplay';
 
@@ -53,6 +53,7 @@ export default function ProductDetailsPage() {
   const [openSections, setOpenSections] = useState<string[]>(['description']);
   const [stats, setStats] = useState({ viewers: 0, inCart: 0 });
   const [availableStock, setAvailableStock] = useState<Record<string, number>>({});
+  const [showStickyBar, setShowStickyBar] = useState(false);
   // Prevents double-clicks and race conditions on "Add to Cart"
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const { addToCart } = useCart();
@@ -90,6 +91,21 @@ export default function ProductDetailsPage() {
       };
     }
   }, [id]);
+
+  // Handle Sticky Bar visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show sticky bar after scrolling past the main buy section (approx 800px)
+      if (window.scrollY > 800) {
+        setShowStickyBar(true);
+      } else {
+        setShowStickyBar(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Track product view
   const trackProductView = async () => {
@@ -553,7 +569,7 @@ export default function ProductDetailsPage() {
               })()}
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-charcoal mb-4 tracking-tight leading-[1.1]">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif font-bold text-charcoal mb-4 tracking-tight leading-[1.05]">
               {product.name}
             </h1>
 
@@ -589,32 +605,32 @@ export default function ProductDetailsPage() {
             </div>
 
             {/* Social Proof - Real-time Stats */}
-            <div className="flex items-center gap-4 mb-6 text-sm text-neutral-500">
-              <span className="flex items-center gap-1.5" title="Active viewers in the last 5 minutes">
-                <Eye className="w-4 h-4" />
-                {stats.viewers} people viewing this
+            <div className="flex items-center gap-6 mb-8 text-sm">
+              <span className="flex items-center gap-2 text-rose-500 font-bold bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100/50" title="Active viewers in the last 5 minutes">
+                <Eye className="w-4 h-4 animate-pulse" />
+                {stats.viewers} people viewing
               </span>
-              <span className="w-1 h-1 bg-neutral-300 rounded-full" />
-              <span className="flex items-center gap-1.5" title="Users with this product in their cart">
+              <span className="flex items-center gap-2 text-blush font-bold bg-cream px-3 py-1.5 rounded-full border border-blush/10" title="Users with this product in their cart">
                 <ShoppingCart className="w-4 h-4" />
                 {stats.inCart} in carts
               </span>
             </div>
 
-            {/* Product Highlights */}
-            <div className="mb-8">
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { icon: Check, text: "Premium Quality Fabric" },
-                  { icon: ShieldCheck, text: "Skin-Friendly Material" },
-                  { icon: Truck, text: "Free Shipping Available" },
-                ].map((highlight, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm text-neutral-600">
-                    <highlight.icon className="w-4 h-4 text-green-500" />
-                    <span>{highlight.text}</span>
+            {/* Product Highlights Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+              {[
+                { icon: Check, title: "Premium Fabric", desc: "100% Breathable" },
+                { icon: ShieldCheck, title: "Safe for Baby", desc: "Eco-friendly dyes" },
+                { icon: Truck, title: "Quick Shipping", desc: "Dispatch in 24h" },
+              ].map((highlight, idx) => (
+                <div key={idx} className="flex flex-col items-center text-center p-4 bg-[#FCF9F7] rounded-2xl border border-blush/5 group hover:border-blush/20 transition-all">
+                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                    <highlight.icon className="w-5 h-5 text-blush" />
                   </div>
-                ))}
-              </div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-charcoal mb-0.5">{highlight.title}</p>
+                  <p className="text-[10px] text-neutral-400 font-medium">{highlight.desc}</p>
+                </div>
+              ))}
             </div>
 
             {/* ACCORDION SECTIONS */}
@@ -945,24 +961,49 @@ export default function ProductDetailsPage() {
                 </p>
               </div>
 
-              {/* ENHANCED TRUST BADGES */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                  <ShieldCheck className="w-5 h-5 text-green-500" />
-                  <p className="text-xs font-bold text-neutral-600">Secure Payment</p>
+              {/* THE MIKS & CHIKS PROMISE */}
+              <div className="mt-12 p-8 bg-gradient-to-br from-cream to-[#FCF9F7] rounded-[32px] border border-blush/10 relative overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-xl font-serif font-bold text-charcoal mb-6 flex items-center gap-3">
+                    <Award className="w-6 h-6 text-blush" />
+                    The Miks & Chiks <span className="text-blush italic">Promise</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
+                        <div>
+                          <p className="text-sm font-bold text-charcoal">Quality First</p>
+                          <p className="text-xs text-neutral-500">Every piece is hand-checked for softness and durability.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
+                        <div>
+                          <p className="text-sm font-bold text-charcoal">Hassle-Free Returns</p>
+                          <p className="text-xs text-neutral-500">7-day easy returns if you're not 100% satisfied.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
+                        <div>
+                          <p className="text-sm font-bold text-charcoal">Safe Checkout</p>
+                          <p className="text-xs text-neutral-500">Secure payments via Razorpay with all major cards.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
+                        <div>
+                          <p className="text-sm font-bold text-charcoal">Fast Delivery</p>
+                          <p className="text-xs text-neutral-500">Standard 3-5 day delivery across India.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                  <Truck className="w-5 h-5 text-blue-500" />
-                  <p className="text-xs font-bold text-neutral-600">Free Shipping ₹1000+</p>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                  <RefreshCw className="w-5 h-5 text-purple-500" />
-                  <p className="text-xs font-bold text-neutral-600">Easy Returns</p>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                  <Award className="w-5 h-5 text-orange-500" />
-                  <p className="text-xs font-bold text-neutral-600">Quality Guarantee</p>
-                </div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blush/5 rounded-full blur-3xl -mr-16 -mt-16" />
               </div>
             </div>
           </div>
@@ -1106,6 +1147,35 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* STICKY MOBILE ADD TO CART BAR */}
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 z-[40] bg-white border-t border-neutral-100 p-4 transform transition-transform duration-500 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] md:hidden",
+        showStickyBar ? "translate-y-0" : "translate-y-full"
+      )}>
+        <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Total Price</span>
+            <span className="text-xl font-serif font-bold text-blush">
+              ₹{(offerData?.discountedPrice ?? (product as any).variants?.[0]?.price ?? 0).toLocaleString()}
+            </span>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={isAddingToCart}
+            className="flex-1 bg-charcoal text-white h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-charcoal/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+          >
+            {isAddingToCart ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4" />
+                Add to Cart
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
