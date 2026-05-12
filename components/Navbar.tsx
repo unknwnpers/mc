@@ -267,7 +267,7 @@ export default function Navbar() {
                           <Link href="/profile" className="flex items-center gap-3 text-[13px] font-medium text-[#5C5C5C] hover:text-[#E9897E] py-2.5 px-2 rounded-xl hover:bg-[#FFF0EE] transition-all" onClick={() => setActiveDropdown(null)}>
                             <User className="w-4 h-4" /> Profile
                           </Link>
-                          <Link href="/orders" className="flex items-center gap-3 text-[13px] font-medium text-[#5C5C5C] hover:text-[#E9897E] py-2.5 px-2 rounded-xl hover:bg-[#FFF0EE] transition-all" onClick={() => setActiveDropdown(null)}>
+                          <Link href="/profile?tab=orders" className="flex items-center gap-3 text-[13px] font-medium text-[#5C5C5C] hover:text-[#E9897E] py-2.5 px-2 rounded-xl hover:bg-[#FFF0EE] transition-all" onClick={() => setActiveDropdown(null)}>
                             <ShoppingBag className="w-4 h-4" /> My Orders
                           </Link>
                           <button onClick={() => { handleLogout(); setActiveDropdown(null); }} className="w-full mt-2 flex items-center gap-3 text-[13px] font-semibold text-white bg-[#E9897E] px-4 py-2.5 rounded-xl hover:bg-[#C86B5F] transition-all">
@@ -354,7 +354,7 @@ export default function Navbar() {
                   {user ? (
                     <div className="space-y-3">
                       <Link href="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 text-[15px] font-medium text-[#5C5C5C] py-3 hover:text-[#E9897E]"><User className="w-5 h-5" /> My Profile</Link>
-                      <Link href="/orders" onClick={() => setIsOpen(false)} className="flex items-center gap-3 text-[15px] font-medium text-[#5C5C5C] py-3 hover:text-[#E9897E]"><ShoppingBag className="w-5 h-5" /> My Orders</Link>
+                      <Link href="/profile?tab=orders" onClick={() => setIsOpen(false)} className="flex items-center gap-3 text-[15px] font-medium text-[#5C5C5C] py-3 hover:text-[#E9897E]"><ShoppingBag className="w-5 h-5" /> My Orders</Link>
                       <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full bg-[#E9897E] text-white py-4 rounded-[14px] font-semibold text-[15px] shadow-[0_6px_20px_rgba(233,137,126,0.25)] active:scale-[0.97] transition-transform">Logout</button>
                     </div>
                   ) : (
@@ -375,7 +375,7 @@ export default function Navbar() {
               { href: '/', icon: Home, label: 'Home' },
               { href: '/products', icon: Grid3X3, label: 'Shop' },
               { href: '/cart', icon: ShoppingBag, label: 'Cart', badge: cart.length },
-              { href: '/orders', icon: Package, label: 'Orders' },
+              { href: '/profile?tab=orders', icon: Package, label: 'Orders' },
               { href: user ? '/profile' : '/login', icon: User, label: user ? 'Profile' : 'Login' },
             ].map((item) => (
               <Link key={item.label} href={item.href} className="relative flex flex-col items-center justify-center gap-0.5 min-w-[48px] min-h-[44px] py-1.5 px-2 text-[#8A8A8A] hover:text-[#E9897E] active:text-[#E9897E] transition-colors">

@@ -16,7 +16,7 @@ const quickLinks = [
 ];
 
 const customerCare = [
-  { label: "Track Order", href: "/orders" },
+  { label: "Track Order", href: "/profile?tab=orders" },
   { label: "Shipping Policy", href: "/shipping-policy" },
   { label: "Returns & Refunds", href: "/refund-policy" },
   { label: "Privacy Policy", href: "/privacy" },

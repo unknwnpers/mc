@@ -7,17 +7,17 @@ import { ApplyCoupon } from "@/components/ApplyCoupon";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle, Shield, RefreshCw, Headphones, AlertCircle } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Check, PlusCircle, Truck, Package, CreditCard, HelpCircle, Shield, RefreshCw, Headphones, AlertCircle, ShoppingBag, MapPin, Info, Loader2, Box, ChevronRight, Phone } from "lucide-react";
 
 const MIN_ORDER_VALUE = 200;
 import Link from "next/link";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { User, MapPin, Phone, Info, Loader2 } from "lucide-react";
 import { db, apiFetch, ensureAppCheckReady } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { SavedAddress } from "@/lib/types";
 import { PaymentBreakdown } from "@/lib/payment-calculator";
+import { cn } from "@/lib/utils";
 
 export default function CartPage() {
     const { cart, removeFromCart, updateQuantity, clearCart, loading } = useCart();
@@ -175,7 +175,7 @@ export default function CartPage() {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
-                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blush border-r-transparent"></div>
+                    <Loader2 className="w-10 h-10 animate-spin text-blush mx-auto" />
                     <p className="mt-4 text-neutral-600 font-sans font-medium">Loading your selection...</p>
                 </div>
             </div>
@@ -183,12 +183,15 @@ export default function CartPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-[#FCF9F7]">
             <Navbar />
 
-            <div className="max-w-7xl mx-auto px-6 md:px-10 py-32">
-                <div className="flex items-center justify-between mb-12">
-                    <h1 className="text-5xl font-serif font-bold text-charcoal tracking-tight">Your <span className="text-blush italic">Cart</span></h1>
+            <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-32 md:py-40">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                    <div>
+                        <p className="text-[13px] font-medium text-neutral-400 mb-2">Shopping Bag</p>
+                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-charcoal tracking-tight">Your <span className="text-blush italic">Cart</span></h1>
+                    </div>
                     {cart.length > 0 && (
                         <button 
                             onClick={() => {
@@ -197,40 +200,40 @@ export default function CartPage() {
                                     toast.success("Cart cleared");
                                 }
                             }}
-                            className="text-neutral-400 hover:text-red-500 transition-colors text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50"
+                            className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-[#F3E8E5] hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all shadow-sm"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                             Clear All
                         </button>
                     )}
                 </div>
 
                 {cart.length === 0 ? (
-                    <div className="text-center py-32 bg-cream/30 rounded-[60px] border border-dashed border-blush/20">
-                        <div className="w-24 h-24 bg-white rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-sm border border-blush/10">
-                            <ShoppingCart className="w-10 h-10 text-blush" />
+                    <div className="text-center py-24 md:py-32 bg-white rounded-[40px] border border-dashed border-[#F3E8E5] shadow-sm">
+                        <div className="w-20 md:w-24 h-20 md:h-24 bg-cream rounded-[32px] flex items-center justify-center mx-auto mb-8 text-blush/20">
+                            <ShoppingCart className="w-10 md:w-12 h-10 md:h-12" />
                         </div>
-                        <h2 className="text-4xl font-serif font-bold text-charcoal mb-4">Your cart is empty</h2>
-                        <p className="text-gray-500 mb-12 max-w-sm mx-auto text-lg font-sans">
+                        <h2 className="text-3xl md:text-4xl font-serif font-bold text-charcoal mb-4">Your cart is empty</h2>
+                        <p className="text-neutral-500 mb-10 max-w-sm mx-auto text-sm md:text-base leading-relaxed">
                             Looks like you haven't added anything to your cart yet. Trendy collections are waiting for you!
                         </p>
-                        <Link href="/" className="inline-flex items-center gap-3 bg-charcoal text-white px-12 py-5 rounded-2xl font-bold hover:bg-blush transition-all shadow-2xl shadow-charcoal/10 active:scale-95 transform hover:-translate-y-1">
+                        <Link href="/products" className="inline-flex items-center gap-2 bg-charcoal text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-charcoal/20 hover:bg-black transition-all active:scale-95">
                             Start Shopping
-                            <ArrowRight className="w-5 h-5" />
+                            <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 xl:gap-12 items-start">
                         {/* ITEMS LIST */}
-                        <div className="lg:col-span-3 space-y-8">
-                            <div className="space-y-6">
-                                {cart.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="flex gap-4 sm:gap-6 bg-white p-4 sm:p-6 rounded-[32px] border border-[#F3E8E5] shadow-sm hover:shadow-xl hover:shadow-blush/5 transition-all duration-500 group"
-                                    >
+                        <div className="space-y-6">
+                            {cart.map((item) => (
+                                <div
+                                    key={`${item.id}-${item.sku}`}
+                                    className="bg-white rounded-[40px] border border-[#F3E8E5] p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden"
+                                >
+                                    <div className="flex flex-col md:flex-row gap-6 md:items-center">
                                         {/* Product Image */}
-                                        <div className="w-24 h-24 sm:w-32 sm:h-32 bg-cream rounded-[24px] sm:rounded-[32px] overflow-hidden shrink-0 border border-[#F3E8E5]">
+                                        <div className="w-full md:w-32 h-48 md:h-32 bg-cream rounded-[32px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
                                             <img
                                                 src={item.image}
                                                 alt={item.name}
@@ -239,306 +242,139 @@ export default function CartPage() {
                                         </div>
 
                                         {/* Product Info */}
-                                        <div className="flex-1 min-w-0 flex flex-col">
-                                            {/* Header: Title + Delete */}
-                                            <div className="flex items-start justify-between gap-3 mb-1">
-                                                <h3 className="font-serif font-bold text-lg sm:text-2xl text-charcoal truncate leading-tight">
-                                                    {item.name}
-                                                </h3>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-4 mb-2">
+                                                <div>
+                                                    <h3 className="text-xl md:text-2xl font-serif font-bold text-charcoal tracking-tight truncate leading-tight">
+                                                        {item.name}
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-3 mt-2">
+                                                        {(() => {
+                                                            let displaySize = item.selectedSize;
+                                                            if (displaySize) {
+                                                                const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
+                                                                if (skuMatch) {
+                                                                    const num = skuMatch[1];
+                                                                    if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
+                                                                        displaySize = `${num[0]}-${num.slice(1)}Y`;
+                                                                    } else {
+                                                                        displaySize = `${num}Y`;
+                                                                    }
+                                                                }
+                                                            }
+                                                            return displaySize ? (
+                                                                <span className="text-[10px] font-black text-blush uppercase tracking-widest bg-rose-50 px-3 py-1 rounded-full border border-blush/5">
+                                                                    Size: {displaySize}
+                                                                </span>
+                                                            ) : null;
+                                                        })()}
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                                                            Unit Price: ₹{item.price}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                                 <button
                                                     onClick={() => {
                                                         removeFromCart(item.id, item.sku);
                                                         toast.error(`${item.name} removed`);
                                                     }}
-                                                    className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all active:scale-90 shrink-0 -mr-2 -mt-2"
-                                                    title="Remove item"
-                                                    aria-label="Remove item from cart"
+                                                    className="p-3 text-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
                                                 >
-                                                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                                    <Trash2 className="w-5 h-5" />
                                                 </button>
                                             </div>
 
-                                            {/* Size */}
-                                            {(() => {
-                                                let displaySize = item.selectedSize;
-                                                if (displaySize) {
-                                                    const skuMatch = displaySize.match(/^.*-(\d{2,})(Y)$/);
-                                                    if (skuMatch) {
-                                                        const num = skuMatch[1];
-                                                        if (num.length >= 2 && !displaySize.includes('-', displaySize.lastIndexOf('-') + 1)) {
-                                                            displaySize = `${num[0]}-${num.slice(1)}Y`;
-                                                        } else {
-                                                            displaySize = `${num}Y`;
+                                            <div className="flex items-center justify-between mt-6">
+                                                <p className="text-2xl font-serif font-bold text-charcoal">
+                                                    ₹{(item.price * item.quantity).toLocaleString()}
+                                                </p>
+
+                                                <div className="flex items-center gap-1 p-1 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                                    <button
+                                                        onClick={() =>
+                                                            updateQuantity(
+                                                                item.id,
+                                                                Math.max(1, item.quantity - 1),
+                                                                item.sku
+                                                            )
                                                         }
-                                                    }
-                                                }
-                                                return displaySize ? (
-                                                    <p className="text-[10px] sm:text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">
-                                                        Size: {displaySize}
-                                                    </p>
-                                                ) : null;
-                                            })()}
+                                                        disabled={item.quantity <= 1}
+                                                        className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-neutral-400 hover:text-blush hover:shadow-sm transition-all disabled:opacity-30"
+                                                    >
+                                                        <Minus className="w-4 h-4" />
+                                                    </button>
 
-                                            {/* Price - Single, prominent */}
-                                            <p className="text-blush font-bold text-xl sm:text-2xl mb-3 sm:mb-4">
-                                                ₹{item.price * item.quantity}
-                                            </p>
+                                                    <span className="w-10 text-center text-sm font-black text-charcoal">
+                                                        {item.quantity}
+                                                    </span>
 
-                                            {/* Quantity Selector - Improved touch targets */}
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        updateQuantity(
-                                                            item.id,
-                                                            Math.max(1, item.quantity - 1),
-                                                            item.sku
-                                                        )
-                                                    }
-                                                    disabled={item.quantity <= 1}
-                                                    className="w-11 h-11 flex items-center justify-center bg-white border border-neutral-300 rounded-xl hover:border-blush hover:text-blush transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-                                                    aria-label="Decrease quantity"
-                                                >
-                                                    <Minus className="w-4 h-4" />
-                                                </button>
-
-                                                <span className="w-12 h-11 flex items-center justify-center font-bold text-charcoal font-sans text-lg bg-neutral-50 rounded-xl border border-neutral-200">
-                                                    {item.quantity}
-                                                </span>
-
-                                                <button
-                                                    onClick={() =>
-                                                        updateQuantity(item.id, item.quantity + 1, item.sku)
-                                                    }
-                                                    disabled={(() => {
-                                                        const raw_stock = item.stock ?? 0;
-                                                        const reserve = Math.ceil(0.2 * raw_stock);
-                                                        const sellable = Math.max(0, raw_stock - reserve);
-                                                        const max_allowed = Math.min(2, Math.floor(sellable / 3));
-                                                        return item.quantity >= Math.max(1, max_allowed);
-                                                    })()}
-                                                    className="w-11 h-11 flex items-center justify-center bg-white border border-neutral-300 rounded-xl hover:border-blush hover:text-blush transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-                                                    aria-label="Increase quantity"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* ORDER SUMMARY */}
-                        <div className="lg:col-span-2 bg-white p-8 rounded-[32px] border border-[#F3E8E5] shadow-xl shadow-blush/5 sticky top-32">
-                            <h2 className="text-3xl font-serif font-bold text-charcoal mb-8">
-                                Order <span className="text-blush italic">Summary</span>
-                            </h2>
-
-                            <div className="space-y-4 mb-6">
-                                {/* Subtotal */}
-                                <div className="flex justify-between text-charcoal/60 font-medium">
-                                    <span>Subtotal ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-                                    <span>₹{paymentBreakdown?.subtotal ?? total ?? 0}</span>
-                                </div>
-
-                                {/* Shipping */}
-                                <div className="flex justify-between text-charcoal/60 font-medium">
-                                    <div className="flex items-center gap-1">
-                                        <Truck className="w-3.5 h-3.5" />
-                                        <span>Shipping</span>
-                                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full ml-1">FREE</span>
-                                    </div>
-                                    <span className="text-green-600 font-bold">FREE</span>
-                                </div>
-
-                                {/* Platform Fee */}
-                                {paymentBreakdown && (
-                                    <div className="flex justify-between text-charcoal/60 font-medium text-sm">
-                                        <div className="flex items-center gap-1">
-                                            <Package className="w-3.5 h-3.5" />
-                                            <span>Platform Fee</span>
-                                        </div>
-                                        <span>₹{breakdownLoading ? "..." : (paymentBreakdown.platformFee ?? 9)}</span>
-                                    </div>
-                                )}
-
-                                {/* COD Charge */}
-                                {isCOD && paymentBreakdown && paymentBreakdown.codCharge > 0 && (
-                                    <div className="flex justify-between text-charcoal/60 font-medium text-sm">
-                                        <div className="flex items-center gap-1">
-                                            <CreditCard className="w-3.5 h-3.5" />
-                                            <span>COD Charge</span>
-                                        </div>
-                                        <span>₹{paymentBreakdown.codCharge}</span>
-                                    </div>
-                                )}
-                                
-                                {/* GST is included in MRP — no separate row shown */}
-                                <div className="text-[10px] text-neutral-400 text-right">
-                                    Prices inclusive of all taxes
-                                </div>
-
-                                {/* Coupon Discount */}
-                                {discount > 0 && (
-                                    <>
-                                        <div className="h-px bg-neutral-200 my-2" />
-                                        <div className="flex justify-between text-green-700 font-semibold">
-                                            <span>Coupon Discount</span>
-                                            <span>-₹{discount}</span>
-                                        </div>
-                                    </>
-                                )}
-                                
-                                {/* Total Savings */}
-                                {discount > 0 && (
-                                    <div className="bg-green-50 rounded-xl p-3 text-center">
-                                        <span className="text-green-700 font-semibold text-sm">
-                                            You saved ₹{discount} on this order!
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                <div className="h-px bg-neutral-200 my-2" />
-                                
-                                <div className="flex justify-between items-center pt-2">
-                                    <span className="text-xl font-bold text-charcoal">Total</span>
-                                    <span className="text-4xl font-serif font-bold text-blush tracking-tight">
-                                        ₹{breakdownLoading ? "..." : finalAmount}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Coupon Application Component */}
-                            <div className="mb-6">
-                                <ApplyCoupon
-                                    orderAmount={total}
-                                    onCouponApplied={(discountAmt, final, couponData) => {
-                                        setDiscount(discountAmt);
-                                    }}
-                                    onCouponRemoved={() => {
-                                        setDiscount(0);
-                                    }}
-                                />
-                            </div>
-
-                            {/* Payment Method Selection */}
-                            <div className="mb-8">
-                                <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-4">Payment Method</p>
-                                <div className="space-y-3">
-                                    {/* Online Payment */}
-                                    <label className={`block p-4 rounded-2xl cursor-pointer transition-all border-2 ${
-                                        !isCOD ? 'bg-blush/5 border-blush' : 'bg-neutral-50 border-transparent hover:border-neutral-200'
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                                !isCOD ? 'border-blush bg-blush' : 'border-neutral-300'
-                                            }`}>
-                                                {!isCOD && <Check className="w-3 h-3 text-white" />}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <CreditCard className="w-4 h-4 text-charcoal" />
-                                                    <span className="font-bold text-charcoal">Pay Online</span>
+                                                    <button
+                                                        onClick={() =>
+                                                            updateQuantity(item.id, item.quantity + 1, item.sku)
+                                                        }
+                                                        className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-neutral-400 hover:text-blush hover:shadow-sm transition-all"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                                <p className="text-xs text-neutral-500 mt-0.5">UPI, Cards, Net Banking</p>
                                             </div>
-                                            <span className="text-sm font-bold text-green-600">No extra fee</span>
                                         </div>
-                                        <input 
-                                            type="radio" 
-                                            name="paymentMethod" 
-                                            checked={!isCOD}
-                                            onChange={() => setIsCOD(false)}
-                                            className="hidden"
-                                        />
-                                    </label>
-
-                                    {/* COD */}
-                                    <label className={`block p-4 rounded-2xl cursor-pointer transition-all border-2 ${
-                                        isCOD ? 'bg-blush/5 border-blush' : 'bg-neutral-50 border-transparent hover:border-neutral-200'
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                                isCOD ? 'border-blush bg-blush' : 'border-neutral-300'
-                                            }`}>
-                                                {isCOD && <Check className="w-3 h-3 text-white" />}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <Package className="w-4 h-4 text-charcoal" />
-                                                    <span className="font-bold text-charcoal">Cash on Delivery</span>
-                                                </div>
-                                                <p className="text-xs text-neutral-500 mt-0.5">Pay when you receive</p>
-                                            </div>
-                                        <span className="text-sm font-bold text-charcoal/60">+ Fees</span>
-                                        </div>
-                                        <input 
-                                            type="radio" 
-                                            name="paymentMethod" 
-                                            checked={isCOD}
-                                            onChange={() => setIsCOD(true)}
-                                            className="hidden"
-                                        />
-                                    </label>
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
 
-                            {/* Address Selection */}
+                            {/* Address Selection Container */}
                             {user && cart.length > 0 && (
-                                <div className="mb-8">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest">Delivery Address</p>
-                                        <Link href="/profile" className="text-xs font-bold text-blush hover:underline">Manage Addresses</Link>
+                                <div className="bg-white rounded-[40px] border border-[#F3E8E5] p-8 md:p-10 shadow-sm mt-8">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+                                                <MapPin className="w-5 h-5" />
+                                            </div>
+                                            <h3 className="text-xl font-serif font-bold text-charcoal">Delivery <span className="text-blush italic">Address</span></h3>
+                                        </div>
+                                        <Link href="/profile?tab=addresses" className="text-[10px] font-black text-blush uppercase tracking-widest hover:underline">Manage Addresses</Link>
                                     </div>
-                                    
+
                                     {addressesLoading ? (
-                                        <div className="animate-pulse bg-neutral-100 rounded-2xl p-6">
-                                            <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2"></div>
-                                            <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
+                                        <div className="space-y-4">
+                                            <div className="h-32 bg-neutral-50 rounded-[32px] animate-pulse" />
                                         </div>
                                     ) : addresses.length > 0 ? (
-                                        <div className="space-y-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {addresses.map((addr) => (
                                                 <label 
                                                     key={addr.id}
-                                                    className={`block p-5 rounded-2xl cursor-pointer transition-all ${
+                                                    className={cn(
+                                                        "relative p-6 rounded-[32px] cursor-pointer transition-all border-2 flex flex-col justify-between min-h-[160px]",
                                                         selectedAddressId === addr.id 
-                                                            ? 'bg-blush/5 border-2 border-blush' 
-                                                            : 'bg-neutral-50 border-2 border-transparent hover:border-neutral-200'
-                                                    }`}
+                                                            ? "bg-cream/10 border-blush shadow-lg shadow-blush/5"
+                                                            : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                                    )}
                                                 >
-                                                    <div className="flex items-start gap-4">
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                                                            selectedAddressId === addr.id 
-                                                                ? 'border-blush bg-blush' 
-                                                                : 'border-neutral-300'
-                                                        }`}>
-                                                            {selectedAddressId === addr.id && (
-                                                                <Check className="w-3 h-3 text-white" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="font-bold text-charcoal">{addr.name}</span>
-                                                                <span className="text-xs px-2 py-0.5 bg-white rounded-full text-neutral-500">{addr.label}</span>
-                                                                {addr.isDefault && (
-                                                                    <span className="text-xs px-2 py-0.5 bg-blush/10 rounded-full text-blush font-bold">Default</span>
-                                                                )}
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-charcoal text-sm">{addr.name}</span>
+                                                                {addr.isDefault && <span className="text-[8px] bg-rose-50 text-blush px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Default</span>}
                                                             </div>
-                                                            <p className="text-sm text-neutral-500">+91 {addr.phone}</p>
-                                                            <p className="text-sm text-neutral-600 mt-1">
-                                                                {addr.addressLine1}
-                                                                {addr.addressLine2 && `, ${addr.addressLine2}`}
-                                                                {addr.landmark && ` (Near: ${addr.landmark})`}
-                                                                <br />
-                                                                {addr.city}, {addr.state} - {addr.pincode}
-                                                            </p>
+                                                            <div className={cn(
+                                                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                                                selectedAddressId === addr.id ? "bg-blush border-blush" : "border-neutral-200"
+                                                            )}>
+                                                                {selectedAddressId === addr.id && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
+                                                            </div>
                                                         </div>
+                                                        <p className="text-[11px] font-medium text-neutral-500 mb-2 flex items-center gap-2">
+                                                            <Phone className="w-3 h-3 text-blush/40" /> +91 {addr.phone}
+                                                        </p>
+                                                        <p className="text-[11px] font-medium text-neutral-600 leading-relaxed line-clamp-2">
+                                                            {addr.addressLine1}, {addr.city}, {addr.state} - {addr.pincode}
+                                                        </p>
                                                     </div>
                                                     <input 
                                                         type="radio" 
                                                         name="address" 
-                                                        value={addr.id}
                                                         checked={selectedAddressId === addr.id}
                                                         onChange={() => setSelectedAddressId(addr.id)}
                                                         className="hidden"
@@ -546,165 +382,243 @@ export default function CartPage() {
                                                 </label>
                                             ))}
                                             <Link 
-                                                href="/profile"
-                                                className="flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-500 hover:border-blush hover:text-blush transition-colors"
+                                                href="/profile?tab=addresses"
+                                                className="flex flex-col items-center justify-center p-6 bg-neutral-50/50 border-2 border-dashed border-neutral-200 rounded-[32px] text-neutral-400 hover:border-blush hover:text-blush transition-all group min-h-[160px]"
                                             >
-                                                <PlusCircle className="w-5 h-5" />
-                                                <span className="font-bold text-sm">Add New Address</span>
+                                                <PlusCircle className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Add New Address</span>
                                             </Link>
                                         </div>
                                     ) : (
-                                        <div className="p-6 bg-neutral-50 rounded-2xl text-center">
-                                            <MapPin className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-                                            <p className="text-sm text-neutral-500 mb-3">No saved addresses</p>
+                                        <div className="p-12 text-center bg-neutral-50/50 rounded-[32px] border-2 border-dashed border-neutral-200">
+                                            <MapPin className="w-10 h-10 text-neutral-300 mx-auto mb-4" />
+                                            <p className="text-sm font-medium text-neutral-500 mb-6">No saved addresses found</p>
                                             <Link 
-                                                href="/profile"
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-blush text-white rounded-full text-sm font-bold hover:bg-blush/90 transition-colors"
+                                                href="/profile?tab=addresses"
+                                                className="inline-flex items-center gap-2 px-8 py-3 bg-blush text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
                                             >
-                                                <PlusCircle className="w-4 h-4" /> Add Address
+                                                <PlusCircle className="w-3.5 h-3.5" /> Add Address
                                             </Link>
                                         </div>
                                     )}
                                 </div>
                             )}
+                        </div>
 
-                            {/* Check if address is selected */}
-                            {user && !hasCompleteAddress && (
-                                <div className="mb-8 p-6 bg-cream/50 rounded-3xl border border-blush/10 flex items-start gap-4">
-                                    <Info className="w-6 h-6 text-blush shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="text-xs font-bold text-charcoal uppercase tracking-widest mb-2">Profile Information Required</p>
-                                        <p className="text-sm text-charcoal/60 leading-relaxed font-sans">
-                                            Please ensure your profile has a valid <strong>Name, Email, Phone, and Address</strong> to proceed with checkout.
-                                        </p>
+                        {/* ORDER SUMMARY */}
+                        <div className="space-y-6 lg:sticky lg:top-40">
+                            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-charcoal/5">
+                                <h2 className="text-2xl font-serif font-bold text-charcoal mb-8 border-b border-neutral-50 pb-6">
+                                    Order <span className="text-blush italic">Summary</span>
+                                </h2>
+
+                                <div className="space-y-5 mb-8">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Subtotal</span>
+                                        <span className="text-sm font-bold text-charcoal">₹{(paymentBreakdown?.subtotal ?? total ?? 0).toLocaleString()}</span>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <Truck className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Shipping</span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Free</span>
+                                    </div>
+
+                                    {paymentBreakdown && (
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <Package className="w-3.5 h-3.5 text-indigo-400" />
+                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">Platform Fee</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-charcoal">
+                                                {breakdownLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : `₹${paymentBreakdown.platformFee ?? 9}`}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {isCOD && paymentBreakdown && paymentBreakdown.codCharge > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <CreditCard className="w-3.5 h-3.5 text-amber-500" />
+                                                <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest">COD Charge</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-charcoal">₹{paymentBreakdown.codCharge}</span>
+                                        </div>
+                                    )}
+
+                                    {discount > 0 && (
+                                        <div className="flex justify-between items-center text-emerald-600">
+                                            <span className="text-[11px] font-bold uppercase tracking-widest">Discount</span>
+                                            <span className="text-sm font-bold">-₹{discount.toLocaleString()}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="h-px bg-neutral-50 my-2" />
+
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">Grand Total</p>
+                                            <p className="text-3xl font-serif font-bold text-charcoal tracking-tighter">
+                                                ₹{breakdownLoading ? "..." : (finalAmount || total).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[8px] font-black text-neutral-300 uppercase tracking-[0.2em]">Inc. of all taxes</p>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Minimum Order Value Check */}
-                            {user && hasCompleteAddress && total < MIN_ORDER_VALUE && (
-                                <div className="mb-8 p-6 bg-amber-50 rounded-3xl border border-amber-200 flex items-start gap-4">
-                                    <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-2">Minimum Order Required</p>
-                                        <p className="text-sm text-amber-700 leading-relaxed font-sans">
-                                            Add ₹{MIN_ORDER_VALUE - total} more to checkout (minimum order ₹{MIN_ORDER_VALUE})
-                                        </p>
+                                {/* Coupon Section */}
+                                <div className="mb-8">
+                                    <ApplyCoupon
+                                        orderAmount={total}
+                                        onCouponApplied={(discountAmt) => setDiscount(discountAmt)}
+                                        onCouponRemoved={() => setDiscount(0)}
+                                    />
+                                </div>
+
+                                {/* Payment Method Selection */}
+                                <div className="mb-8 space-y-3">
+                                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest ml-1 mb-2">Payment Mode</p>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <button
+                                            onClick={() => setIsCOD(false)}
+                                            className={cn(
+                                                "flex items-center justify-between p-4 rounded-2xl transition-all border-2",
+                                                !isCOD ? "bg-cream/5 border-blush shadow-sm" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", !isCOD ? "bg-blush border-blush" : "border-neutral-200")}>
+                                                    {!isCOD && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                                </div>
+                                                <span className={cn("text-xs font-bold", !isCOD ? "text-charcoal" : "text-neutral-400")}>Online Payment</span>
+                                            </div>
+                                            <CreditCard className={cn("w-4 h-4", !isCOD ? "text-blush" : "text-neutral-300")} />
+                                        </button>
+
+                                        <button
+                                            onClick={() => setIsCOD(true)}
+                                            className={cn(
+                                                "flex items-center justify-between p-4 rounded-2xl transition-all border-2",
+                                                isCOD ? "bg-cream/5 border-blush shadow-sm" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center", isCOD ? "bg-blush border-blush" : "border-neutral-200")}>
+                                                    {isCOD && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                                </div>
+                                                <span className={cn("text-xs font-bold", isCOD ? "text-charcoal" : "text-neutral-400")}>Cash on Delivery</span>
+                                            </div>
+                                            <Package className={cn("w-4 h-4", isCOD ? "text-blush" : "text-neutral-300")} />
+                                        </button>
                                     </div>
                                 </div>
-                            )}
 
-                             <button
-                                onClick={async () => {
-                                    if (!user) {
-                                        toast.info("Please login to checkout");
-                                        router.push("/login?redirect=/cart");
-                                        return;
-                                    }
+                                {/* Checkout Button */}
+                                <button
+                                    onClick={async () => {
+                                        if (!user) {
+                                            toast.info("Please login to checkout");
+                                            router.push("/login?redirect=/cart");
+                                            return;
+                                        }
 
-                                    // Get the delivery profile (selected address or profile)
-                                    const deliveryProfile = getDeliveryProfile();
+                                        const deliveryProfile = getDeliveryProfile();
 
-                                    // Check if complete profile info is available (MANDATORY)
-                                    if (!deliveryProfile?.addressLine1 || !deliveryProfile?.city || !deliveryProfile?.pincode || !deliveryProfile?.phone || !deliveryProfile?.email || !deliveryProfile?.name) {
-                                        toast.warning("Incomplete profile. Name, Email, Phone, and Address are mandatory for purchase.");
-                                        router.push("/profile?redirect=/cart");
-                                        return;
-                                    }
+                                        if (!deliveryProfile?.addressLine1 || !deliveryProfile?.city || !deliveryProfile?.pincode || !deliveryProfile?.phone || !deliveryProfile?.email || !deliveryProfile?.name) {
+                                            toast.warning("Incomplete profile. Address details are mandatory for purchase.");
+                                            router.push("/profile?redirect=/cart");
+                                            return;
+                                        }
 
-                                    setIsCheckingOut(true);
-                                    try {
-                                        // 1. Create Server-Validated Razorpay Order (with discount applied)
-                                        // Use apiFetch to include App Check token automatically
-                                        const res = await apiFetch("/api/razorpay/order", {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ 
-                                                cart, 
-                                                userId: user.uid, 
-                                                profile: deliveryProfile,
-                                                discount,
-                                                finalAmount,
-                                                isCOD,
-                                                paymentBreakdown,
-                                            }),
-                                        });
+                                        setIsCheckingOut(true);
+                                        try {
+                                            const res = await apiFetch("/api/razorpay/order", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({
+                                                    cart,
+                                                    userId: user.uid,
+                                                    profile: deliveryProfile,
+                                                    discount,
+                                                    finalAmount,
+                                                    isCOD,
+                                                    paymentBreakdown,
+                                                }),
+                                            });
 
-                                        const data = await res.json();
-                                        if (!res.ok) {
-                                            if (data.type === "INVENTORY_ERROR") {
-                                                toast.error(data.error || "Some items are no longer available.");
+                                            const data = await res.json();
+                                            if (!res.ok) {
+                                                if (data.type === "INVENTORY_ERROR") {
+                                                    toast.error(data.error || "Some items are no longer available.");
+                                                    return;
+                                                }
+                                                throw new Error(data.error || "Order creation failed");
+                                            }
+
+                                            if (isCOD) {
+                                                toast.success("COD Order placed successfully!");
+                                                clearCart();
+                                                router.push(`/orders/${data.firestoreOrderId}`);
                                                 return;
                                             }
-                                            throw new Error(data.error || "Order creation failed");
-                                        }
 
-                                        // 2. Handle COD Orders (Skip Razorpay)
-                                        if (isCOD) {
-                                            toast.success("COD Order placed successfully!");
-                                            clearCart();
-                                            router.push(`/orders/${data.firestoreOrderId}`);
-                                            return;
-                                        }
+                                            if (data.isMock) {
+                                                toast.success("Test Mode: Order placed successfully!");
+                                                router.push("/profile?tab=orders");
+                                                clearCart();
+                                                return;
+                                            }
 
-                                        // 3. Handle Bypass/Mock Mode
-                                        if (data.isMock) {
-                                            toast.success("Test Mode: Order placed successfully!");
-                                            router.push("/orders");
-                                            clearCart();
-                                            return;
-                                        }
+                                            const options = {
+                                                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                                                amount: data.amount,
+                                                currency: data.currency,
+                                                name: "Miks & Chiks",
+                                                description: "Premium Maternity & Kids Wear",
+                                                order_id: data.orderId,
+                                                handler: async function (response: any) {
+                                                    setIsCheckingOut(true);
+                                                    try {
+                                                        const verifyRes = await apiFetch("/api/razorpay/verify", {
+                                                            method: "POST",
+                                                            headers: { "Content-Type": "application/json" },
+                                                            body: JSON.stringify(response),
+                                                        });
 
-                                        // 4. Open Razorpay Checkout Modal (Live Mode)
-                                        const options = {
-                                            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                                            amount: data.amount,
-                                            currency: data.currency,
-                                            name: "Miks & Chiks",
-                                            description: "Premium Maternity & Kids Wear",
-                                            order_id: data.orderId,
-                                            handler: async function (response: any) {
-                                                setIsCheckingOut(true);
-                                                try {
-                                                    const verifyRes = await apiFetch("/api/razorpay/verify", {
-                                                        method: "POST",
-                                                        headers: { "Content-Type": "application/json" },
-                                                        body: JSON.stringify(response),
-                                                    });
-
-                                                    const verifyData = await verifyRes.json();
-                                                    if (verifyData.success) {
-                                                        toast.success("Payment verified! Your order is confirmed.");
-                                                        clearCart();
-                                                        router.push(`/orders/${verifyData.firestoreOrderId}`);
-                                                    } else {
-                                                        throw new Error(verifyData.error || "Payment verification failed");
+                                                        const verifyData = await verifyRes.json();
+                                                        if (verifyData.success) {
+                                                            toast.success("Payment verified! Your order is confirmed.");
+                                                            clearCart();
+                                                            router.push(`/orders/${verifyData.firestoreOrderId}`);
+                                                        } else {
+                                                            throw new Error(verifyData.error || "Payment verification failed");
+                                                        }
+                                                    } catch (vErr: any) {
+                                                        console.error("Verification Error:", vErr);
+                                                        toast.error(vErr.message || "Failed to verify payment");
+                                                    } finally {
+                                                        setIsCheckingOut(false);
                                                     }
-                                                } catch (vErr: any) {
-                                                    console.error("Verification Error:", vErr);
-                                                    toast.error(vErr.message || "Failed to verify payment");
-                                                } finally {
-                                                    setIsCheckingOut(false);
-                                                }
-                                            },
-                                            prefill: {
-                                                name: deliveryProfile?.name || "",
-                                                email: user.email,
-                                                contact: deliveryProfile?.phone || "",
-                                            },
-                                            theme: {
-                                                color: "#F8AFA6", // Blush color
-                                            },
-                                        };
+                                                },
+                                                prefill: {
+                                                    name: deliveryProfile?.name || "",
+                                                    email: user.email,
+                                                    contact: deliveryProfile?.phone || "",
+                                                },
+                                                theme: {
+                                                    color: "#F8AFA6",
+                                                },
+                                            };
 
                                             const rzp = new (window as any).Razorpay(options);
-                                            
-                                            // 4. Bulletproof Failure/Abandonment Recovery
                                             rzp.on('payment.failed', async function (response: any) {
                                                 console.error("Payment failure:", response.error);
                                                 setIsCheckingOut(true);
                                                 try {
-                                                    // Immediately release stock if payment fails
                                                     await apiFetch("/api/razorpay/cancel", {
                                                         method: "POST",
                                                         headers: { "Content-Type": "application/json" },
@@ -718,118 +632,64 @@ export default function CartPage() {
                                                     setIsCheckingOut(false);
                                                 }
                                             });
-                                            
                                             rzp.open();
 
-                                    } catch (err: any) {
-                                        console.error("Checkout Error:", err);
-                                        toast.error(err.message || "Failed to initiate checkout");
-                                    } finally {
-                                        setIsCheckingOut(false);
-                                    }
-                                }}
-                                disabled={isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE}
-                                className={`
-                                    w-full py-5 rounded-2xl font-bold text-lg transition-all shadow-xl 
-                                    flex items-center justify-center gap-3 group active:scale-95
-                                    ${isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE
-                                        ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
-                                        : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30 animate-pulse"
-                                    }
-                                `}
-                            >
-                                {isCheckingOut ? (
-                                    <div className="h-6 w-6 animate-spin rounded-full border-3 border-solid border-white border-r-transparent" />
-                                ) : (
-                                    <>
-                                        {!user 
-                                            ? "Login to Checkout" 
-                                            : !hasCompleteAddress 
-                                                ? "Add Delivery Address" 
-                                                : total < MIN_ORDER_VALUE
-                                                    ? `Add ₹${MIN_ORDER_VALUE - total} More`
-                                                    : isCOD 
-                                                        ? `Pay ₹${finalAmount} Cash on Delivery`
-                                                        : `Pay ₹${finalAmount} Securely`
+                                        } catch (err: any) {
+                                            console.error("Checkout Error:", err);
+                                            toast.error(err.message || "Failed to initiate checkout");
+                                        } finally {
+                                            setIsCheckingOut(false);
                                         }
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                                    </>
-                                )}
-                            </button>
-                            
-                            {/* Trust Signals */}
-                            <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-neutral-100">
-                                <div className="text-center">
-                                    <Shield className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                                    <p className="text-[10px] text-neutral-500 font-medium">Secure Payment</p>
+                                    }}
+                                    disabled={isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE}
+                                    className={cn(
+                                        "w-full py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-xl shadow-charcoal/10",
+                                        isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE
+                                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                                            : "bg-charcoal text-white hover:bg-black"
+                                    )}
+                                >
+                                    {isCheckingOut ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <>
+                                            {!user
+                                                ? "Login to Checkout"
+                                                : !hasCompleteAddress
+                                                    ? "Add Delivery Details"
+                                                    : total < MIN_ORDER_VALUE
+                                                        ? `Min Order ₹${MIN_ORDER_VALUE}`
+                                                        : `Place Order • ₹${(finalAmount || total).toLocaleString()}`
+                                            }
+                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Trust Badge */}
+                            <div className="bg-white p-6 rounded-[32px] border border-[#F3E8E5] flex items-center justify-around shadow-sm">
+                                <div className="text-center group cursor-help">
+                                    <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Secure</p>
                                 </div>
-                                <div className="text-center">
-                                    <RefreshCw className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                                    <p className="text-[10px] text-neutral-500 font-medium">Easy Returns</p>
+                                <div className="h-8 w-px bg-neutral-100" />
+                                <div className="text-center group cursor-help">
+                                    <RefreshCw className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:rotate-180 transition-transform duration-500" />
+                                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Returns</p>
                                 </div>
-                                <div className="text-center">
-                                    <Headphones className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-                                    <p className="text-[10px] text-neutral-500 font-medium">24/7 Support</p>
+                                <div className="h-8 w-px bg-neutral-100" />
+                                <div className="text-center group cursor-help">
+                                    <Headphones className="w-5 h-5 text-rose-400 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+                                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Support</p>
                                 </div>
                             </div>
-                            
-                            <p className="text-center text-[10px] text-gray-400 mt-6 uppercase tracking-[0.2em] font-bold">
-                                Protected by Razorpay Secure
-                            </p>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Mobile Sticky Checkout Bar */}
-            {cart.length > 0 && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 p-4 shadow-lg z-50">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <p className="text-xs text-neutral-500">Total</p>
-                            <p className="text-xl font-bold text-blush">₹{finalAmount || total}</p>
-                        </div>
-                        <button 
-                            onClick={async () => {
-                                if (!user) {
-                                    toast.info("Please login to checkout");
-                                    router.push("/login?redirect=/cart");
-                                    return;
-                                }
-                                if (total < MIN_ORDER_VALUE) {
-                                    toast.warning(`Minimum order ₹${MIN_ORDER_VALUE} required`);
-                                    return;
-                                }
-                                // Scroll to checkout button on mobile
-                                const checkoutBtn = document.querySelector('[data-checkout-btn]');
-                                if (checkoutBtn) {
-                                    checkoutBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }
-                            }}
-                            disabled={isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE}
-                            className={`
-                                flex-1 py-3 px-6 rounded-xl font-bold text-sm transition-all
-                                ${isCheckingOut || !hasCompleteAddress || total < MIN_ORDER_VALUE
-                                    ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
-                                    : "bg-gradient-to-r from-blush to-rose-400 text-white"
-                                }
-                            `}
-                        >
-                            {!user 
-                                ? "Login" 
-                                : !hasCompleteAddress 
-                                    ? "Add Address" 
-                                    : total < MIN_ORDER_VALUE
-                                        ? `Add ₹${MIN_ORDER_VALUE - total}`
-                                        : "Checkout"
-                            }
-                        </button>
-                    </div>
-                </div>
-            )}
-
             <Footer />
-
         </div>
     );
 }

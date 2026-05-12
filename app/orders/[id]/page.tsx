@@ -180,10 +180,10 @@ export default function OrderDetailPage() {
                 if (data.userId === user?.uid) {
                     setOrder({ id: snap.id, ...data });
                 } else {
-                    router.push("/orders");
+                    router.push("/profile?tab=orders");
                 }
             } else {
-                router.push("/orders");
+                router.push("/profile?tab=orders");
             }
         } catch (error) {
             console.error("Error fetching order:", error);
@@ -342,7 +342,7 @@ export default function OrderDetailPage() {
                 <div className="max-w-7xl mx-auto px-6 md:px-10">
                     <div className="max-w-5xl mx-auto">
                         <Link 
-                            href="/orders" 
+                            href="/profile?tab=orders"
                             className="inline-flex items-center gap-2 text-neutral-400 hover:text-blush transition-colors mb-10 font-bold text-xs uppercase tracking-widest group"
                         >
                             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
