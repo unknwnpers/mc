@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 
 // --- CONSTANTS ---
 const statusConfig: any = {
@@ -130,8 +131,6 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
       orderQueries.push(query(collection(db, "orders"), where("recipient.phone", "==", phone)));
     }
 
-    // Since we have multiple queries, we'll merge them manually.
-    // To keep it simple and real-time, we'll use onSnapshot on each and merge the results.
     const results = new Map<string, any>();
     const unsubscribes = orderQueries.map(q =>
       onSnapshot(q, (snap) => {
@@ -181,8 +180,31 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
   const activeOrders = orders.filter(o => o.status !== 'cancelled');
   const totalSpent = activeOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
+  const getLabel = (dateStr: string) => {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (dateStr === today) return "Today";
+    if (dateStr === yesterday) return "Yesterday";
+    return dateStr;
+  };
+
+  const groups = orders.reduce((acc: any, order) => {
+    const date = order.createdAt?.seconds
+      ? new Date(order.createdAt.seconds * 1000).toDateString()
+      : "Recent Orders";
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(order);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.keys(groups).sort((a, b) => {
+    if (a === "Recent Orders") return -1;
+    if (b === "Recent Orders") return 1;
+    return new Date(b).getTime() - new Date(a).getTime();
+  });
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       {/* Stats Summary */}
       <div className="grid grid-cols-2 gap-4">
           <div className="bg-white p-6 rounded-[32px] border border-[#F3E8E5] shadow-sm">
@@ -195,65 +217,90 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
           </div>
       </div>
 
-      <div className="space-y-6">
-        {orders.map((order) => {
-          const status = statusConfig[order.status] || statusConfig.created;
-          const StatusIcon = status.icon;
-
-          return (
-            <div key={order.id} className="bg-white rounded-[40px] border border-[#F3E8E5] p-8 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-neutral-50 relative z-10">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-cream rounded-2xl flex items-center justify-center text-blush shadow-inner">
-                    <Box className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Order Ref</p>
-                      <p className="font-mono text-[11px] text-neutral-500">#{order.id.slice(-8).toUpperCase()}</p>
-                    </div>
-                    <h4 className="text-3xl font-serif font-bold text-charcoal tracking-tight">₹{order.total?.toLocaleString()}</h4>
-                    <p className="text-[11px] font-medium text-neutral-400 mt-1">{formatDate(order.createdAt)} • {order.items?.length} items</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className={cn("inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest", status.color)}>
-                    <StatusIcon className="w-3.5 h-3.5" />
-                    {status.label}
-                  </div>
-                  <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-2 px-6 py-2.5 bg-neutral-50 rounded-2xl text-[11px] font-black uppercase tracking-widest text-charcoal hover:bg-charcoal hover:text-white transition-all">
-                    Track <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-8 relative z-10">
-                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide flex-1">
-                  {order.items?.map((item: any, idx: number) => (
-                    <div key={idx} className="relative flex-shrink-0">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden border border-neutral-100 bg-neutral-50 shadow-sm group-hover:shadow-md transition-shadow">
-                        <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
-                      </div>
-                      {item.quantity > 1 && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-charcoal text-white text-[9px] font-black h-4 w-4 rounded-md flex items-center justify-center border border-white">
-                          {item.quantity}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="hidden sm:flex items-center gap-3 text-neutral-400">
-                    <MapPin className="w-4 h-4" />
-                    <p className="text-[11px] font-medium max-w-[150px] truncate">{order.shipping?.address || "Address details..."}</p>
-                </div>
-              </div>
-
-              <div className="absolute top-0 right-0 w-32 h-32 bg-cream rounded-full blur-3xl opacity-10 -mr-10 -mt-10" />
+      <div className="space-y-16">
+        {sortedDates.map((date) => (
+          <div key={date} className="relative">
+            <div className="flex items-center gap-6 mb-8">
+              <div className="h-px flex-1 bg-neutral-200" />
+              <h3 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] whitespace-nowrap bg-[#FCF9F7] px-6 py-2 rounded-full border border-neutral-100 shadow-sm">
+                {getLabel(date)}
+              </h3>
+              <div className="h-px flex-1 bg-neutral-200" />
             </div>
-          );
-        })}
+
+            <div className="grid grid-cols-1 gap-8">
+              {groups[date].map((order: any) => {
+                const status = statusConfig[order.status] || statusConfig.created;
+                const StatusIcon = status.icon;
+                const orderDate = order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000) : new Date();
+
+                return (
+                  <div key={order.id} className="bg-white rounded-[40px] border border-[#F3E8E5] p-8 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
+                    <div className="absolute top-0 right-10 bg-cream px-6 py-2 rounded-b-2xl border-x border-b border-blush/10 text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-blush/40" />
+                      {formatDistanceToNow(orderDate, { addSuffix: true })}
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-neutral-50 relative z-10">
+                      <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 bg-cream rounded-2xl flex items-center justify-center text-blush shadow-inner">
+                          <Box className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Order Ref</p>
+                            <p className="font-mono text-[11px] text-neutral-500">#{order.id.slice(-8).toUpperCase()}</p>
+                          </div>
+                          <h4 className="text-3xl font-serif font-bold text-charcoal tracking-tight">₹{order.total?.toLocaleString()}</h4>
+                          <p className="text-[11px] font-medium text-neutral-400 mt-1">
+                            {orderDate.toLocaleString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })} • {order.items?.length} items
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className={cn("inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest", status.color)}>
+                          <StatusIcon className="w-3.5 h-3.5" />
+                          {status.label}
+                        </div>
+                        <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-2 px-6 py-2.5 bg-neutral-50 rounded-2xl text-[11px] font-black uppercase tracking-widest text-charcoal hover:bg-charcoal hover:text-white transition-all">
+                          Track <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+                      <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide flex-1">
+                        {order.items?.map((item: any, idx: number) => (
+                          <div key={idx} className="relative flex-shrink-0">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden border border-neutral-100 bg-neutral-50 shadow-sm group-hover:shadow-md transition-shadow">
+                              <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                            </div>
+                            {item.quantity > 1 && (
+                              <span className="absolute -top-1.5 -right-1.5 bg-charcoal text-white text-[9px] font-black h-4 w-4 rounded-md flex items-center justify-center border border-white">
+                                {item.quantity}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="bg-[#FFF7ED] px-6 py-3 rounded-2xl border border-[#F3E8E5]/50 flex items-center gap-3">
+                          <MapPin className="w-4 h-4 text-[#C4A484]" />
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-[#B49474]">Shipping To</p>
+                            <p className="text-[11px] font-bold text-[#5C4033] truncate max-w-[150px]">
+                              {order.shipping?.address || order.shippingAddress || "Address details..."}
+                            </p>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -293,7 +340,7 @@ function WishlistTab({ userId }: { userId: string }) {
     }
   };
 
-  if (loading) return <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-64 rounded-[40px]" />)}</div>;
+  if (loading) return <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="aspect-[3/4] rounded-[40px]" />)}</div>;
 
   if (items.length === 0) {
     return (
@@ -311,25 +358,32 @@ function WishlistTab({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
       {items.map((item) => (
-        <div key={item.id} className="bg-white p-6 rounded-[40px] border border-[#F3E8E5] shadow-sm hover:shadow-xl transition-all duration-500 group flex items-center gap-6">
-          <div className="w-32 h-40 bg-cream rounded-3xl overflow-hidden border border-[#F3E8E5] shrink-0">
+        <div key={item.id} className="bg-white p-4 rounded-[40px] border border-[#F3E8E5] shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col relative">
+          <button
+            onClick={() => handleDelete(item.id)}
+            className="absolute top-6 right-6 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full text-neutral-300 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+
+          <div className="aspect-[3/4] bg-cream rounded-[32px] overflow-hidden border border-[#F3E8E5] mb-4 relative">
              <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.name} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-serif font-bold text-xl text-charcoal mb-1 truncate">{item.name}</h4>
-            <p className="text-2xl font-bold text-blush">₹{item.price}</p>
-            <div className="flex items-center gap-3 mt-6">
-                <Link href={`/products/${item.id}`} className="flex-1 bg-charcoal text-white py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-center hover:bg-black transition-all">
+             <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 bg-gradient-to-t from-charcoal/40 to-transparent">
+                <Link href={`/products/${item.id}`} className="w-full bg-white text-charcoal py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-center block shadow-lg">
                   View Product
                 </Link>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-3 border border-neutral-100 rounded-2xl text-neutral-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+             </div>
+          </div>
+
+          <div className="px-2 pb-2">
+            <h4 className="font-bold text-[13px] text-charcoal mb-1 truncate">{item.name}</h4>
+            <div className="flex items-center justify-between">
+               <p className="text-lg font-bold text-blush">₹{item.price}</p>
+               <button className="p-2 bg-neutral-50 rounded-xl text-neutral-400 hover:text-blush transition-colors">
+                  <ShoppingBag className="w-4 h-4" />
+               </button>
             </div>
           </div>
         </div>
@@ -688,7 +742,11 @@ function ProfileContent() {
   const [ordersLoading, setOrdersLoading] = useState(true);
 
   // Auth Provider Detect
-  const isPhoneUser = user?.providerData?.some(p => p.providerId === 'phone') || false;
+  const googleProvider = user?.providerData?.find(p => p.providerId === 'google.com');
+  const phoneProvider = user?.providerData?.find(p => p.providerId === 'phone');
+
+  const isGoogleUser = !!googleProvider;
+  const isPhoneUser = !!phoneProvider;
 
   useEffect(() => {
     if (profile) {
@@ -874,13 +932,24 @@ function ProfileContent() {
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Email</p>
                                 {isEditing ? (
-                                  <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20"
-                                    placeholder="Email Address"
-                                  />
+                                  <div className="relative group/field">
+                                    <input
+                                      type="email"
+                                      value={email}
+                                      disabled={isGoogleUser}
+                                      onChange={(e) => setEmail(e.target.value)}
+                                      className={cn(
+                                        "w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20",
+                                        isGoogleUser && "opacity-60 cursor-not-allowed"
+                                      )}
+                                      placeholder="Email Address"
+                                    />
+                                    {isGoogleUser && (
+                                      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/field:opacity-100 transition-opacity">
+                                         <div className="bg-charcoal text-white text-[8px] font-black px-2 py-1 rounded-md whitespace-nowrap">Verified via Google</div>
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : (
                                   <p className="text-[13px] font-bold text-charcoal truncate">{profile?.email || 'Not set'}</p>
                                 )}
@@ -894,16 +963,32 @@ function ProfileContent() {
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5 flex items-center gap-2">
                                     Mobile
-                                    <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">Verified</span>
+                                    <span className={cn(
+                                      "text-[8px] px-1.5 py-0.5 rounded border",
+                                      isPhoneUser ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-neutral-50 text-neutral-400 border-neutral-100"
+                                    )}>
+                                      {isPhoneUser ? 'Verified' : 'Manual'}
+                                    </span>
                                 </p>
                                 {isEditing ? (
-                                  <input
-                                    type="tel"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    className="w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20"
-                                    placeholder="Phone Number"
-                                  />
+                                  <div className="relative group/field">
+                                    <input
+                                      type="tel"
+                                      value={phone}
+                                      disabled={isPhoneUser}
+                                      onChange={(e) => setPhone(e.target.value)}
+                                      className={cn(
+                                        "w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20",
+                                        isPhoneUser && "opacity-60 cursor-not-allowed"
+                                      )}
+                                      placeholder="Phone Number"
+                                    />
+                                    {isPhoneUser && (
+                                      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/field:opacity-100 transition-opacity">
+                                         <div className="bg-charcoal text-white text-[8px] font-black px-2 py-1 rounded-md whitespace-nowrap">Verified via OTP</div>
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : (
                                   <p className="text-[13px] font-bold text-charcoal">{profile?.phone || 'Not set'}</p>
                                 )}
@@ -916,7 +1001,7 @@ function ProfileContent() {
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Linked to</p>
-                                <p className="text-[13px] font-bold text-blush">{isPhoneUser ? 'Phone Identity' : 'Google Cloud'}</p>
+                                <p className="text-[13px] font-bold text-blush">{isGoogleUser ? 'Google Cloud' : isPhoneUser ? 'Phone Identity' : 'Standard Account'}</p>
                             </div>
                         </div>
                     </div>
