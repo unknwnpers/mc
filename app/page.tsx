@@ -23,7 +23,7 @@ export const revalidate = 60;
 // ── SEO Metadata ──
 export const metadata: Metadata = {
   title: 'Premium Maternity & Kids Wear | Miks & Chiks — Kochi',
-  description: 'Discover premium maternity and kids wear at Miks & Chiks. Thoughtfully designed with the softest fabrics for comfort, elegance, and joy in every moment of motherhood. Free shipping above ₹699.',
+  description: 'Discover premium maternity and kids wear at Miks & Chiks. Thoughtfully designed with the softest fabrics for comfort, elegance, and joy in every moment of motherhood. Free shipping.',
   alternates: {
     canonical: 'https://miksandchiks.com',
   },

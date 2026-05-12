@@ -274,33 +274,36 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
   return (
     <div className="w-full">
       {step === "phone" && (
-        <div className="space-y-4">
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-              <Phone className="w-5 h-5" />
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] ml-2">Mobile Number</label>
+            <div className="relative group">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-blush transition-colors">
+                <Phone className="w-4 h-4" />
+              </div>
+              <span className="absolute left-12 top-1/2 -translate-y-1/2 text-charcoal font-bold text-sm">
+                +91
+              </span>
+              <input
+                id="phone-input"
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                }
+                onKeyDown={(e) => e.key === "Enter" && sendOTP()}
+                placeholder="10-digit number"
+                className="w-full pl-20 pr-5 py-5 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-bold text-charcoal placeholder:text-neutral-300 text-sm shadow-sm"
+                autoComplete="tel"
+              />
             </div>
-            <span className="absolute left-12 top-1/2 -translate-y-1/2 text-gray-600 font-medium text-sm">
-              +91
-            </span>
-            <input
-              id="phone-input"
-              type="tel"
-              inputMode="numeric"
-              value={phone}
-              onChange={(e) =>
-                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-              }
-              onKeyDown={(e) => e.key === "Enter" && sendOTP()}
-              placeholder="10-digit mobile number"
-              className="w-full pl-20 pr-4 py-4 rounded-2xl border border-gray-200 focus:border-blush focus:ring-2 focus:ring-blush/20 outline-none text-lg font-medium transition-all"
-              autoComplete="tel"
-            />
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+            <div className="flex items-start gap-2 p-4 bg-red-50 text-red-600 rounded-2xl text-[13px] border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
@@ -308,7 +311,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
             id="send-otp-btn"
             onClick={sendOTP}
             disabled={loading || phone.length < 10 || lockoutTimer > 0}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blush to-rose-400 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full h-[64px] flex items-center justify-center gap-3 bg-blush text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/20 active:scale-[0.98] disabled:opacity-50 group"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -316,9 +319,9 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
               <span>Wait {formatTime(lockoutTimer)}</span>
             ) : (
               <>
-                <ShieldCheck className="w-5 h-5" />
-                <span>Send OTP</span>
-                <ArrowRight className="w-5 h-5" />
+                <ShieldCheck className="w-4 h-4" />
+                <span>Send OTP Code</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </>
             )}
           </button>
@@ -326,10 +329,10 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
       )}
 
       {step === "otp" && (
-        <div className="space-y-4">
-          <div className="text-center mb-2">
-            <p className="text-gray-500 text-sm">
-              Code sent to <span className="font-semibold">+91 {phone}</span>
+        <div className="space-y-6">
+          <div className="text-center bg-cream/30 p-4 rounded-2xl border border-blush/5">
+            <p className="text-neutral-500 text-xs font-medium">
+              We've sent a code to <span className="font-bold text-charcoal">+91 {phone}</span>
             </p>
             <button
               onClick={() => {
@@ -337,31 +340,34 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
                 setOtp("");
                 setError(null);
               }}
-              className="text-blush text-xs font-bold hover:underline mt-1"
+              className="text-blush text-[10px] font-black uppercase tracking-widest hover:underline mt-2"
             >
-              Change number
+              Change Number
             </button>
           </div>
 
-          <input
-            id="otp-input"
-            type="text"
-            inputMode="numeric"
-            value={otp}
-            onChange={(e) =>
-              setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-            }
-            onKeyDown={(e) => e.key === "Enter" && verifyOTP()}
-            placeholder="6-digit OTP"
-            className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:border-blush outline-none text-2xl font-bold tracking-[0.5em] text-center transition-all"
-            autoFocus
-            autoComplete="one-time-code"
-          />
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] ml-2">Verification Code</label>
+            <input
+              id="otp-input"
+              type="text"
+              inputMode="numeric"
+              value={otp}
+              onChange={(e) =>
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              onKeyDown={(e) => e.key === "Enter" && verifyOTP()}
+              placeholder="000000"
+              className="w-full px-5 py-5 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 outline-none text-2xl font-bold tracking-[0.5em] text-center text-charcoal transition-all shadow-sm placeholder:text-neutral-200"
+              autoFocus
+              autoComplete="one-time-code"
+            />
+          </div>
 
           {error && (
-            <div className="flex items-start gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+            <div className="flex items-start gap-2 p-4 bg-red-50 text-red-600 rounded-2xl text-[13px] border border-red-100">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
@@ -369,25 +375,31 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
             id="verify-otp-btn"
             onClick={verifyOTP}
             disabled={loading || otp.length < 6}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blush to-rose-400 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full h-[64px] flex items-center justify-center gap-3 bg-blush text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/20 active:scale-[0.98] disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <span>Verify OTP</span>
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Verify & Continue</span>
+              </>
             )}
           </button>
 
           <div className="text-center">
             {timer > 0 ? (
-              <p className="text-gray-400 text-xs">Resend code in {timer}s</p>
+              <div className="flex items-center justify-center gap-2 text-neutral-400 text-[10px] font-bold uppercase tracking-widest">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Resend in {timer}s
+              </div>
             ) : (
               <button
                 onClick={resendOTP}
-                className="text-blush text-xs font-bold flex items-center gap-1 mx-auto hover:underline"
+                className="text-blush text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto hover:underline decoration-2"
               >
                 <RefreshCw className="w-3 h-3" />
-                Resend OTP
+                Resend Code Now
               </button>
             )}
           </div>

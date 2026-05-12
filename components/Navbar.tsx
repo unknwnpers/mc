@@ -26,17 +26,19 @@ const navLinks = [
       { label: 'Baby Care', href: '/products?category=baby' },
     ],
   },
-  { label: 'Collections', href: '/products?featured=true', dropdown: [
-    { label: 'Best Sellers', href: '/products?featured=true' },
-    { label: 'New Arrivals', href: '/products?new=true' },
-    { label: 'Under ₹999', href: '/products?maxPrice=999' },
-  ]},
+  {
+    label: 'Collections', href: '/products?featured=true', dropdown: [
+      { label: 'Best Sellers', href: '/products?featured=true' },
+      { label: 'New Arrivals', href: '/products?new=true' },
+      { label: 'Under ₹999', href: '/products?maxPrice=999' },
+    ]
+  },
   { label: 'About Us', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ];
 
 const announcementItems = [
-  { icon: Truck, text: 'Free Shipping above ₹699' },
+  { icon: Truck, text: 'Free Shipping' },
   { icon: RefreshCw, text: 'Easy 7-Day Returns' },
   { icon: Banknote, text: 'COD Available' },
   { icon: ShieldCheck, text: '100% Secure Payments' },
@@ -71,14 +73,14 @@ export default function Navbar() {
           const { url, timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < LOGO_CACHE_TTL) { setLogoUrl(url); return; }
         }
-      } catch {}
+      } catch { }
       try {
         const response = await fetch('/api/images?category=system&subcategory=logo&limit=1');
         const data = await response.json();
         if (data.success && data.images.length > 0) {
           const url = data.images[0].url;
           setLogoUrl(url);
-          try { sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify({ url, timestamp: Date.now() })); } catch {}
+          try { sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify({ url, timestamp: Date.now() })); } catch { }
         }
       } catch (error) { console.error('Error fetching logo:', error); }
     }
@@ -151,7 +153,7 @@ export default function Navbar() {
             {/* ── LOGO ── */}
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300 group shrink-0">
               <div className="relative w-11 h-11 md:w-12 md:h-12">
-                <Image src={logoUrl} alt="Miks & Chiks" fill className="object-contain group-hover:scale-105 transition-transform duration-500" priority />
+                <Image src={logoUrl} alt="Miks & Chiks" fill sizes="48px" className="object-contain group-hover:scale-105 transition-transform duration-500" priority />
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-serif text-xl md:text-[22px] text-[#1E1E1E] font-bold tracking-tight">

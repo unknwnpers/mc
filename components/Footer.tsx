@@ -51,8 +51,8 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
     ...(socialSettings.facebook ? [{ icon: Facebook, href: socialSettings.facebook, label: "Facebook" }] : [{ icon: Facebook, href: "#", label: "Facebook" }]),
     ...(socialSettings.youtube ? [{ icon: Youtube, href: socialSettings.youtube, label: "YouTube" }] : [{ icon: Youtube, href: "#", label: "YouTube" }]),
     // We can also add X and Whatsapp if they exist in the settings, without breaking layout too much.
-    ...(socialSettings.x ? [{ icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px]"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>, href: socialSettings.x, label: "X" }] : []),
-    ...(socialSettings.whatsapp ? [{ icon: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/><path d="M16 14.5a2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z" opacity="0"/></svg>, href: socialSettings.whatsapp, label: "WhatsApp" }] : []),
+    ...(socialSettings.x ? [{ icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px]"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>, href: socialSettings.x, label: "X" }] : []),
+    ...(socialSettings.whatsapp ? [{ icon: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /><path d="M16 14.5a2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z" opacity="0" /></svg>, href: socialSettings.whatsapp, label: "WhatsApp" }] : []),
   ];
 
   const instagramUrl = socialSettings.instagram || "https://instagram.com/miksandchiks";
@@ -143,7 +143,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <h3 className="text-[16px] font-bold text-white mb-6">Get in Touch</h3>
             <div className="space-y-4">
               {[
-                { icon: Mail, content: "hello@miksandchiks.com", href: "mailto:hello@miksandchiks.com" },
+                { icon: Mail, content: "miksandchiks@gmail.com", href: "mailto:hello@miksandchiks.com" },
                 { icon: Phone, content: "+91 9876 543 210", href: "tel:+919876543210" },
                 { icon: MapPin, content: "Kochi, Kerala, India" },
                 { icon: Clock, content: "Mon–Sat, 10AM–7PM IST" },
