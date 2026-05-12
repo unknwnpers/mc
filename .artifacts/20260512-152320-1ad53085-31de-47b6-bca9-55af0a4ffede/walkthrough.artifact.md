@@ -11,6 +11,11 @@ I have successfully consolidated the orders navigation into the profile page and
 - **Order Detail Page**: Updated "Back to Orders" and error redirection to point to `/profile?tab=orders`.
 - **Cart Page**: Updated the mock checkout success redirection to point to `/profile?tab=orders`.
 
+### Redesign Pages (About Us & Contact)
+
+- **About Us Page**: Redesigned with a premium `#FCF9F7` background, enhanced typography (`font-serif`), and luxurious card styling for "Why Choose Us". Added decorative floating elements.
+- **Contact Page**: Redesigned with the same premium background and standardized typography. Form inputs were updated to `bg-white` with refined borders, and contact details were put into elegant, colored cards.
+
 ### Redesign Cart Page
 
 The cart page has been redesigned to match the `profile/page.tsx` aesthetics:
