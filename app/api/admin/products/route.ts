@@ -97,10 +97,33 @@ export async function GET(req: Request) {
       
       // Apply pagination in-memory
       docs = docs.slice(offset, offset + limit);
-      
+
+      // Fetch all approved reviews to calculate stats for each product
+      const reviewsSnapshot = await adminDb.collection("reviews").where("status", "==", "approved").get();
+      const reviewStats: Record<string, { averageRating: number; total: number }> = {};
+
+      reviewsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const pid = data.productId;
+        const rating = data.rating || 0;
+
+        if (!reviewStats[pid]) {
+          reviewStats[pid] = { averageRating: 0, total: 0 };
+        }
+
+        reviewStats[pid].averageRating += rating;
+        reviewStats[pid].total += 1;
+      });
+
+      Object.keys(reviewStats).forEach(pid => {
+        reviewStats[pid].averageRating = Math.round((reviewStats[pid].averageRating / reviewStats[pid].total) * 10) / 10;
+      });
+
       // Convert Firestore Timestamps to ISO strings for serialization
       const serializedDocs = docs.map((doc: any) => ({
         ...doc,
+        rating: reviewStats[doc.id]?.averageRating || 0,
+        reviewCount: reviewStats[doc.id]?.total || 0,
         createdAt: doc.createdAt?.toDate?.().toISOString() || doc.createdAt,
         updatedAt: doc.updatedAt?.toDate?.().toISOString() || doc.updatedAt,
       }));
@@ -118,11 +141,35 @@ export async function GET(req: Request) {
       });
     }
 
+    // Fetch all approved reviews to calculate stats for each product
+    const reviewsSnapshot = await adminDb.collection("reviews").where("status", "==", "approved").get();
+    const reviewStats: Record<string, { averageRating: number; total: number }> = {};
+
+    reviewsSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const pid = data.productId;
+      const rating = data.rating || 0;
+
+      if (!reviewStats[pid]) {
+        reviewStats[pid] = { averageRating: 0, total: 0 };
+      }
+
+      reviewStats[pid].averageRating += rating;
+      reviewStats[pid].total += 1;
+    });
+
+    // Finalize average rating
+    Object.keys(reviewStats).forEach(pid => {
+      reviewStats[pid].averageRating = Math.round((reviewStats[pid].averageRating / reviewStats[pid].total) * 10) / 10;
+    });
+
     const products = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
         ...data,
+        rating: reviewStats[doc.id]?.averageRating || 0,
+        reviewCount: reviewStats[doc.id]?.total || 0,
         createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt,
       };

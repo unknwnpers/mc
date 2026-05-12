@@ -23,6 +23,8 @@ export interface Product {
   variants: ProductVariant[];         // all purchasable SKUs
   isActive: boolean;
   is_featured?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
   lowStockThreshold?: number;         // default: 3, per-product low stock threshold
   createdAt: any;
   updatedAt: any;

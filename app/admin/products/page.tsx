@@ -28,6 +28,8 @@ interface Product {
   variants: ProductVariant[];
   isActive: boolean;
   is_featured: boolean;
+  rating?: number;
+  reviewCount?: number;
   createdAt: any;
 }
 
@@ -957,7 +959,7 @@ Type "DELETE" to confirm (press OK).`
         ) : viewMode === "list" ? (
           /* ── List View ───────────────────────────────────────────────────── */
           <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-[40px_auto_1fr_120px_100px_100px_120px] gap-4 px-4 py-3 border-b border-white/10 text-xs font-bold text-white/30 uppercase tracking-widest items-center">
+            <div className="grid grid-cols-[40px_auto_1fr_120px_100px_100px_100px_120px] gap-4 px-4 py-3 border-b border-white/10 text-xs font-bold text-white/30 uppercase tracking-widest items-center">
               <input
                 type="checkbox"
                 checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProducts.has(p.id))}
@@ -968,6 +970,7 @@ Type "DELETE" to confirm (press OK).`
               <div>Product</div>
               <div>Category</div>
               <div>Stock</div>
+              <div>Rating</div>
               <div>Status</div>
               <div className="text-right">Actions</div>
             </div>
@@ -978,7 +981,7 @@ Type "DELETE" to confirm (press OK).`
                 const hasLowStock = p.variants.some(v => v.stock > 0 && v.stock <= 5);
                 return (
                   <div key={p.id} className={cn(
-                    "grid grid-cols-[40px_auto_1fr_120px_100px_100px_120px] gap-4 px-4 py-3 items-center hover:bg-white/5 transition-colors",
+                    "grid grid-cols-[40px_auto_1fr_120px_100px_100px_100px_120px] gap-4 px-4 py-3 items-center hover:bg-white/5 transition-colors",
                     !p.isActive && "opacity-50",
                     selectedProducts.has(p.id) && "bg-white/5"
                   )}>
@@ -1010,6 +1013,11 @@ Type "DELETE" to confirm (press OK).`
                       ) : (
                         <span className="text-white/60 text-xs">{totalStock} in stock</span>
                       )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-400 fill-current" />
+                      <span className="text-white text-xs">{p.rating || 0}</span>
+                      <span className="text-white/30 text-[10px]">({p.reviewCount || 0})</span>
                     </div>
                     <div className="flex gap-1 flex-wrap">
                       {!p.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">Archived</span>}
@@ -1065,12 +1073,21 @@ Type "DELETE" to confirm (press OK).`
                 </div>
 
                 <div className="p-5">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-1">
                     <h3 className="font-semibold text-white truncate">{p.name}</h3>
                     <div className="flex gap-1.5 shrink-0 ml-2">
                       {!p.isActive && <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold">Archived</span>}
                       {p.is_featured && <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">Featured</span>}
                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 mb-3">
+                    <div className="flex items-center gap-0.5">
+                      {[1,2,3,4,5].map(i => (
+                        <Star key={i} className={cn("w-3 h-3", i <= Math.round(p.rating || 0) ? "text-amber-400 fill-current" : "text-white/10")} />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-white/40">({p.reviewCount || 0} reviews)</span>
                   </div>
 
                   {/* Variant pills */}

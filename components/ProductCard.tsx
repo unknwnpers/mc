@@ -27,6 +27,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
   const [imgLoading, setImgLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [offerData, setOfferData] = useState<AppliedOffer | null>(null);
+  const [reviewData, setReviewData] = useState({ averageRating: 0, total: 0 });
 
   const displayImage = product.images?.[0] || '/placeholder.svg';
   const displayPrice = product.variants?.[0]?.price ?? 0;
@@ -44,6 +45,22 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
       .catch(console.error);
     }
   }, [displayPrice, product.category_slug, product.id]);
+
+  useEffect(() => {
+    if (product.id) {
+      fetch(`/api/reviews/product?productId=${product.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.stats) {
+            setReviewData({
+              averageRating: data.stats.averageRating || 0,
+              total: data.stats.total || 0,
+            });
+          }
+        })
+        .catch(console.error);
+    }
+  }, [product.id]);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -140,11 +157,17 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
         <div className="flex items-center gap-1.5 mt-2">
           <div className="flex items-center gap-0.5">
             {[1,2,3,4,5].map(i => (
-              <Star key={i} className="w-3.5 h-3.5 text-[#F4B740] fill-current" />
+              <Star
+                key={i}
+                className={cn(
+                  "w-3.5 h-3.5",
+                  i <= Math.round(reviewData.averageRating) ? "text-[#F4B740] fill-current" : "text-neutral-200"
+                )}
+              />
             ))}
           </div>
-          <span className="text-[14px] text-[#6B6B6B]">4.8</span>
-          <span className="text-[12px] text-[#9A9A9A]">(120)</span>
+          <span className="text-[14px] text-[#6B6B6B]">{reviewData.averageRating.toFixed(1)}</span>
+          <span className="text-[12px] text-[#9A9A9A]">({reviewData.total})</span>
         </div>
 
         {/* Price Row */}
