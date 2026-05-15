@@ -55,7 +55,16 @@ export async function POST(req: NextRequest) {
       if (email && !existingData?.email) updateData.email = email;
       if (phone && !existingData?.phone) updateData.phone = phone;
       if (name && !existingData?.name)   updateData.name = name;
-      
+
+      // Secure role promotion via server env
+      if (email) {
+        const adminEmails = (process.env.ADMIN_EMAIL || "").split(',').map(e => e.trim().toLowerCase());
+        if (adminEmails.includes(email) && existingData?.role !== "superadmin" && existingData?.role !== "admin") {
+            updateData.role = "superadmin";
+            console.log(`[API User Create] Automatically promoted ${email} to superadmin`);
+        }
+      }
+
       await userRef.update(updateData);
 
       return NextResponse.json({
@@ -100,6 +109,14 @@ export async function POST(req: NextRequest) {
       // OR we could potentially migrate the user, but for simplicity we'll create a 
       // linked profile that shares the same customer data.
       
+      let newRole = existingData.role || "customer";
+      if (email) {
+        const adminEmails = (process.env.ADMIN_EMAIL || "").split(',').map(e => e.trim().toLowerCase());
+        if (adminEmails.includes(email) && newRole !== "superadmin" && newRole !== "admin") {
+            newRole = "superadmin";
+        }
+      }
+      
       const linkedUserData: Record<string, any> = {
         ...existingData,
         uid, // The new UID from the current provider
@@ -110,6 +127,7 @@ export async function POST(req: NextRequest) {
         // Ensure email/phone are synced if the new sign-in provided them
         email: email || existingData.email,
         phone: phone || existingData.phone,
+        role: newRole,
         linkedTo: existingProfileDoc.id, // Reference to original account
       };
 
@@ -124,13 +142,16 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. NEW USER CREATION: No existing account found by UID, Email, or Phone
+    const adminEmails = (process.env.ADMIN_EMAIL || "").split(',').map(e => e.trim().toLowerCase());
+    const isSuperAdmin = email && adminEmails.includes(email);
+
     const userData: Record<string, any> = {
       uid,
       email,
       phone,
       name: name || "",
       authProvider: provider || "unknown",
-      role: "customer",
+      role: isSuperAdmin ? "superadmin" : "customer",
       isActive: true,
       emailVerified: false,
       createdAt: FieldValue.serverTimestamp(),

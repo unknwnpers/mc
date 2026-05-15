@@ -102,10 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (profileSnap.exists()) {
           const data = profileSnap.data() as UserProfile;
-          const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@miksandchiks.com")
-            .split(',')
-            .map(email => email.trim().toLowerCase());
-
           if (data.blocked) {
             toast.error("Your account has been blocked. Contact support.");
             const authInstance = getFirebaseAuth();
@@ -132,19 +128,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const needsNameSync = userDisplayName && !data.name;
           const needsPhoneSync = userPhone && !data.phone;
           
-          // SECURITY: Only auto-promote to superadmin if email matches AND user has valid email
-          const isValidAdminEmail = !!(userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase()));
-          const needsRoleUpgrade = isValidAdminEmail && data.role !== "superadmin" && data.role !== "admin";
           const needsFieldFill   = !data.addressLine1 && userEmail; // Only require field fill for email users usually
 
-          if (needsRoleUpgrade || needsFieldFill || needsEmailSync || needsNameSync || needsPhoneSync) {
+          if (needsFieldFill || needsEmailSync || needsNameSync || needsPhoneSync) {
             const updated: UserProfile = {
               ...data,
               email: userEmail || data.email || null,
               name: userDisplayName || data.name || "User",
               addressLine1: data.addressLine1 || "",
               phone: (userPhone?.replace("+91", "") || data.phone || "").replace(/\D/g, ""),
-              role: (needsRoleUpgrade && userEmail) ? "superadmin" : (data.role || "customer"),
+              role: data.role || "customer",
               updated_at: new Date().toISOString(),
             };
             await setDoc(profileRef, updated, { merge: true });
