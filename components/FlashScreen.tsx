@@ -52,10 +52,10 @@ export default function FlashScreen() {
 
         let activeConfig: FlashConfig;
 
-        if (response.ok && data.config && data.config.isActive !== false) {
+        if (response.ok && data.config) {
           activeConfig = data.config as FlashConfig;
         } else {
-          // Fallback to the uploaded Firebase images if no backend config exists or it's disabled
+          // Fallback to the uploaded Firebase images if no backend config exists
           activeConfig = {
             isActive: true,
             desktopImage: "https://storage.googleapis.com/miksandchiks-34b66.firebasestorage.app/system/flash-screen/original/1777614706470-flash-screen-desktop.png",
