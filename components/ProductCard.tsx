@@ -112,7 +112,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
           loading="lazy"
           onLoad={() => setImgLoading(false)}
           className={cn(
-            "object-cover transition-transform duration-500 ease-out group-hover:scale-105",
+            "object-cover transition-transform duration-700 ease-[0.22,1,0.36,1] group-hover:scale-[1.03] group-hover:translate-y-1",
             imgLoading ? "opacity-0" : "opacity-100",
             displayStock <= 0 && "grayscale opacity-50"
           )}

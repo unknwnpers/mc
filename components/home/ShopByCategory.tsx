@@ -1,8 +1,9 @@
 "use client";
 
+import { useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import CollectionCard from '@/components/CollectionCard';
 import type { CuratedCollection, Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -11,11 +12,16 @@ const ease = [0.22, 1, 0.36, 1];
 
 const containerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } },
+  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
 };
-const itemVariants = {
-  hidden: { opacity: 0, y: 28 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease } },
+
+const getCategoryVariant = (idx: number) => {
+  // 0: Women/Maternity -> fade upward
+  if (idx % 3 === 0) return { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } } };
+  // 1: Kids -> slide slightly
+  if (idx % 3 === 1) return { hidden: { opacity: 0, x: 15 }, visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease } } };
+  // 2: Newborn -> scale softly
+  return { hidden: { opacity: 0, scale: 0.97 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease } } };
 };
 
 const fallbackCategories = [
@@ -98,11 +104,34 @@ function CategoryCardInline({
 
 export default function ShopByCategory({ collections, categories }: ShopByCategoryProps) {
   const hasCollections = collections.length > 0;
+  const ref = useRef<HTMLElement>(null);
+  
+  const { scrollYProgress } = useScroll({ 
+    target: ref, 
+    offset: ["start end", "end start"] 
+  });
+  
+  // Parallax transforms for background and decor
+  const bgTextY = useTransform(scrollYProgress, [0, 1], [-30, 30]);
+  const decorY1 = useTransform(scrollYProgress, [0, 1], [-15, 20]);
+  const decorY2 = useTransform(scrollYProgress, [0, 1], [20, -15]);
 
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
+    <section ref={ref} className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
       {/* Background glow */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Parallax Background Typography */}
+      <motion.div 
+        style={{ y: bgTextY }}
+        className="absolute top-[15%] left-[-2%] text-[#E9897E]/[0.02] font-serif font-black text-[120px] md:text-[220px] whitespace-nowrap pointer-events-none select-none z-0"
+      >
+        Maternity & Kids
+      </motion.div>
+
+      {/* Floating Decorative Elements */}
+      <motion.div style={{ y: decorY1 }} className="absolute top-[20%] right-[10%] w-3 h-3 rounded-full bg-[#E9897E]/20 hidden md:block z-0" />
+      <motion.div style={{ y: decorY2 }} className="absolute bottom-[20%] left-[5%] w-4 h-4 rounded-full border-2 border-[#E9897E]/15 hidden md:block z-0" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
         {/* ── CENTERED HEADER ── */}
@@ -134,8 +163,8 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
           >
             {collections.slice(0, 6).map((col, idx) => (
               <motion.div
-                key={col.id} variants={itemVariants}
-                className={cn(idx === 0 && "lg:row-span-2")}
+                key={col.id} variants={getCategoryVariant(idx)}
+                className={cn(idx === 0 && "lg:row-span-2", "relative z-10")}
               >
                 <CollectionCard collection={col} />
               </motion.div>
@@ -150,8 +179,8 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
           >
             {fallbackCategories.map((cat, idx) => (
               <motion.div
-                key={idx} variants={itemVariants}
-                className={cn(cat.featured && "lg:row-span-2")}
+                key={idx} variants={getCategoryVariant(idx)}
+                className={cn(cat.featured && "lg:row-span-2", "relative z-10")}
               >
                 <CategoryCardInline
                   title={cat.title} count={cat.count}

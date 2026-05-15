@@ -1,9 +1,10 @@
 "use client";
 
+import { useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Star, Heart, Truck, ShieldCheck, RefreshCw, Banknote } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 const ease = [0.22, 1, 0.36, 1];
 
@@ -20,15 +21,28 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionProps) {
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"]
+  });
+
+  // Parallax transform values (pixels to move vertically during scroll)
+  // Very subtle (5-20px) for premium feel without noise
+  const textY = useTransform(scrollYProgress, [0, 1], [0, 10]);
+  const imageY = useTransform(scrollYProgress, [0, 1], [0, 5]);
+  const bgDecorY = useTransform(scrollYProgress, [0, 1], [0, 20]);
+
   return (
     <section
+      ref={ref}
       className="relative overflow-hidden w-full max-w-full flex items-center min-h-[620px] md:min-h-[760px] pt-[130px] md:pt-[130px] pb-12 md:pb-24"
       style={{ background: 'linear-gradient(180deg, #FFF9F6 0%, #FDF5F1 100%)' }}
     >
       {/* ── Background decoration ── */}
-      <div className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full bg-[#E9897E]/[0.03] blur-[100px] pointer-events-none hidden md:block" />
-      <div className="absolute bottom-[-150px] left-[-80px] w-[400px] h-[400px] rounded-full bg-[#FDF5F1] blur-[80px] pointer-events-none hidden md:block" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#E9897E]/[0.015] blur-[120px] pointer-events-none hidden md:block" />
+      <motion.div style={{ y: bgDecorY }} className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full bg-[#E9897E]/[0.03] blur-[100px] pointer-events-none hidden md:block" />
+      <motion.div style={{ y: bgDecorY }} className="absolute bottom-[-150px] left-[-80px] w-[400px] h-[400px] rounded-full bg-[#FDF5F1] blur-[80px] pointer-events-none hidden md:block" />
+      <motion.div style={{ y: bgDecorY }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#E9897E]/[0.015] blur-[120px] pointer-events-none hidden md:block" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 w-full relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -40,6 +54,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
+            style={{ y: textY }}
             className="max-w-[560px] order-2 lg:order-1 text-center lg:text-left mx-auto lg:mx-0"
           >
             {/* Welcome Badge */}
@@ -147,6 +162,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.1, ease }}
+            style={{ y: imageY }}
             className="relative order-1 lg:order-2 flex justify-center lg:justify-end"
           >
             <div className="relative w-full max-w-[520px] aspect-[4/5] max-h-[420px] md:max-h-none group">

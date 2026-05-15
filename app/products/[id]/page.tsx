@@ -978,13 +978,7 @@ export default function ProductDetailsPage() {
                           <p className="text-xs text-neutral-500">Every piece is hand-checked for softness and durability.</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
-                        <div>
-                          <p className="text-sm font-bold text-charcoal">Hassle-Free Returns</p>
-                          <p className="text-xs text-neutral-500">7-day easy returns if you're not 100% satisfied.</p>
-                        </div>
-                      </div>
+
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
@@ -994,13 +988,7 @@ export default function ProductDetailsPage() {
                           <p className="text-xs text-neutral-500">Secure payments via Razorpay with all major cards.</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
-                        <div>
-                          <p className="text-sm font-bold text-charcoal">Fast Delivery</p>
-                          <p className="text-xs text-neutral-500">Standard 3-5 day delivery across India.</p>
-                        </div>
-                      </div>
+
                     </div>
                   </div>
                 </div>

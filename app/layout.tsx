@@ -72,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning>
+    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className={`${inter.variable} ${playfair.variable} font-sans w-full max-w-full overflow-x-hidden`} suppressHydrationWarning>
         <RootInit />
         <Suspense fallback={null}>
