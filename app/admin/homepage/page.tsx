@@ -18,6 +18,7 @@ export default function HomepageSettings() {
   const [saving, setSaving] = useState(false);
   const [uploadingMaternity, setUploadingMaternity] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingLogin, setUploadingLogin] = useState(false);
 
   const [settings, setSettings] = useState({
     heroImages: [] as HeroImage[],
@@ -38,6 +39,9 @@ export default function HomepageSettings() {
       buttonText: "Explore Our Story",
       buttonLink: "/about",
     },
+    login: {
+      imageUrl: "/mother-baby.jpg",
+    },
   });
 
   useEffect(() => {
@@ -56,6 +60,7 @@ export default function HomepageSettings() {
             heroImages: data.heroImages || [],
             hero: { ...prev.hero, ...(data.hero || {}) },
             maternity: { ...prev.maternity, ...(data.maternity || {}) },
+            login: { ...prev.login, ...(data.login || {}) },
           }));
         } else {
           throw new Error(result.error || "Failed to fetch settings");
@@ -144,6 +149,25 @@ export default function HomepageSettings() {
       toast.error("Failed to upload image");
     } finally {
       setUploadingMaternity(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleLoginImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File size must be less than 5MB"); return; }
+
+    try {
+      setUploadingLogin(true);
+      const url = await handleUpload(file, "homepage-login");
+      setSettings((prev) => ({ ...prev, login: { ...prev.login, imageUrl: url } }));
+      toast.success("Login image uploaded successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingLogin(false);
       e.target.value = "";
     }
   };
@@ -442,6 +466,37 @@ export default function HomepageSettings() {
                   className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-white focus:border-rose-500"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* LOGIN PAGE SECTION */}
+        <div className="bg-[#111] border border-white/[0.06] rounded-3xl p-6 md:p-8 space-y-6">
+          <div className="flex items-center gap-3 border-b border-white/[0.06] pb-4 mb-6">
+            <ImageIcon className="w-6 h-6 text-rose-400" />
+            <h2 className="text-xl font-bold text-white">Login Page Background</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1 space-y-4">
+              <label className="block text-sm font-bold text-white">Login Image</label>
+              <div className="relative aspect-[16/9] bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden group">
+                {settings.login.imageUrl ? (
+                  <img src={settings.login.imageUrl} alt="Login" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/20">
+                    <ImageIcon className="w-12 h-12" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-xl font-bold flex items-center gap-2">
+                    {uploadingLogin ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    Upload New
+                    <input type="file" accept="image/*" onChange={handleLoginImageUpload} className="hidden" disabled={uploadingLogin} />
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-white/40">Recommended: High quality lifestyle image, ratio 16:9 or similar.</p>
             </div>
           </div>
         </div>

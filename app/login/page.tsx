@@ -27,12 +27,23 @@ function LoginContent() {
   const [authMethod, setAuthMethod] = useState<"choice" | "google" | "phone">("choice");
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [loginImage, setLoginImage] = useState("/mother-baby.jpg");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
 
   useEffect(() => {
     setIsMounted(true);
+    
+    // Fetch dynamic login image from backend
+    fetch("/api/settings/login-page")
+      .then(res => res.json())
+      .then(data => {
+        if (data.config && data.config.imageUrl) {
+          setLoginImage(data.config.imageUrl);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   const handleGoogleLogin = async () => {
@@ -163,8 +174,8 @@ function LoginContent() {
               {/* Visual Anchor Image with Premium Masking */}
               <div className="brand-image-wrapper relative w-full max-w-[460px] aspect-[16/9] rounded-[32px] overflow-hidden opacity-[0.94] mt-8 hidden md:block group shadow-premium border border-white/40 after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-t after:from-[#FCF9F7] after:via-transparent after:to-transparent after:opacity-40">
                 <Image
-                  src="/mother-baby.jpg"
-                  alt="Mother and child"
+                  src={loginImage}
+                  alt="Premium lifestyle"
                   fill
                   priority
                   sizes="460px"
