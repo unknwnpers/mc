@@ -156,8 +156,8 @@ export default function Navbar() {
                 <Image src={logoUrl} alt="Miks & Chiks" fill sizes="48px" className="object-contain group-hover:scale-105 transition-transform duration-500" priority />
               </div>
               <div className="flex flex-col leading-none">
-                <span className="font-serif text-xl md:text-[22px] text-[#1E1E1E] font-bold tracking-tight">
-                  Miks & <span className="text-[#E9897E] italic">Chiks</span>
+                <span className="font-serif text-xl md:text-[22px] text-[#AF9743] font-bold tracking-tight">
+                  Miks & <span className="text-[#AF9743] italic">Chiks</span>
                 </span>
                 <span className="text-[9px] tracking-[0.2em] text-[#8A8A8A] uppercase font-medium mt-0.5">
                   Premium Maternity & Kids
