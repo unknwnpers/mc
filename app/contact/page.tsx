@@ -55,7 +55,7 @@ export default function ContactPage() {
     {
       icon: Mail,
       label: 'Email Inquiries',
-      content: 'miksandchiks@gmail.com',
+      content: 'hello@miksandchiks.com',
       link: 'mailto:miksandchiks@gmail.com',
       color: 'bg-emerald-50 text-emerald-500'
     },

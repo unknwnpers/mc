@@ -143,7 +143,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <h3 className="text-[16px] font-bold text-white mb-6">Get in Touch</h3>
             <div className="space-y-4">
               {[
-                { icon: Mail, content: "miksandchiks@gmail.com", href: "mailto:miksandchiks@gmail.com" },
+                { icon: Mail, content: "hello@miksandchiks.com", href: "mailto:miksandchiks@gmail.com" },
                 { icon: Phone, content: "+91 9633 374 657", href: "tel:+919633374657" },
                 { icon: MapPin, content: "Kakkara House, nettoor PO, Cochin, Kerala-682040, India" },
                 { icon: Clock, content: "Mon–Sat, 10AM–6PM IST" },
