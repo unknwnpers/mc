@@ -143,10 +143,10 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <h3 className="text-[16px] font-bold text-white mb-6">Get in Touch</h3>
             <div className="space-y-4">
               {[
-                { icon: Mail, content: "miksandchiks@gmail.com", href: "mailto:hello@miksandchiks.com" },
-                { icon: Phone, content: "+91 9876 543 210", href: "tel:+919876543210" },
-                { icon: MapPin, content: "Kochi, Kerala, India" },
-                { icon: Clock, content: "Mon–Sat, 10AM–7PM IST" },
+                { icon: Mail, content: "miksandchiks@gmail.com", href: "mailto:miksandchiks@gmail.com" },
+                { icon: Phone, content: "+91 9633 374 657", href: "tel:+919633374657" },
+                { icon: MapPin, content: "Kakkara House, nettoor PO, Cochin, Kerala-682040, India" },
+                { icon: Clock, content: "Mon–Sat, 10AM–6PM IST" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <item.icon className="w-4 h-4 text-[#E9897E] mt-1 shrink-0" />

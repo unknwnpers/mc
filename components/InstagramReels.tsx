@@ -153,7 +153,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
         >
           {REELS.map((reel) => (
             <motion.div key={reel.id} variants={itemVariants} className="snap-start shrink-0">
-              <ReelCard reel={reel} />
+              <ReelCard reel={reel} instagramUrl={instagramUrl} />
             </motion.div>
           ))}
         </motion.div>
@@ -163,10 +163,10 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
 });
 
 /* ── REEL CARD ── */
-function ReelCard({ reel }: { reel: Reel }) {
+function ReelCard({ reel, instagramUrl }: { reel: Reel, instagramUrl: string }) {
   return (
     <Link
-      href={reel.link}
+      href={reel.link !== '#' ? reel.link : instagramUrl}
       target="_blank"
       className="group relative block min-w-[220px] md:min-w-[280px] w-[220px] md:w-[320px] h-[400px] md:h-[560px] rounded-[32px] overflow-hidden hover:-translate-y-1.5 transition-all duration-300 md:duration-500 ease-out"
       style={{ boxShadow: '0 22px 55px rgba(0,0,0,0.06)' }}
