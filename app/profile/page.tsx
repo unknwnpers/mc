@@ -64,7 +64,7 @@ function AccountTips() {
         <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
           <Zap className="w-5 h-5 fill-current" />
         </div>
-        <h3 className="text-xl font-serif font-bold text-charcoal">Account <span className="text-blush italic">Tips</span></h3>
+        <h3 className="text-xl font-serif font-bold text-[#3B312C]">Account <span className="text-[#C8B273] italic">Tips</span></h3>
       </div>
       <div className="space-y-4">
         {tips.map((tip, i) => (
@@ -94,16 +94,16 @@ function YourPriority() {
         <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
           <Heart className="w-5 h-5 fill-current" />
         </div>
-        <h3 className="text-xl font-serif font-bold text-charcoal">Your <span className="text-blush italic">Priority</span></h3>
+        <h3 className="text-xl font-serif font-bold text-[#3B312C]">Your <span className="text-[#C8B273] italic">Priority</span></h3>
       </div>
       <div className="space-y-4">
         {priorities.map((p, i) => (
           <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-neutral-50/50">
             <div className="flex items-center gap-4">
-              <span className="w-6 h-6 rounded-full bg-blush/10 flex items-center justify-center text-[11px] font-black text-blush">{i + 1}</span>
-              <span className="text-[13px] font-bold text-charcoal">{p.label}</span>
+              <span className="w-6 h-6 rounded-full bg-[#C8B273]/10 flex items-center justify-center text-[11px] font-black text-[#C8B273]">{i + 1}</span>
+              <span className="text-[13px] font-bold text-[#3B312C]">{p.label}</span>
             </div>
-            {p.meta && <span className="text-[9px] font-black uppercase tracking-widest text-blush">{p.meta}</span>}
+            {p.meta && <span className="text-[9px] font-black uppercase tracking-widest text-[#C8B273]">{p.meta}</span>}
           </div>
         ))}
       </div>
@@ -165,12 +165,12 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
   if (orders.length === 0) {
     return (
       <div className="text-center py-24 bg-white rounded-[40px] border border-dashed border-[#F3E8E5]">
-        <div className="w-20 h-20 bg-cream rounded-3xl flex items-center justify-center mx-auto mb-6 text-blush/20">
+        <div className="w-20 h-20 bg-[#F8F4EE] rounded-3xl flex items-center justify-center mx-auto mb-6 text-[#C8B273]/20">
           <Package className="w-10 h-10" />
         </div>
-        <h3 className="text-2xl font-serif font-bold text-charcoal mb-2">No orders yet</h3>
+        <h3 className="text-2xl font-serif font-bold text-[#3B312C] mb-2">No orders yet</h3>
         <p className="text-neutral-500 mb-8">When you place an order, it will appear here.</p>
-        <Link href="/products" className="inline-flex items-center gap-2 bg-blush text-white px-8 py-3 rounded-xl font-bold hover:bg-[#f48c82] transition-all">
+        <Link href="/products" className="inline-flex items-center gap-2 bg-[#C8B273] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#B89B5E] transition-all">
           Start Shopping <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
@@ -209,9 +209,9 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
       <div className="grid grid-cols-2 gap-4">
           <div className="bg-white p-6 rounded-[32px] border border-[#F3E8E5] shadow-sm">
               <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">Total Orders</p>
-              <p className="text-2xl font-serif font-bold text-charcoal">{orders.length}</p>
+              <p className="text-2xl font-serif font-bold text-[#3B312C]">{orders.length}</p>
           </div>
-          <div className="bg-charcoal p-6 rounded-[32px] shadow-lg shadow-charcoal/10">
+          <div className="bg-[#3B312C] p-6 rounded-[32px] shadow-lg shadow-[#3B312C]/10">
               <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest mb-1">Total Spent</p>
               <p className="text-2xl font-serif font-bold text-white">₹{totalSpent.toLocaleString()}</p>
           </div>
@@ -236,14 +236,14 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
 
                 return (
                   <div key={order.id} className="bg-white rounded-[40px] border border-[#F3E8E5] p-8 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
-                    <div className="absolute top-0 right-10 bg-cream px-6 py-2 rounded-b-2xl border-x border-b border-blush/10 text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-blush/40" />
+                    <div className="absolute top-0 right-10 bg-[#F8F4EE] px-6 py-2 rounded-b-2xl border-x border-b border-[#C8B273]/10 text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-[#C8B273]/40" />
                       {formatDistanceToNow(orderDate, { addSuffix: true })}
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-neutral-50 relative z-10">
                       <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-cream rounded-2xl flex items-center justify-center text-blush shadow-inner">
+                        <div className="w-16 h-16 bg-[#F8F4EE] rounded-2xl flex items-center justify-center text-[#C8B273] shadow-inner">
                           <Box className="w-8 h-8" />
                         </div>
                         <div>
@@ -251,7 +251,7 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
                             <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Order Ref</p>
                             <p className="font-mono text-[11px] text-neutral-500">#{order.id.slice(-8).toUpperCase()}</p>
                           </div>
-                          <h4 className="text-3xl font-serif font-bold text-charcoal tracking-tight">₹{order.total?.toLocaleString()}</h4>
+                          <h4 className="text-3xl font-serif font-bold text-[#3B312C] tracking-tight">₹{order.total?.toLocaleString()}</h4>
                           <p className="text-[11px] font-medium text-neutral-400 mt-1">
                             {orderDate.toLocaleString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })} • {order.items?.length} items
                           </p>
@@ -263,7 +263,7 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
                           <StatusIcon className="w-3.5 h-3.5" />
                           {status.label}
                         </div>
-                        <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-2 px-6 py-2.5 bg-neutral-50 rounded-2xl text-[11px] font-black uppercase tracking-widest text-charcoal hover:bg-charcoal hover:text-white transition-all">
+                        <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-2 px-6 py-2.5 bg-neutral-50 rounded-2xl text-[11px] font-black uppercase tracking-widest text-[#3B312C] hover:bg-[#3B312C] hover:text-white transition-all">
                           Track <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
@@ -277,7 +277,7 @@ function OrdersTab({ userId, email, phone }: { userId: string; email?: string | 
                               <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
                             </div>
                             {item.quantity > 1 && (
-                              <span className="absolute -top-1.5 -right-1.5 bg-charcoal text-white text-[9px] font-black h-4 w-4 rounded-md flex items-center justify-center border border-white">
+                              <span className="absolute -top-1.5 -right-1.5 bg-[#3B312C] text-white text-[9px] font-black h-4 w-4 rounded-md flex items-center justify-center border border-white">
                                 {item.quantity}
                               </span>
                             )}
@@ -348,7 +348,7 @@ function WishlistTab({ userId }: { userId: string }) {
         <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-rose-500/20">
           <Heart className="w-10 h-10 fill-current" />
         </div>
-        <h3 className="text-2xl font-serif font-bold text-charcoal mb-2">Your wishlist is empty</h3>
+        <h3 className="text-2xl font-serif font-bold text-[#3B312C] mb-2">Your wishlist is empty</h3>
         <p className="text-neutral-500 mb-8">Save items you love to find them easily later.</p>
         <Link href="/products" className="inline-flex items-center gap-2 bg-rose-400 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-500 transition-all">
           Explore Products <ArrowRight className="w-4 h-4" />
@@ -368,20 +368,20 @@ function WishlistTab({ userId }: { userId: string }) {
             <Trash2 className="w-4 h-4" />
           </button>
 
-          <div className="aspect-[3/4] bg-cream rounded-[32px] overflow-hidden border border-[#F3E8E5] mb-4 relative">
+          <div className="aspect-[3/4] bg-[#F8F4EE] rounded-[32px] overflow-hidden border border-[#F3E8E5] mb-4 relative">
              <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.name} />
-             <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 bg-gradient-to-t from-charcoal/40 to-transparent">
-                <Link href={`/products/${item.id}`} className="w-full bg-white text-charcoal py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-center block shadow-lg">
+             <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 bg-gradient-to-t from-[#3B312C]/40 to-transparent">
+                <Link href={`/products/${item.id}`} className="w-full bg-white text-[#3B312C] py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-center block shadow-lg">
                   View Product
                 </Link>
              </div>
           </div>
 
           <div className="px-2 pb-2">
-            <h4 className="font-bold text-[13px] text-charcoal mb-1 truncate">{item.name}</h4>
+            <h4 className="font-bold text-[13px] text-[#3B312C] mb-1 truncate">{item.name}</h4>
             <div className="flex items-center justify-between">
-               <p className="text-lg font-bold text-blush">₹{item.price}</p>
-               <button className="p-2 bg-neutral-50 rounded-xl text-neutral-400 hover:text-blush transition-colors">
+               <p className="text-lg font-bold text-[#C8B273]">₹{item.price}</p>
+               <button className="p-2 bg-neutral-50 rounded-xl text-neutral-400 hover:text-[#C8B273] transition-colors">
                   <ShoppingBag className="w-4 h-4" />
                </button>
             </div>
@@ -490,12 +490,12 @@ function AddressModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-[#3B312C]/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         <div className="p-8 sm:p-10">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl sm:text-3xl font-serif font-bold text-charcoal">
-              {address ? "Edit" : "Add New"} <span className="text-blush italic">Address</span>
+            <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#3B312C]">
+              {address ? "Edit" : "Add New"} <span className="text-[#C8B273] italic">Address</span>
             </h3>
             <button onClick={onClose} className="p-2 hover:bg-neutral-50 rounded-full transition-colors">
               <X className="w-6 h-6 text-neutral-400" />
@@ -511,7 +511,7 @@ function AddressModal({
                   onClick={() => setFormData({ ...formData, label: l })}
                   className={cn(
                     "px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
-                    formData.label === l ? "bg-white text-blush shadow-sm" : "text-neutral-400 hover:text-charcoal"
+                    formData.label === l ? "bg-white text-[#C8B273] shadow-sm" : "text-neutral-400 hover:text-[#3B312C]"
                   )}
                 >
                   {l === "Home" && <Home className="w-3.5 h-3.5 inline mr-1.5" />}
@@ -528,7 +528,7 @@ function AddressModal({
                 <input
                   type="text"
                   placeholder="Receiver's Name"
-                  className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20"
+                  className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
@@ -540,7 +540,7 @@ function AddressModal({
                    <input
                     type="tel"
                     placeholder="10-digit mobile"
-                    className="w-full bg-neutral-50 border-none rounded-2xl pl-14 pr-5 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20"
+                    className="w-full bg-neutral-50 border-none rounded-2xl pl-14 pr-5 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0,10) })}
                   />
@@ -553,7 +553,7 @@ function AddressModal({
               <input
                 type="text"
                 placeholder="House No, Building Name, Street"
-                className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20"
+                className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20"
                 value={formData.addressLine1}
                 onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
               />
@@ -565,7 +565,7 @@ function AddressModal({
                 <input
                   type="text"
                   placeholder="City"
-                  className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20"
+                  className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 />
@@ -575,7 +575,7 @@ function AddressModal({
                 <input
                   type="text"
                   placeholder="6-digit PIN"
-                  className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20"
+                  className="w-full bg-neutral-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20"
                   value={formData.pincode}
                   onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '').slice(0,6) })}
                 />
@@ -587,7 +587,7 @@ function AddressModal({
                 onClick={() => setFormData({ ...formData, isDefault: !formData.isDefault })}
                 className={cn(
                 "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all",
-                formData.isDefault ? "bg-blush border-blush" : "border-neutral-200 group-hover:border-blush/40"
+                formData.isDefault ? "bg-[#C8B273] border-[#C8B273]" : "border-neutral-200 group-hover:border-[#C8B273]/40"
               )}>
                 {formData.isDefault && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
               </div>
@@ -597,7 +597,7 @@ function AddressModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-charcoal text-white py-5 rounded-[24px] font-black uppercase tracking-widest text-xs shadow-xl shadow-charcoal/20 hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-[#3B312C] text-white py-5 rounded-[24px] font-black uppercase tracking-widest text-xs shadow-xl shadow-[#3B312C]/20 hover:bg-black transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {address ? "Update" : "Save"} Address
@@ -669,13 +669,13 @@ function AddressesTab({ user }: { user: any }) {
           <div key={addr.id} className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-sm hover:shadow-xl transition-all duration-500">
              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <span className="font-bold text-charcoal text-lg">{addr.name}</span>
-                    {addr.isDefault && <span className="text-[10px] bg-rose-50 text-blush px-3 py-1 rounded-full font-black uppercase tracking-widest">Default</span>}
+                    <span className="font-bold text-[#3B312C] text-lg">{addr.name}</span>
+                    {addr.isDefault && <span className="text-[10px] bg-rose-50 text-[#C8B273] px-3 py-1 rounded-full font-black uppercase tracking-widest">Default</span>}
                 </div>
                 <div className="flex gap-1">
                     <button
                       onClick={() => handleEdit(addr)}
-                      className="p-2 text-neutral-300 hover:text-blush transition-colors"
+                      className="p-2 text-neutral-300 hover:text-[#C8B273] transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -689,11 +689,11 @@ function AddressesTab({ user }: { user: any }) {
              </div>
              <div className="space-y-3">
                 <div className="flex items-center gap-3 text-neutral-500">
-                    <Phone className="w-4 h-4 text-blush/40" />
+                    <Phone className="w-4 h-4 text-[#C8B273]/40" />
                     <span className="text-sm font-medium">+91 {addr.phone}</span>
                 </div>
                 <div className="flex items-start gap-3 text-neutral-600 leading-relaxed">
-                    <MapPin className="w-4 h-4 mt-1 text-blush/40" />
+                    <MapPin className="w-4 h-4 mt-1 text-[#C8B273]/40" />
                     <span className="text-sm font-medium">
                         {addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ""}<br />
                         {addr.city}, {addr.state} - {addr.pincode}
@@ -704,7 +704,7 @@ function AddressesTab({ user }: { user: any }) {
         ))}
         <button
           onClick={handleAdd}
-          className="flex flex-col items-center justify-center p-12 bg-white border-2 border-dashed border-[#F3E8E5] rounded-[40px] text-neutral-400 hover:border-blush hover:text-blush transition-all group min-h-[220px]"
+          className="flex flex-col items-center justify-center p-12 bg-white border-2 border-dashed border-[#F3E8E5] rounded-[40px] text-neutral-400 hover:border-[#C8B273] hover:text-[#C8B273] transition-all group min-h-[220px]"
         >
             <div className="w-14 h-14 rounded-full border-2 border-current flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Plus className="w-7 h-7" />
@@ -820,7 +820,7 @@ function ProfileContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-blush" />
+        <Loader2 className="w-10 h-10 animate-spin text-[#C8B273]" />
       </div>
     );
   }
@@ -859,7 +859,7 @@ function ProfileContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FCF9F7] selection:bg-blush/20">
+    <div className="min-h-screen bg-[#FCF9F7] selection:bg-[#C8B273]/20">
       <Navbar />
 
       <main className="max-w-[1440px] mx-auto px-6 md:px-10 py-32 md:py-40">
@@ -870,7 +870,7 @@ function ProfileContent() {
             <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-sm relative overflow-hidden">
               <div className="relative z-10">
                 <div className="flex items-center gap-5 mb-8">
-                  <div className="w-20 h-20 bg-cream rounded-[30px] flex items-center justify-center text-blush border border-blush/5 relative shadow-inner">
+                  <div className="w-20 h-20 bg-[#F8F4EE] rounded-[30px] flex items-center justify-center text-[#C8B273] border border-[#C8B273]/5 relative shadow-inner">
                     <User className="w-10 h-10" strokeWidth={1.5} />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white">
                       <Check className="w-3 h-3" strokeWidth={3} />
@@ -878,7 +878,7 @@ function ProfileContent() {
                   </div>
                   <div className="flex-1">
                     <p className="text-[13px] font-medium text-neutral-400">Welcome back,</p>
-                    <h2 className="text-2xl font-serif font-bold text-charcoal leading-tight truncate">{profile?.name?.split(' ')[0] || 'User'} 👋</h2>
+                    <h2 className="text-2xl font-serif font-bold text-[#3B312C] leading-tight truncate">{profile?.name?.split(' ')[0] || 'User'} 👋</h2>
                     <p className="text-[11px] font-medium text-neutral-400 mt-1">Manage your account</p>
                   </div>
                 </div>
@@ -890,14 +890,14 @@ function ProfileContent() {
                         {!isEditing ? (
                           <button
                             onClick={() => setIsEditing(true)}
-                            className="text-[10px] font-black text-blush uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+                            className="text-[10px] font-black text-[#C8B273] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-opacity"
                           >
                               <Edit2 className="w-3 h-3" /> Edit Profile
                           </button>
                         ) : (
                           <button
                             onClick={() => setIsEditing(false)}
-                            className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-1.5 hover:text-charcoal transition-opacity"
+                            className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-1.5 hover:text-[#3B312C] transition-opacity"
                           >
                               <X className="w-3 h-3" /> Cancel
                           </button>
@@ -916,11 +916,11 @@ function ProfileContent() {
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20"
+                                    className="w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-[#3B312C] focus:ring-1 focus:ring-[#C8B273]/20"
                                     placeholder="Full Name"
                                   />
                                 ) : (
-                                  <p className="text-[13px] font-bold text-charcoal">{profile?.name || user?.displayName || 'Not set'}</p>
+                                  <p className="text-[13px] font-bold text-[#3B312C]">{profile?.name || user?.displayName || 'Not set'}</p>
                                 )}
                             </div>
                         </div>
@@ -939,19 +939,19 @@ function ProfileContent() {
                                       disabled={isGoogleUser}
                                       onChange={(e) => setEmail(e.target.value)}
                                       className={cn(
-                                        "w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20",
+                                        "w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-[#3B312C] focus:ring-1 focus:ring-[#C8B273]/20",
                                         isGoogleUser && "opacity-60 cursor-not-allowed"
                                       )}
                                       placeholder="Email Address"
                                     />
                                     {isGoogleUser && (
                                       <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/field:opacity-100 transition-opacity">
-                                         <div className="bg-charcoal text-white text-[8px] font-black px-2 py-1 rounded-md whitespace-nowrap">Verified via Google</div>
+                                         <div className="bg-[#3B312C] text-white text-[8px] font-black px-2 py-1 rounded-md whitespace-nowrap">Verified via Google</div>
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-[13px] font-bold text-charcoal truncate">{profile?.email || user?.email || 'Not set'}</p>
+                                  <p className="text-[13px] font-bold text-[#3B312C] truncate">{profile?.email || user?.email || 'Not set'}</p>
                                 )}
                             </div>
                         </div>
@@ -978,19 +978,19 @@ function ProfileContent() {
                                       disabled={isPhoneUser}
                                       onChange={(e) => setPhone(e.target.value)}
                                       className={cn(
-                                        "w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-charcoal focus:ring-1 focus:ring-blush/20",
+                                        "w-full bg-neutral-50 border-none rounded-lg p-2 text-[13px] font-bold text-[#3B312C] focus:ring-1 focus:ring-[#C8B273]/20",
                                         isPhoneUser && "opacity-60 cursor-not-allowed"
                                       )}
                                       placeholder="Phone Number"
                                     />
                                     {isPhoneUser && (
                                       <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/field:opacity-100 transition-opacity">
-                                         <div className="bg-charcoal text-white text-[8px] font-black px-2 py-1 rounded-md whitespace-nowrap">Verified via OTP</div>
+                                         <div className="bg-[#3B312C] text-white text-[8px] font-black px-2 py-1 rounded-md whitespace-nowrap">Verified via OTP</div>
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-[13px] font-bold text-charcoal">{profile?.phone || user?.phoneNumber?.replace("+91", "") || 'Not set'}</p>
+                                  <p className="text-[13px] font-bold text-[#3B312C]">{profile?.phone || user?.phoneNumber?.replace("+91", "") || 'Not set'}</p>
                                 )}
                             </div>
                         </div>
