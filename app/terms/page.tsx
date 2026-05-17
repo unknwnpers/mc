@@ -145,7 +145,7 @@ export default function TermsOfService() {
             For any questions regarding these Terms, please contact:
           </p>
           <p className="text-neutral-600 leading-relaxed">
-            Email: <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">miksandchiks@gmail.com</a>
+            Email: <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">hello@miksandchiks.com</a>
           </p>
         </div>
       </section>

@@ -20,7 +20,7 @@ export default function RefundPolicy() {
             Orders can be cancelled within <strong>12 hours of placement</strong> or <strong>before shipment is processed</strong>, whichever is earlier.
           </p>
           <ul className="list-disc list-inside text-neutral-600 leading-relaxed space-y-2 ml-4 mb-4">
-            <li>To cancel, email us at <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">miksandchiks@gmail.com</a> with your Order ID</li>
+            <li>To cancel, email us at <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">hello@miksandchiks.com</a> with your Order ID</li>
             <li>Once shipped, orders <strong>cannot be cancelled</strong></li>
           </ul>
           <p className="text-neutral-600 leading-relaxed">
@@ -36,7 +36,7 @@ export default function RefundPolicy() {
           <p className="text-neutral-600 leading-relaxed mb-4">
             We offer a <strong>7-day return/exchange policy</strong> from the date of delivery.
           </p>
-          
+
           <h3 className="text-lg font-bold text-charcoal mb-3 mt-6">Eligible Conditions:</h3>
           <ul className="list-disc list-inside text-neutral-600 leading-relaxed space-y-2 ml-4 mb-4">
             <li>Item is unused, unwashed, and in original packaging</li>

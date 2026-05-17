@@ -21,6 +21,7 @@ const customerCare = [
   { label: "Returns & Refunds", href: "/refund-policy" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms & Conditions", href: "/terms" },
+  { label: "Cookies Policy", href: "/cookies" },
 ];
 
 const trustBadges = [
@@ -207,7 +208,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             {[
               { label: "Privacy Policy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
-              { label: "Cookies", href: "/privacy" },
+              { label: "Cookies", href: "/cookies" },
             ].map((link) => (
               <Link
                 key={link.label}

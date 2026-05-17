@@ -151,7 +151,7 @@ export default function PrivacyPolicy() {
             If you have any questions or concerns about this Privacy Policy, you may contact us at:
           </p>
           <p className="text-neutral-600 leading-relaxed">
-            Email: <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">miksandchiks@gmail.com</a>
+            Email: <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">hello@miksandchiks.com</a>
           </p>
         </div>
       </section>
