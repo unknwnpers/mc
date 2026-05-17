@@ -117,21 +117,21 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
   const decorY2 = useTransform(scrollYProgress, [0, 1], [20, -15]);
 
   return (
-    <section ref={ref} className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
+    <section ref={ref} className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
       {/* Background glow */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#E4C765]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       {/* Parallax Background Typography */}
       <motion.div 
         style={{ y: bgTextY }}
-        className="absolute top-[15%] left-[-2%] text-[#E4C765]/[0.02] font-serif font-black text-[120px] md:text-[220px] whitespace-nowrap pointer-events-none select-none z-0"
+        className="absolute top-[15%] left-[-2%] text-[#C8B273]/[0.02] font-serif font-black text-[120px] md:text-[220px] whitespace-nowrap pointer-events-none select-none z-0"
       >
         Maternity & Kids
       </motion.div>
 
       {/* Floating Decorative Elements */}
-      <motion.div style={{ y: decorY1 }} className="absolute top-[20%] right-[10%] w-3 h-3 rounded-full bg-[#E4C765]/20 hidden md:block z-0" />
-      <motion.div style={{ y: decorY2 }} className="absolute bottom-[20%] left-[5%] w-4 h-4 rounded-full border-2 border-[#E4C765]/15 hidden md:block z-0" />
+      <motion.div style={{ y: decorY1 }} className="absolute top-[20%] right-[10%] w-3 h-3 rounded-full bg-[#C8B273]/20 hidden md:block z-0" />
+      <motion.div style={{ y: decorY2 }} className="absolute bottom-[20%] left-[5%] w-4 h-4 rounded-full border-2 border-[#C8B273]/15 hidden md:block z-0" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
         {/* ── CENTERED HEADER ── */}
@@ -142,10 +142,10 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
           transition={{ duration: 0.5, ease }}
           className="text-center max-w-[720px] mx-auto mb-10 md:mb-16"
         >
-          <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765] mb-4">
+          <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#C8B273] mb-4">
             Explore Collections
           </p>
-          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#1E1E1E]">
+          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#3B312C]">
             Shop by Category
           </h2>
           <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] mt-4 md:mt-6">

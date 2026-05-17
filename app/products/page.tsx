@@ -389,11 +389,11 @@ function ProductsContent() {
                     <ChevronRight className="w-4 h-4 text-neutral-300 mx-2" />
                   )}
                   {crumb.isActive ? (
-                    <span className="font-bold text-charcoal">{crumb.label}</span>
+                    <span className="font-bold text-[#3B312C]">{crumb.label}</span>
                   ) : (
                     <a
                       href={crumb.href}
-                      className="text-neutral-500 hover:text-blush transition-colors flex items-center gap-1"
+                      className="text-neutral-500 hover:text-[#C8B273] transition-colors flex items-center gap-1"
                     >
                       {index === 0 && <Home className="w-4 h-4" />}
                       {crumb.label}
@@ -406,8 +406,8 @@ function ProductsContent() {
 
           {/* 🔹 Header section */}
           <div className="mt-6 mb-6">
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-charcoal tracking-tight">
-              The <span className="text-blush italic">Collection</span>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#3B312C] tracking-tight">
+              The <span className="text-[#C8B273] italic">Collection</span>
             </h1>
             <p className="text-neutral-500 mt-3 max-w-lg text-base font-sans leading-relaxed">
               Thoughtfully curated essentials for mothers and children, crafted with care.
@@ -422,8 +422,8 @@ function ProductsContent() {
                 className={cn(
                   "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 hover:shadow-md",
                   !selectedCategory
-                    ? "bg-blush text-white font-semibold shadow-lg shadow-blush/20"
-                    : "bg-white border border-neutral-300 text-charcoal/70 hover:border-blush hover:text-blush hover:scale-105"
+                    ? "bg-[#C8B273] text-white font-semibold shadow-lg shadow-[#C8B273]/20"
+                    : "bg-white border border-neutral-300 text-[#3B312C]/70 hover:border-[#C8B273] hover:text-[#C8B273] hover:scale-105"
                 )}
               >
                 All Items
@@ -435,8 +435,8 @@ function ProductsContent() {
                   className={cn(
                     "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 hover:shadow-md",
                     selectedCategory === cat.slug
-                      ? "bg-blush text-white font-semibold shadow-lg shadow-blush/20"
-                      : "bg-white border border-neutral-300 text-charcoal/70 hover:border-blush hover:text-blush hover:scale-105"
+                      ? "bg-[#C8B273] text-white font-semibold shadow-lg shadow-[#C8B273]/20"
+                      : "bg-white border border-neutral-300 text-[#3B312C]/70 hover:border-[#C8B273] hover:text-[#C8B273] hover:scale-105"
                   )}
                 >
                   {cat.name}
@@ -448,13 +448,13 @@ function ProductsContent() {
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
               {/* Search */}
               <div className="relative flex-1 max-w-xl group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-blush transition-colors" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-[#C8B273] transition-colors" />
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-neutral-300 bg-white text-charcoal text-sm placeholder:text-neutral-400 focus:outline-none focus:border-blush focus:ring-2 focus:ring-blush/20 focus:shadow-md transition-all duration-200 shadow-sm"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-neutral-300 bg-white text-[#3B312C] text-sm placeholder:text-neutral-400 focus:outline-none focus:border-[#C8B273] focus:ring-2 focus:ring-[#C8B273]/20 focus:shadow-md transition-all duration-200 shadow-sm"
                 />
               </div>
 
@@ -465,8 +465,8 @@ function ProductsContent() {
                   className={cn(
                     "h-11 px-4 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95",
                     sortDropdownOpen
-                      ? "border-blush bg-blush/5 text-blush"
-                      : "border-neutral-300 bg-white text-charcoal hover:border-blush hover:text-blush"
+                      ? "border-[#C8B273] bg-[#C8B273]/5 text-[#C8B273]"
+                      : "border-neutral-300 bg-white text-[#3B312C] hover:border-[#C8B273] hover:text-[#C8B273]"
                   )}
                 >
                   <ArrowUpDown className="w-4 h-4" />
@@ -488,7 +488,7 @@ function ProductsContent() {
                         }}
                         className={cn(
                           "w-full px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-neutral-50",
-                          sort === option.value ? "text-blush bg-blush/5" : "text-charcoal"
+                          sort === option.value ? "text-[#C8B273] bg-[#C8B273]/5" : "text-[#3B312C]"
                         )}
                       >
                         {option.label}
@@ -505,8 +505,8 @@ function ProductsContent() {
                   className={cn(
                     "h-11 px-4 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95",
                     priceRangeOpen || (urlMinPrice || urlMaxPrice)
-                      ? "border-blush bg-blush text-white shadow-lg shadow-blush/20"
-                      : "border-neutral-300 bg-white text-charcoal hover:border-blush hover:text-blush"
+                      ? "border-[#C8B273] bg-[#C8B273] text-white shadow-lg shadow-[#C8B273]/20"
+                      : "border-neutral-300 bg-white text-[#3B312C] hover:border-[#C8B273] hover:text-[#C8B273]"
                   )}
                 >
                   <IndianRupee className="w-4 h-4" />
@@ -526,7 +526,7 @@ function ProductsContent() {
                       <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Price Range</span>
                       <button
                         onClick={() => setPriceRangeOpen(false)}
-                        className="text-neutral-400 hover:text-charcoal"
+                        className="text-neutral-400 hover:text-[#3B312C]"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -540,7 +540,7 @@ function ProductsContent() {
                           placeholder="Min"
                           value={minPrice}
                           onChange={(e) => setMinPrice(e.target.value === '' ? '' : parseInt(e.target.value))}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#F3E8E5] text-sm focus:outline-none focus:border-blush/50 focus:ring-2 focus:ring-blush/10"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#F3E8E5] text-sm focus:outline-none focus:border-[#C8B273]/50 focus:ring-2 focus:ring-[#C8B273]/10"
                         />
                       </div>
                       <span className="text-neutral-400">-</span>
@@ -551,7 +551,7 @@ function ProductsContent() {
                           placeholder="Max"
                           value={maxPrice}
                           onChange={(e) => setMaxPrice(e.target.value === '' ? '' : parseInt(e.target.value))}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#F3E8E5] text-sm focus:outline-none focus:border-blush/50 focus:ring-2 focus:ring-blush/10"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#F3E8E5] text-sm focus:outline-none focus:border-[#C8B273]/50 focus:ring-2 focus:ring-[#C8B273]/10"
                         />
                       </div>
                     </div>
@@ -570,7 +570,7 @@ function ProductsContent() {
                             setMinPrice(preset.min);
                             setMaxPrice(preset.max);
                           }}
-                          className="px-3 py-2 text-xs font-medium text-neutral-600 bg-neutral-50 rounded-lg hover:bg-blush/10 hover:text-blush transition-colors text-left"
+                          className="px-3 py-2 text-xs font-medium text-neutral-600 bg-neutral-50 rounded-lg hover:bg-[#C8B273]/10 hover:text-[#C8B273] transition-colors text-left"
                         >
                           {preset.label}
                         </button>
@@ -588,7 +588,7 @@ function ProductsContent() {
                           router.push(`/products?${params.toString()}`);
                           setPriceRangeOpen(false);
                         }}
-                        className="flex-1 py-2.5 text-xs font-bold text-neutral-500 hover:text-charcoal transition-colors"
+                        className="flex-1 py-2.5 text-xs font-bold text-neutral-500 hover:text-[#3B312C] transition-colors"
                       >
                         Clear
                       </button>
@@ -602,7 +602,7 @@ function ProductsContent() {
                           router.push(`/products?${params.toString()}`);
                           setPriceRangeOpen(false);
                         }}
-                        className="flex-1 py-2.5 bg-blush text-white text-xs font-bold rounded-xl hover:bg-blush/90 transition-colors"
+                        className="flex-1 py-2.5 bg-[#C8B273] text-white text-xs font-bold rounded-xl hover:bg-[#C8B273]/90 transition-colors"
                       >
                         Apply
                       </button>
@@ -618,8 +618,8 @@ function ProductsContent() {
                   className={cn(
                     "h-11 px-4 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95",
                     sizeFilterOpen || urlSizes.length > 0
-                      ? "border-blush bg-blush text-white shadow-lg shadow-blush/20"
-                      : "border-neutral-300 bg-white text-charcoal hover:border-blush hover:text-blush"
+                      ? "border-[#C8B273] bg-[#C8B273] text-white shadow-lg shadow-[#C8B273]/20"
+                      : "border-neutral-300 bg-white text-[#3B312C] hover:border-[#C8B273] hover:text-[#C8B273]"
                   )}
                 >
                   <Ruler className="w-4 h-4" />
@@ -639,7 +639,7 @@ function ProductsContent() {
                       <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Select Sizes</span>
                       <button
                         onClick={() => setSizeFilterOpen(false)}
-                        className="text-neutral-400 hover:text-charcoal"
+                        className="text-neutral-400 hover:text-[#3B312C]"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -660,8 +660,8 @@ function ProductsContent() {
                               className={cn(
                                 "px-3 py-2 text-xs font-bold rounded-lg transition-all",
                                 selectedSizes.includes(size)
-                                  ? "bg-blush text-white shadow-md"
-                                  : "bg-neutral-50 text-neutral-600 hover:bg-blush/10 hover:text-blush"
+                                  ? "bg-[#C8B273] text-white shadow-md"
+                                  : "bg-neutral-50 text-neutral-600 hover:bg-[#C8B273]/10 hover:text-[#C8B273]"
                               )}
                             >
                               {size}
@@ -678,7 +678,7 @@ function ProductsContent() {
                               router.push(`/products?${params.toString()}`);
                               setSizeFilterOpen(false);
                             }}
-                            className="flex-1 py-2.5 text-xs font-bold text-neutral-500 hover:text-charcoal transition-colors"
+                            className="flex-1 py-2.5 text-xs font-bold text-neutral-500 hover:text-[#3B312C] transition-colors"
                           >
                             Clear
                           </button>
@@ -693,7 +693,7 @@ function ProductsContent() {
                               router.push(`/products?${params.toString()}`);
                               setSizeFilterOpen(false);
                             }}
-                            className="flex-1 py-2.5 bg-blush text-white text-xs font-bold rounded-xl hover:bg-blush/90 transition-colors"
+                            className="flex-1 py-2.5 bg-[#C8B273] text-white text-xs font-bold rounded-xl hover:bg-[#C8B273]/90 transition-colors"
                           >
                             Apply
                           </button>
@@ -713,7 +713,7 @@ function ProductsContent() {
               <p className="text-sm text-neutral-500">
                 {!loading && (
                   <>
-                    Showing <span className="font-bold text-charcoal">{paginatedProducts.length}</span> of <span className="font-bold text-charcoal">{totalProducts}</span> product{totalProducts !== 1 ? 's' : ''}
+                    Showing <span className="font-bold text-[#3B312C]">{paginatedProducts.length}</span> of <span className="font-bold text-[#3B312C]">{totalProducts}</span> product{totalProducts !== 1 ? 's' : ''}
                   </>
                 )}
               </p>
@@ -735,7 +735,7 @@ function ProductsContent() {
                         }
                         removeFilter(filter.key);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blush text-white rounded-lg text-xs font-semibold hover:bg-blush/90 transition-all duration-200 group shadow-sm hover:shadow-md active:scale-95"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C8B273] text-white rounded-lg text-xs font-semibold hover:bg-[#C8B273]/90 transition-all duration-200 group shadow-sm hover:shadow-md active:scale-95"
                     >
                       <span>{filter.label}: {filter.value}</span>
                       <X className="w-3 h-3 group-hover:scale-110 transition-transform" />
@@ -743,7 +743,7 @@ function ProductsContent() {
                   ))}
                   <button
                     onClick={clearAllFilters}
-                    className="text-xs font-bold text-neutral-500 hover:text-blush hover:bg-neutral-100 px-2 py-1 rounded transition-all duration-200 ml-1"
+                    className="text-xs font-bold text-neutral-500 hover:text-[#C8B273] hover:bg-neutral-100 px-2 py-1 rounded transition-all duration-200 ml-1"
                   >
                     Clear all
                   </button>
@@ -758,7 +758,7 @@ function ProductsContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="space-y-6">
-                    <Skeleton className="aspect-[4/5] w-full rounded-[32px] bg-cream/50" />
+                    <Skeleton className="aspect-[4/5] w-full rounded-[32px] bg-[#F8F4EE]/50" />
                     <div className="space-y-3">
                         <Skeleton className="h-5 w-3/4 rounded-lg" />
                         <Skeleton className="h-4 w-1/4 rounded-lg" />
@@ -783,8 +783,8 @@ function ProductsContent() {
                           className={cn(
                             "p-2.5 rounded-full shadow-lg backdrop-blur-sm transition-all z-10",
                             isInWishlist(product.id)
-                              ? "bg-blush text-white"
-                              : "bg-white/90 text-charcoal hover:bg-blush hover:text-white"
+                              ? "bg-[#C8B273] text-white"
+                              : "bg-white/90 text-[#3B312C] hover:bg-[#C8B273] hover:text-white"
                           )}
                           aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
                         >
@@ -798,7 +798,7 @@ function ProductsContent() {
                             setSelectedQuickViewSize('');
                             addToRecentlyViewed(product);
                           }}
-                          className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-blush hover:text-white text-charcoal z-10 transition-all"
+                          className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-[#C8B273] hover:text-white text-[#3B312C] z-10 transition-all"
                           aria-label="Quick view"
                         >
                           <Eye className="w-4 h-4" />
@@ -820,7 +820,7 @@ function ProductsContent() {
                           "px-4 py-2 rounded-xl text-sm font-bold transition-all",
                           currentPage === 1
                             ? "text-neutral-300 cursor-not-allowed"
-                            : "text-charcoal hover:bg-blush/10 hover:text-blush"
+                            : "text-[#3B312C] hover:bg-[#C8B273]/10 hover:text-[#C8B273]"
                         )}
                       >
                         ← Prev
@@ -855,8 +855,8 @@ function ProductsContent() {
                                 className={cn(
                                   "w-10 h-10 rounded-xl text-sm font-bold transition-all",
                                   currentPage === page
-                                    ? "bg-blush text-white shadow-lg shadow-blush/20"
-                                    : "text-charcoal hover:bg-blush/10 hover:text-blush"
+                                    ? "bg-[#C8B273] text-white shadow-lg shadow-[#C8B273]/20"
+                                    : "text-[#3B312C] hover:bg-[#C8B273]/10 hover:text-[#C8B273]"
                                 )}
                               >
                                 {page}
@@ -873,7 +873,7 @@ function ProductsContent() {
                           "px-4 py-2 rounded-xl text-sm font-bold transition-all",
                           currentPage >= Math.ceil(totalProducts / ITEMS_PER_PAGE)
                             ? "text-neutral-300 cursor-not-allowed"
-                            : "text-charcoal hover:bg-blush/10 hover:text-blush"
+                            : "text-[#3B312C] hover:bg-[#C8B273]/10 hover:text-[#C8B273]"
                         )}
                       >
                         Next →
@@ -889,12 +889,12 @@ function ProductsContent() {
               </>
             ) : (
               /* 💎 5. EMPTY STATE */
-              <div className="text-center py-40 bg-cream/20 rounded-[60px] border border-dashed border-blush/20">
-                <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-xl shadow-blush/5 border border-[#F3E8E5]">
-                  <Tag className="h-10 w-10 text-blush opacity-20" />
+              <div className="text-center py-40 bg-[#F8F4EE]/20 rounded-[60px] border border-dashed border-[#C8B273]/20">
+                <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-xl shadow-[#C8B273]/5 border border-[#F3E8E5]">
+                  <Tag className="h-10 w-10 text-[#C8B273] opacity-20" />
                 </div>
-                <h2 className="text-4xl font-serif font-bold text-charcoal mb-4">
-                  No products <span className="text-blush italic">Found</span>
+                <h2 className="text-4xl font-serif font-bold text-[#3B312C] mb-4">
+                  No products <span className="text-[#C8B273] italic">Found</span>
                 </h2>
                 <p className="text-neutral-500 max-w-xs mx-auto text-lg leading-relaxed mb-12">
                   We couldn't find anything matching your search. Try different filters!
@@ -902,7 +902,7 @@ function ProductsContent() {
                 {(search || selectedCategory || hasActiveFilters) && (
                   <button 
                     onClick={clearAllFilters}
-                    className="bg-charcoal text-white px-12 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-blush transition-all shadow-2xl shadow-charcoal/20 transform hover:-translate-y-1"
+                    className="bg-[#3B312C] text-white px-12 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-[#C8B273] transition-all shadow-2xl shadow-[#3B312C]/20 transform hover:-translate-y-1"
                   >
                     Reset All Filters
                   </button>
@@ -915,12 +915,12 @@ function ProductsContent() {
 
       {/* 🔹 Recently Viewed Section */}
       {!loading && recentlyViewed.length > 0 && (
-        <section className="py-16 bg-cream/30 border-t border-[#F3E8E5]">
+        <section className="py-16 bg-[#F8F4EE]/30 border-t border-[#F3E8E5]">
           <div className="max-w-7xl mx-auto px-6 md:px-10">
             <div className="flex items-center gap-3 mb-8">
-              <Clock className="w-5 h-5 text-blush" />
-              <h2 className="text-2xl font-serif font-bold text-charcoal">
-                Recently <span className="text-blush italic">Viewed</span>
+              <Clock className="w-5 h-5 text-[#C8B273]" />
+              <h2 className="text-2xl font-serif font-bold text-[#3B312C]">
+                Recently <span className="text-[#C8B273] italic">Viewed</span>
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
@@ -938,10 +938,10 @@ function ProductsContent() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <h3 className="text-sm font-bold text-charcoal truncate group-hover:text-blush transition-colors">
+                  <h3 className="text-sm font-bold text-[#3B312C] truncate group-hover:text-[#C8B273] transition-colors">
                     {product.name}
                   </h3>
-                  <p className="text-sm text-blush font-bold">
+                  <p className="text-sm text-[#C8B273] font-bold">
                     ₹{product.variants?.[0]?.price || 0}
                   </p>
                 </a>
@@ -962,7 +962,7 @@ function ProductsContent() {
           {quickViewProduct && (
             <div className="grid md:grid-cols-2 gap-0">
               {/* Image Section */}
-              <div className="relative aspect-square bg-cream/30">
+              <div className="relative aspect-square bg-[#F8F4EE]/30">
                 <Image
                   src={quickViewProduct.images?.[0] || '/placeholder.svg'}
                   alt={quickViewProduct.name}
@@ -974,10 +974,10 @@ function ProductsContent() {
               {/* Details Section */}
               <div className="p-8 flex flex-col">
                 <div className="flex-1">
-                  <h2 className="text-2xl font-serif font-bold text-charcoal mb-2">
+                  <h2 className="text-2xl font-serif font-bold text-[#3B312C] mb-2">
                     {quickViewProduct.name}
                   </h2>
-                  <p className="text-2xl font-bold text-blush mb-4">
+                  <p className="text-2xl font-bold text-[#C8B273] mb-4">
                     ₹{quickViewProduct.variants?.[0]?.price || 0}
                   </p>
                   <p className="text-neutral-600 text-sm leading-relaxed mb-6 line-clamp-3">
@@ -998,8 +998,8 @@ function ProductsContent() {
                             className={cn(
                               "px-4 py-2 text-xs font-bold rounded-lg transition-all border",
                               selectedQuickViewSize === (variant.options?.Size || variant.sku)
-                                ? "bg-blush text-white border-blush shadow-md"
-                                : "bg-white text-charcoal border-[#F3E8E5] hover:border-blush hover:text-blush"
+                                ? "bg-[#C8B273] text-white border-[#C8B273] shadow-md"
+                                : "bg-white text-[#3B312C] border-[#F3E8E5] hover:border-[#C8B273] hover:text-[#C8B273]"
                             )}
                           >
                             {variant.options?.Size || variant.sku}
@@ -1017,8 +1017,8 @@ function ProductsContent() {
                     className={cn(
                       "px-4 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2",
                       isInWishlist(quickViewProduct.id)
-                        ? "bg-blush text-white"
-                        : "bg-neutral-100 text-charcoal hover:bg-blush hover:text-white"
+                        ? "bg-[#C8B273] text-white"
+                        : "bg-neutral-100 text-[#3B312C] hover:bg-[#C8B273] hover:text-white"
                     )}
                     aria-label={isInWishlist(quickViewProduct.id) ? "Remove from wishlist" : "Add to wishlist"}
                   >
@@ -1026,7 +1026,7 @@ function ProductsContent() {
                   </button>
                   <a
                     href={`/products/${quickViewProduct.id}`}
-                    className="flex-1 bg-charcoal text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-blush transition-all text-center flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#3B312C] text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-[#C8B273] transition-all text-center flex items-center justify-center gap-2"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     View Details
@@ -1045,7 +1045,7 @@ export default function ProductsPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-rose-400 border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#C8B273] border-t-transparent"></div>
             </div>
         }>
             <ProductsContent />

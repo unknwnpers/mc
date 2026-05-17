@@ -278,10 +278,10 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
           <div className="space-y-2">
             <label className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.3em] ml-2">Mobile Number</label>
             <div className="relative group">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-blush transition-colors">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C8B273] transition-colors">
                 <Phone className="w-4 h-4" />
               </div>
-              <span className="absolute left-12 top-1/2 -translate-y-1/2 text-charcoal font-bold text-sm">
+              <span className="absolute left-12 top-1/2 -translate-y-1/2 text-[#3B312C] font-bold text-sm">
                 +91
               </span>
               <input
@@ -294,7 +294,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
                 }
                 onKeyDown={(e) => e.key === "Enter" && sendOTP()}
                 placeholder="10-digit number"
-                className="w-full pl-20 pr-5 py-5 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 transition-all font-bold text-charcoal placeholder:text-neutral-300 text-sm shadow-sm"
+                className="w-full pl-20 pr-5 py-5 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-[#C8B273]/20 transition-all font-bold text-[#3B312C] placeholder:text-neutral-300 text-sm shadow-sm"
                 autoComplete="tel"
               />
             </div>
@@ -311,7 +311,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
             id="send-otp-btn"
             onClick={sendOTP}
             disabled={loading || phone.length < 10 || lockoutTimer > 0}
-            className="w-full h-[64px] flex items-center justify-center gap-3 bg-blush text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/20 active:scale-[0.98] disabled:opacity-50 group"
+            className="w-full h-[64px] flex items-center justify-center gap-3 bg-gradient-to-br from-[#C8B273] to-[#B89B5E] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-[0_12px_24px_rgba(200,178,115,0.18)] hover:-translate-y-[1px] transition-all active:scale-[0.98] disabled:opacity-50 group"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -330,9 +330,9 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
 
       {step === "otp" && (
         <div className="space-y-6">
-          <div className="text-center bg-cream/30 p-4 rounded-2xl border border-blush/5">
+          <div className="text-center bg-[#F8F4EE]/80 p-4 rounded-2xl border border-[rgba(200,178,115,0.12)]">
             <p className="text-neutral-500 text-xs font-medium">
-              We've sent a code to <span className="font-bold text-charcoal">+91 {phone}</span>
+              We've sent a code to <span className="font-bold text-[#3B312C]">+91 {phone}</span>
             </p>
             <button
               onClick={() => {
@@ -340,7 +340,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
                 setOtp("");
                 setError(null);
               }}
-              className="text-blush text-[10px] font-black uppercase tracking-widest hover:underline mt-2"
+              className="text-[#C8B273] text-[10px] font-black uppercase tracking-widest hover:underline mt-2"
             >
               Change Number
             </button>
@@ -358,7 +358,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
               }
               onKeyDown={(e) => e.key === "Enter" && verifyOTP()}
               placeholder="000000"
-              className="w-full px-5 py-5 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-blush/20 outline-none text-2xl font-bold tracking-[0.5em] text-center text-charcoal transition-all shadow-sm placeholder:text-neutral-200"
+              className="w-full px-5 py-5 bg-neutral-50 border-none rounded-2xl focus:ring-2 focus:ring-[#C8B273]/20 outline-none text-2xl font-bold tracking-[0.5em] text-center text-[#3B312C] transition-all shadow-sm placeholder:text-neutral-200"
               autoFocus
               autoComplete="one-time-code"
             />
@@ -375,7 +375,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
             id="verify-otp-btn"
             onClick={verifyOTP}
             disabled={loading || otp.length < 6}
-            className="w-full h-[64px] flex items-center justify-center gap-3 bg-blush text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#f48c82] transition-all shadow-xl shadow-blush/20 active:scale-[0.98] disabled:opacity-50"
+            className="w-full h-[64px] flex items-center justify-center gap-3 bg-gradient-to-br from-[#C8B273] to-[#B89B5E] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-[0_12px_24px_rgba(200,178,115,0.18)] hover:-translate-y-[1px] transition-all active:scale-[0.98] disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -396,7 +396,7 @@ export default function PhoneAuth({ onSuccess }: PhoneAuthProps) {
             ) : (
               <button
                 onClick={resendOTP}
-                className="text-blush text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto hover:underline decoration-2"
+                className="text-[#C8B273] text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto hover:underline decoration-2"
               >
                 <RefreshCw className="w-3 h-3" />
                 Resend Code Now

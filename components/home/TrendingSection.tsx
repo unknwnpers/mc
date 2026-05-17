@@ -28,9 +28,9 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
   const trendingProducts = products.slice(1, 5);
 
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
       {/* Background glow */}
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#E4C765]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
         {/* ── HEADER ── */}
@@ -41,10 +41,10 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
           transition={{ duration: 0.5, ease }}
           className="mb-12 md:mb-16"
         >
-          <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765] mb-3">
+          <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#C8B273] mb-3">
             Just Dropped
           </p>
-          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#1E1E1E] mb-3 md:mb-4">
+          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#3B312C] mb-3 md:mb-4">
             Trending This Week
           </h2>
           <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] max-w-[560px]">
@@ -78,7 +78,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
               <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.55))' }} />
 
               {/* NEW badge */}
-              <div className="absolute top-6 left-6 bg-[#E4C765] text-white text-[12px] font-bold px-4 py-1.5 rounded-full shadow-[0_4px_12px_rgba(228,199,101,0.3)]">
+              <div className="absolute top-6 left-6 bg-[#C8B273] text-white text-[12px] font-bold px-4 py-1.5 rounded-full shadow-[0_4px_12px_rgba(200, 178, 115,0.3)]">
                 NEW
               </div>
 
@@ -145,9 +145,9 @@ function MiniProductCard({ product }: { product: Product }) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group bg-white rounded-[28px] overflow-hidden flex flex-col h-full border border-[rgba(228,199,101,0.06)] hover:-translate-y-1.5 transition-all duration-300 ease-out"
+      className="group bg-white rounded-[28px] overflow-hidden flex flex-col h-full border border-[rgba(200, 178, 115,0.06)] hover:-translate-y-1.5 transition-all duration-300 ease-out"
       style={{ boxShadow: '0 14px 35px rgba(0,0,0,0.04)' }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 20px 48px rgba(228,199,101,0.10)'; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 20px 48px rgba(200, 178, 115,0.10)'; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 14px 35px rgba(0,0,0,0.04)'; }}
     >
       {/* Image */}
@@ -159,12 +159,12 @@ function MiniProductCard({ product }: { product: Product }) {
           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
         {/* NEW badge */}
-        <div className="absolute top-3 left-3 bg-[#E4C765] text-white text-[11px] font-bold px-3 py-1 rounded-full">
+        <div className="absolute top-3 left-3 bg-[#C8B273] text-white text-[11px] font-bold px-3 py-1 rounded-full">
           NEW
         </div>
         {/* Quick Add (desktop hover) */}
         <div className="absolute bottom-3 left-3 right-3 translate-y-12 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hidden md:block">
-          <div className="bg-[#E4C765] text-white h-[40px] rounded-full flex items-center justify-center gap-2 text-[13px] font-semibold shadow-[0_6px_20px_rgba(228,199,101,0.3)]">
+          <div className="bg-[#C8B273] text-white h-[40px] rounded-full flex items-center justify-center gap-2 text-[13px] font-semibold shadow-[0_6px_20px_rgba(200, 178, 115,0.3)]">
             <ShoppingBag className="w-3.5 h-3.5" />
             Quick Add
           </div>
@@ -173,14 +173,14 @@ function MiniProductCard({ product }: { product: Product }) {
 
       {/* Info */}
       <div className="p-4 md:p-5 flex flex-col flex-1">
-        <p className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#E4C765] mb-1">
+        <p className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#C8B273] mb-1">
           {product.category_slug || "New Arrival"}
         </p>
-        <h3 className="text-[15px] md:text-[17px] font-bold text-[#1E1E1E] leading-[1.4] line-clamp-2 mb-auto">
+        <h3 className="text-[15px] md:text-[17px] font-bold text-[#3B312C] leading-[1.4] line-clamp-2 mb-auto">
           {product.name}
         </h3>
-        <div className="flex items-baseline gap-2 mt-3 pt-3 border-t border-[rgba(228,199,101,0.06)]">
-          <span className="text-[20px] md:text-[22px] font-extrabold text-[#1E1E1E]">
+        <div className="flex items-baseline gap-2 mt-3 pt-3 border-t border-[rgba(200, 178, 115,0.06)]">
+          <span className="text-[20px] md:text-[22px] font-extrabold text-[#3B312C]">
             ₹{displayPrice.toLocaleString('en-IN')}
           </span>
         </div>

@@ -111,7 +111,7 @@ export default function SocialMediaSettings() {
         {/* Instagram */}
         <div>
           <label className="flex items-center gap-2 text-sm font-bold text-white mb-2">
-            <Instagram className="w-4 h-4 text-[#E4C765]" /> Instagram URL
+            <Instagram className="w-4 h-4 text-[#C8B273]" /> Instagram URL
           </label>
           <input
             type="url"

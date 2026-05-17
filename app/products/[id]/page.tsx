@@ -425,7 +425,7 @@ export default function ProductDetailsPage() {
       
       <main className="max-w-7xl mx-auto px-6 md:px-10 py-12">
         {/* BACK BUTTON */}
-        <Link href="/products" className="inline-flex items-center gap-2 text-neutral-400 hover:text-blush font-bold text-xs uppercase tracking-[0.2em] mb-12 transition-colors group">
+        <Link href="/products" className="inline-flex items-center gap-2 text-neutral-400 hover:text-[#C8B273] font-bold text-xs uppercase tracking-[0.2em] mb-12 transition-colors group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Collection
         </Link>
@@ -505,8 +505,8 @@ export default function ProductDetailsPage() {
                     className={cn(
                       "relative w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden shrink-0 border-2 transition-all hover:shadow-md",
                       selectedImageIndex === idx
-                        ? "border-blush shadow-md shadow-rose-200 ring-2 ring-blush/20"
-                        : "border-neutral-200 hover:border-blush/50"
+                        ? "border-[#C8B273] shadow-md shadow-rose-200 ring-2 ring-[#C8B273]/20"
+                        : "border-neutral-200 hover:border-[#C8B273]/50"
                     )}
                   >
                     <img
@@ -523,7 +523,7 @@ export default function ProductDetailsPage() {
 
           {/* CONTENT SECTION */}
           <div className="flex flex-col h-full">
-            <nav className="flex mb-4 text-xs text-blush uppercase tracking-[0.2em] font-black">
+            <nav className="flex mb-4 text-xs text-[#C8B273] uppercase tracking-[0.2em] font-black">
               <Link href="/" className="hover:underline">Home</Link>
               <span className="mx-2 text-neutral-300">/</span>
               {product.category_slug ? (
@@ -570,7 +570,7 @@ export default function ProductDetailsPage() {
               })()}
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif font-bold text-charcoal mb-4 tracking-tight leading-[1.05]">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif font-bold text-[#3B312C] mb-4 tracking-tight leading-[1.05]">
               {product.name}
             </h1>
 
@@ -587,7 +587,7 @@ export default function ProductDetailsPage() {
                 
                 return (
                   <>
-                    <span className="text-3xl md:text-4xl font-serif font-bold text-blush tracking-tight whitespace-nowrap">
+                    <span className="text-3xl md:text-4xl font-serif font-bold text-[#C8B273] tracking-tight whitespace-nowrap">
                       ₹{displayPrice.toLocaleString('en-IN')}
                     </span>
                     {hasDiscount && (
@@ -611,7 +611,7 @@ export default function ProductDetailsPage() {
                 <Eye className="w-4 h-4 animate-pulse" />
                 {stats.viewers} people viewing
               </span>
-              <span className="flex items-center gap-2 text-blush font-bold bg-cream px-3 py-1.5 rounded-full border border-blush/10" title="Users with this product in their cart">
+              <span className="flex items-center gap-2 text-[#C8B273] font-bold bg-[#F8F4EE] px-3 py-1.5 rounded-full border border-[#C8B273]/10" title="Users with this product in their cart">
                 <ShoppingCart className="w-4 h-4" />
                 {stats.inCart} in carts
               </span>
@@ -624,11 +624,11 @@ export default function ProductDetailsPage() {
                 { icon: ShieldCheck, title: "Safe for Baby", desc: "Eco-friendly dyes" },
                 { icon: Truck, title: "Quick Shipping", desc: "Dispatch in 24h" },
               ].map((highlight, idx) => (
-                <div key={idx} className="flex flex-col items-center text-center p-4 bg-[#FCF9F7] rounded-2xl border border-blush/5 group hover:border-blush/20 transition-all">
+                <div key={idx} className="flex flex-col items-center text-center p-4 bg-[#FCF9F7] rounded-2xl border border-[#C8B273]/5 group hover:border-[#C8B273]/20 transition-all">
                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
-                    <highlight.icon className="w-5 h-5 text-blush" />
+                    <highlight.icon className="w-5 h-5 text-[#C8B273]" />
                   </div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-charcoal mb-0.5">{highlight.title}</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-[#3B312C] mb-0.5">{highlight.title}</p>
                   <p className="text-[10px] text-neutral-400 font-medium">{highlight.desc}</p>
                 </div>
               ))}
@@ -643,7 +643,7 @@ export default function ProductDetailsPage() {
                   className="w-full flex items-center justify-between p-4 bg-white hover:bg-neutral-50 transition-colors"
                 >
                   <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
-                    <Package className="w-4 h-4 text-blush" />
+                    <Package className="w-4 h-4 text-[#C8B273]" />
                     Description
                   </span>
                   {openSections.includes('description') ? (
@@ -668,7 +668,7 @@ export default function ProductDetailsPage() {
                   className="w-full flex items-center justify-between p-4 bg-white hover:bg-neutral-50 transition-colors"
                 >
                   <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blush" />
+                    <Sparkles className="w-4 h-4 text-[#C8B273]" />
                     Material & Care
                   </span>
                   {openSections.includes('material') ? (
@@ -681,7 +681,7 @@ export default function ProductDetailsPage() {
                   <div className="p-4 pt-0 bg-white">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-blush">
+                        <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-[#C8B273]">
                           <Package className="w-4 h-4" />
                         </div>
                         <div>
@@ -690,7 +690,7 @@ export default function ProductDetailsPage() {
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-blush">
+                        <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-[#C8B273]">
                           <RefreshCw className="w-4 h-4" />
                         </div>
                         <div>
@@ -710,7 +710,7 @@ export default function ProductDetailsPage() {
                   className="w-full flex items-center justify-between p-4 bg-white hover:bg-neutral-50 transition-colors"
                 >
                   <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-blush" />
+                    <Truck className="w-4 h-4 text-[#C8B273]" />
                     Shipping & Returns
                   </span>
                   {openSections.includes('shipping') ? (
@@ -722,14 +722,14 @@ export default function ProductDetailsPage() {
                 {openSections.includes('shipping') && (
                   <div className="p-4 pt-0 bg-white space-y-3">
                     <div className="flex items-start gap-3">
-                      <Truck className="w-4 h-4 text-blush mt-0.5" />
+                      <Truck className="w-4 h-4 text-[#C8B273] mt-0.5" />
                       <div>
                         <p className="text-sm font-bold text-neutral-700">Delivery</p>
                         <p className="text-sm text-neutral-500">Free shipping on orders over ₹1000. Delivery in 3-5 business days.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <RefreshCw className="w-4 h-4 text-blush mt-0.5" />
+                      <RefreshCw className="w-4 h-4 text-[#C8B273] mt-0.5" />
                       <div>
                         <p className="text-sm font-bold text-neutral-700">Returns</p>
                         <p className="text-sm text-neutral-500">Easy 7-day returns. Product must be unworn with tags attached.</p>
@@ -754,7 +754,7 @@ export default function ProductDetailsPage() {
                             <div className="flex items-center gap-3">
                                 <button 
                                     onClick={() => toast.info("Size guide coming soon!")}
-                                    className="text-xs font-bold text-blush hover:text-blush/80 flex items-center gap-1 transition-colors"
+                                    className="text-xs font-bold text-[#C8B273] hover:text-[#C8B273]/80 flex items-center gap-1 transition-colors"
                                 >
                                     <Ruler className="w-3 h-3" />
                                     Size Guide
@@ -795,8 +795,8 @@ export default function ProductDetailsPage() {
                                         "relative px-6 py-3 rounded-2xl border text-xs font-bold transition-all duration-300",
                                         isOOS ? "opacity-40 cursor-not-allowed bg-neutral-100 border-neutral-200 line-through" : "active:scale-95",
                                         selectedSize === v.sku
-                                            ? "bg-charcoal border-charcoal text-white shadow-xl shadow-charcoal/20"
-                                            : (!isOOS && "bg-white border-[#F3E8E5] text-charcoal hover:border-blush hover:text-blush"),
+                                            ? "bg-[#3B312C] border-[#3B312C] text-white shadow-xl shadow-[#3B312C]/20"
+                                            : (!isOOS && "bg-white border-[#F3E8E5] text-[#3B312C] hover:border-[#C8B273] hover:text-[#C8B273]"),
                                         isLowStock && selectedSize !== v.sku && "border-orange-200 text-orange-600"
                                     )}>
                                     {v.options?.Size || v.sku}
@@ -911,8 +911,8 @@ export default function ProductDetailsPage() {
                             : isOutOfStock
                               ? "bg-red-50 text-red-400 cursor-not-allowed shadow-none border-2 border-red-100"
                               : isAddingToCart
-                                ? "bg-gradient-to-r from-blush to-rose-400 text-white opacity-80 cursor-wait"
-                                : "bg-gradient-to-r from-blush to-rose-400 text-white hover:shadow-2xl hover:shadow-blush/30"
+                                ? "bg-gradient-to-r from-[#C8B273] to-[#B89B5E] text-white opacity-80 cursor-wait"
+                                : "bg-gradient-to-r from-[#C8B273] to-[#B89B5E] text-white hover:shadow-2xl hover:shadow-[#C8B273]/30"
                         )}
                       >
                         {!isOutOfStock && !isAddingToCart && <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />}
@@ -933,15 +933,15 @@ export default function ProductDetailsPage() {
                         className={cn(
                           "p-5 rounded-2xl border-2 transition-all duration-300 active:scale-90 shadow-sm",
                           isFav 
-                            ? "bg-blush border-blush text-white shadow-blush/30" 
-                            : "bg-white border-neutral-200 text-neutral-400 hover:text-blush hover:border-blush"
+                            ? "bg-[#C8B273] border-[#C8B273] text-white shadow-[#C8B273]/30" 
+                            : "bg-white border-neutral-200 text-neutral-400 hover:text-[#C8B273] hover:border-[#C8B273]"
                         )}
                       >
                         <Heart className={cn("w-6 h-6", isFav && "fill-current")} />
                       </button>
                       <button 
                         onClick={handleShare}
-                        className="p-5 border-2 border-neutral-200 rounded-2xl hover:bg-neutral-50 hover:border-neutral-300 transition-all text-neutral-400 hover:text-charcoal active:scale-90 shadow-sm"
+                        className="p-5 border-2 border-neutral-200 rounded-2xl hover:bg-neutral-50 hover:border-neutral-300 transition-all text-neutral-400 hover:text-[#3B312C] active:scale-90 shadow-sm"
                       >
                         <Share2 className="w-6 h-6" />
                       </button>
@@ -963,18 +963,18 @@ export default function ProductDetailsPage() {
               </div>
 
               {/* THE MIKS & CHIKS PROMISE */}
-              <div className="mt-12 p-8 bg-gradient-to-br from-cream to-[#FCF9F7] rounded-[32px] border border-blush/10 relative overflow-hidden">
+              <div className="mt-12 p-8 bg-gradient-to-br from-[#F8F4EE] to-[#FCF9F7] rounded-[32px] border border-[#C8B273]/10 relative overflow-hidden">
                 <div className="relative z-10">
-                  <h3 className="text-xl font-serif font-bold text-charcoal mb-6 flex items-center gap-3">
-                    <Award className="w-6 h-6 text-blush" />
-                    The Miks & Chiks <span className="text-blush italic">Promise</span>
+                  <h3 className="text-xl font-serif font-bold text-[#3B312C] mb-6 flex items-center gap-3">
+                    <Award className="w-6 h-6 text-[#C8B273]" />
+                    The Miks & Chiks <span className="text-[#C8B273] italic">Promise</span>
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
                         <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
                         <div>
-                          <p className="text-sm font-bold text-charcoal">Quality First</p>
+                          <p className="text-sm font-bold text-[#3B312C]">Quality First</p>
                           <p className="text-xs text-neutral-500">Every piece is hand-checked for softness and durability.</p>
                         </div>
                       </div>
@@ -984,7 +984,7 @@ export default function ProductDetailsPage() {
                       <div className="flex items-start gap-3">
                         <CheckCircle2 className="w-4 h-4 text-green-500 mt-1" />
                         <div>
-                          <p className="text-sm font-bold text-charcoal">Safe Checkout</p>
+                          <p className="text-sm font-bold text-[#3B312C]">Safe Checkout</p>
                           <p className="text-xs text-neutral-500">Secure payments via Razorpay with all major cards.</p>
                         </div>
                       </div>
@@ -992,7 +992,7 @@ export default function ProductDetailsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blush/5 rounded-full blur-3xl -mr-16 -mt-16" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8B273]/5 rounded-full blur-3xl -mr-16 -mt-16" />
               </div>
             </div>
           </div>
@@ -1003,7 +1003,7 @@ export default function ProductDetailsPage() {
           <div className="border-t border-neutral-200 pt-12">
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <MessageSquare className="w-8 h-8 text-blush" />
+                <MessageSquare className="w-8 h-8 text-[#C8B273]" />
                 <h2 className="text-3xl font-bold text-gray-900">Customer Reviews</h2>
               </div>
               {averageRating > 0 && (
@@ -1019,7 +1019,7 @@ export default function ProductDetailsPage() {
             {user ? (
               <button
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="w-full mb-8 bg-gradient-to-r from-blush to-pink-400 text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2"
+                className="w-full mb-8 bg-gradient-to-r from-[#C8B273] to-[#B89B5E] text-white py-4 rounded-2xl font-semibold hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2"
               >
                 <Star className="w-5 h-5" />
                 {showReviewForm ? 'Cancel' : 'Write a Review'}
@@ -1144,14 +1144,14 @@ export default function ProductDetailsPage() {
         <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Total Price</span>
-            <span className="text-xl font-serif font-bold text-blush">
+            <span className="text-xl font-serif font-bold text-[#C8B273]">
               ₹{(offerData?.discountedPrice ?? (product as any).variants?.[0]?.price ?? 0).toLocaleString()}
             </span>
           </div>
           <button
             onClick={handleAddToCart}
             disabled={isAddingToCart}
-            className="flex-1 bg-charcoal text-white h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-charcoal/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+            className="flex-1 bg-[#3B312C] text-white h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-[#3B312C]/20 active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             {isAddingToCart ? (
               <Loader2 className="w-4 h-4 animate-spin" />

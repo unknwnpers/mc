@@ -52,9 +52,9 @@ interface WhyChooseUsProps {
 
 export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
       {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#E4C765]/[0.02] rounded-full blur-[100px] pointer-events-none hidden md:block" />
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none hidden md:block" />
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#FDF5F1]/80 rounded-full blur-[80px] pointer-events-none hidden md:block" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
@@ -105,7 +105,7 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
                 <div className="flex items-center gap-3 mb-2.5">
                   {/* Avatar stack */}
                   <div className="flex -space-x-2">
-                    {['bg-[#F1DE9D]', 'bg-[#E4C765]', 'bg-[#C9A844]'].map((bg, i) => (
+                    {['bg-[#F1DE9D]', 'bg-[#C8B273]', 'bg-[#B89B5E]'].map((bg, i) => (
                       <div key={i} className={`w-8 h-8 rounded-full border-[2.5px] border-white ${bg} flex items-center justify-center`}>
                         <span className="text-white text-[10px] font-bold">{['S', 'M', 'R'][i]}</span>
                       </div>
@@ -136,18 +136,18 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
               className="max-w-[560px]"
             >
               {/* Label */}
-              <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765] mb-4">
+              <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#C8B273] mb-4">
                 {content.label || "Why Moms Love Us"}
               </p>
 
               {/* Heading */}
-              <h2 className="font-serif font-bold text-[30px] md:text-[52px] leading-[1.08] text-[#1E1E1E] tracking-tight">
+              <h2 className="font-serif font-bold text-[30px] md:text-[52px] leading-[1.08] text-[#3B312C] tracking-tight">
                 {content.headline || "Crafted With Care"}<br />
-                For Every <span className="italic text-[#E4C765]">{content.headlineHighlight || "Little Moment"}</span>
+                For Every <span className="italic text-[#C8B273]">{content.headlineHighlight || "Little Moment"}</span>
               </h2>
 
               {/* Description */}
-              <p className="text-[15px] md:text-[17px] leading-7 md:leading-8 text-[#5C5C5C] mt-6 md:mt-8 max-w-[520px]">
+              <p className="text-[15px] md:text-[17px] leading-7 md:leading-8 text-[#6E625B] mt-6 md:mt-8 max-w-[520px]">
                 {content.description || "We believe every mother deserves products that are as thoughtful as her love. Each piece is designed from the heart — tested by moms, loved by babies."}
               </p>
             </motion.div>
@@ -168,14 +168,14 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
                 >
                   {/* Icon */}
                   <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(228,199,101,0.15)] transition-all duration-300"
-                    style={{ background: 'rgba(228,199,101,0.10)' }}
+                    className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(200, 178, 115,0.15)] transition-all duration-300"
+                    style={{ background: 'rgba(200, 178, 115,0.10)' }}
                   >
-                    <feature.icon className="w-6 h-6 text-[#E4C765]" strokeWidth={1.8} />
+                    <feature.icon className="w-6 h-6 text-[#C8B273]" strokeWidth={1.8} />
                   </div>
                   {/* Text */}
                   <div>
-                    <h3 className="text-[18px] md:text-[20px] font-bold text-[#1E1E1E] mb-1 leading-tight">
+                    <h3 className="text-[18px] md:text-[20px] font-bold text-[#3B312C] mb-1 leading-tight">
                       {feature.title}
                     </h3>
                     <p className="text-[14px] md:text-[15px] leading-[1.6] md:leading-[1.8] text-[#6B6B6B]">
@@ -196,7 +196,7 @@ export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
             >
               <Link
                 href={content.buttonLink || "/about"}
-                className="group inline-flex items-center gap-2.5 h-[54px] px-8 rounded-xl bg-[#E4C765] text-white text-[15px] font-semibold hover:bg-[#C9A844] active:scale-[0.97] shadow-[0_8px_24px_rgba(228,199,101,0.25)] hover:shadow-[0_14px_36px_rgba(228,199,101,0.30)] hover:-translate-y-0.5 transition-all duration-300"
+                className="group inline-flex items-center gap-2.5 h-[54px] px-8 rounded-xl bg-[#C8B273] text-white text-[15px] font-semibold hover:bg-[#B89B5E] active:scale-[0.97] shadow-[0_8px_24px_rgba(200, 178, 115,0.25)] hover:shadow-[0_14px_36px_rgba(200, 178, 115,0.30)] hover:-translate-y-0.5 transition-all duration-300"
               >
                 {content.buttonText || "Explore Our Story"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />

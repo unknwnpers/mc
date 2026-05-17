@@ -175,7 +175,7 @@ export default function CartPage() {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-blush mx-auto" />
+                    <Loader2 className="w-10 h-10 animate-spin text-[#C8B273] mx-auto" />
                     <p className="mt-4 text-neutral-600 font-sans font-medium">Loading your selection...</p>
                 </div>
             </div>
@@ -190,7 +190,7 @@ export default function CartPage() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
                         <p className="text-[13px] font-medium text-neutral-400 mb-2">Shopping Bag</p>
-                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-charcoal tracking-tight">Your <span className="text-blush italic">Cart</span></h1>
+                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#3B312C] tracking-tight">Your <span className="text-[#C8B273] italic">Cart</span></h1>
                     </div>
                     {cart.length > 0 && (
                         <button 
@@ -210,14 +210,14 @@ export default function CartPage() {
 
                 {cart.length === 0 ? (
                     <div className="text-center py-24 md:py-32 bg-white rounded-[40px] border border-dashed border-[#F3E8E5] shadow-sm">
-                        <div className="w-20 md:w-24 h-20 md:h-24 bg-cream rounded-[32px] flex items-center justify-center mx-auto mb-8 text-blush/20">
+                        <div className="w-20 md:w-24 h-20 md:h-24 bg-[#F8F4EE] rounded-[32px] flex items-center justify-center mx-auto mb-8 text-[#C8B273]/20">
                             <ShoppingCart className="w-10 md:w-12 h-10 md:h-12" />
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-serif font-bold text-charcoal mb-4">Your cart is empty</h2>
+                        <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#3B312C] mb-4">Your cart is empty</h2>
                         <p className="text-neutral-500 mb-10 max-w-sm mx-auto text-sm md:text-base leading-relaxed">
                             Looks like you haven't added anything to your cart yet. Trendy collections are waiting for you!
                         </p>
-                        <Link href="/products" className="inline-flex items-center gap-2 bg-charcoal text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-charcoal/20 hover:bg-black transition-all active:scale-95">
+                        <Link href="/products" className="inline-flex items-center gap-2 bg-[#3B312C] text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-[#3B312C]/20 hover:bg-black transition-all active:scale-95">
                             Start Shopping
                             <ArrowRight className="w-4 h-4" />
                         </Link>
@@ -238,7 +238,7 @@ export default function CartPage() {
                                 >
                                     <div className="flex gap-5 md:items-start">
                                         {/* Product Image */}
-                                        <div className="w-24 md:w-32 h-24 md:h-32 bg-cream rounded-[24px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
+                                        <div className="w-24 md:w-32 h-24 md:h-32 bg-[#F8F4EE] rounded-[24px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
                                             <img
                                                 src={item.image}
                                                 alt={item.name}
@@ -250,7 +250,7 @@ export default function CartPage() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <h3 className="text-sm md:text-lg font-serif font-bold text-charcoal truncate leading-tight mb-1">
+                                                    <h3 className="text-sm md:text-lg font-serif font-bold text-[#3B312C] truncate leading-tight mb-1">
                                                         {item.name}
                                                     </h3>
                                                     <p className="text-[10px] md:text-[11px] font-medium text-neutral-400 mb-3">
@@ -258,7 +258,7 @@ export default function CartPage() {
                                                     </p>
 
                                                     <div className="flex items-center gap-3 mb-4">
-                                                        <span className="text-lg md:text-xl font-serif font-bold text-blush">
+                                                        <span className="text-lg md:text-xl font-serif font-bold text-[#C8B273]">
                                                             ₹{item.price.toLocaleString()}
                                                         </span>
                                                         {hasDiscount && (
@@ -295,12 +295,12 @@ export default function CartPage() {
                                                             )
                                                         }
                                                         disabled={item.quantity <= 1}
-                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-blush transition-all disabled:opacity-30"
+                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-[#C8B273] transition-all disabled:opacity-30"
                                                     >
                                                         <Minus className="w-3.5 h-3.5" />
                                                     </button>
 
-                                                    <span className="w-6 text-center text-[13px] font-bold text-charcoal">
+                                                    <span className="w-6 text-center text-[13px] font-bold text-[#3B312C]">
                                                         {item.quantity}
                                                     </span>
 
@@ -308,7 +308,7 @@ export default function CartPage() {
                                                         onClick={() =>
                                                             updateQuantity(item.id, item.quantity + 1, item.sku)
                                                         }
-                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-blush transition-all"
+                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-[#C8B273] transition-all"
                                                     >
                                                         <Plus className="w-3.5 h-3.5" />
                                                     </button>
@@ -328,9 +328,9 @@ export default function CartPage() {
                                             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
                                                 <MapPin className="w-5 h-5" />
                                             </div>
-                                            <h3 className="text-xl font-serif font-bold text-charcoal">Delivery <span className="text-blush italic">Address</span></h3>
+                                            <h3 className="text-xl font-serif font-bold text-[#3B312C]">Delivery <span className="text-[#C8B273] italic">Address</span></h3>
                                         </div>
-                                        <Link href="/profile?tab=addresses" className="text-[10px] font-black text-blush uppercase tracking-widest hover:underline">Manage Addresses</Link>
+                                        <Link href="/profile?tab=addresses" className="text-[10px] font-black text-[#C8B273] uppercase tracking-widest hover:underline">Manage Addresses</Link>
                                     </div>
 
                                     {addressesLoading ? (
@@ -345,25 +345,25 @@ export default function CartPage() {
                                                     className={cn(
                                                         "relative p-6 rounded-[32px] cursor-pointer transition-all border-2 flex flex-col justify-between min-h-[160px]",
                                                         selectedAddressId === addr.id 
-                                                            ? "bg-cream/10 border-blush shadow-lg shadow-blush/5"
+                                                            ? "bg-[#F8F4EE]/10 border-[#C8B273] shadow-lg shadow-[#C8B273]/5"
                                                             : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
                                                     )}
                                                 >
                                                     <div>
                                                         <div className="flex items-center justify-between mb-4">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-charcoal text-sm">{addr.name}</span>
-                                                                {addr.isDefault && <span className="text-[8px] bg-rose-50 text-blush px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Default</span>}
+                                                                <span className="font-bold text-[#3B312C] text-sm">{addr.name}</span>
+                                                                {addr.isDefault && <span className="text-[8px] bg-rose-50 text-[#C8B273] px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Default</span>}
                                                             </div>
                                                             <div className={cn(
                                                                 "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                                                selectedAddressId === addr.id ? "bg-blush border-blush" : "border-neutral-200"
+                                                                selectedAddressId === addr.id ? "bg-[#C8B273] border-[#C8B273]" : "border-neutral-200"
                                                             )}>
                                                                 {selectedAddressId === addr.id && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
                                                             </div>
                                                         </div>
                                                         <p className="text-[11px] font-medium text-neutral-500 mb-2 flex items-center gap-2">
-                                                            <Phone className="w-3 h-3 text-blush/40" /> +91 {addr.phone}
+                                                            <Phone className="w-3 h-3 text-[#C8B273]/40" /> +91 {addr.phone}
                                                         </p>
                                                         <p className="text-[11px] font-medium text-neutral-600 leading-relaxed line-clamp-2">
                                                             {addr.addressLine1}, {addr.city}, {addr.state} - {addr.pincode}
@@ -380,7 +380,7 @@ export default function CartPage() {
                                             ))}
                                             <Link 
                                                 href="/profile?tab=addresses"
-                                                className="flex flex-col items-center justify-center p-6 bg-neutral-50/50 border-2 border-dashed border-neutral-200 rounded-[32px] text-neutral-400 hover:border-blush hover:text-blush transition-all group min-h-[160px]"
+                                                className="flex flex-col items-center justify-center p-6 bg-neutral-50/50 border-2 border-dashed border-neutral-200 rounded-[32px] text-neutral-400 hover:border-[#C8B273] hover:text-[#C8B273] transition-all group min-h-[160px]"
                                             >
                                                 <PlusCircle className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
                                                 <span className="text-[10px] font-black uppercase tracking-widest">Add New Address</span>
@@ -392,7 +392,7 @@ export default function CartPage() {
                                             <p className="text-sm font-medium text-neutral-500 mb-6">No saved addresses found</p>
                                             <Link 
                                                 href="/profile?tab=addresses"
-                                                className="inline-flex items-center gap-2 px-8 py-3 bg-blush text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
+                                                className="inline-flex items-center gap-2 px-8 py-3 bg-[#C8B273] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
                                             >
                                                 <PlusCircle className="w-3.5 h-3.5" /> Add Address
                                             </Link>
@@ -404,15 +404,15 @@ export default function CartPage() {
 
                         {/* ORDER SUMMARY */}
                         <div className="space-y-6 lg:sticky lg:top-40">
-                            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-charcoal/5 relative overflow-hidden">
-                                <h2 className="text-2xl font-serif font-bold text-charcoal mb-8">
-                                    Order <span className="text-blush italic">Summary</span>
+                            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-[#3B312C]/5 relative overflow-hidden">
+                                <h2 className="text-2xl font-serif font-bold text-[#3B312C] mb-8">
+                                    Order <span className="text-[#C8B273] italic">Summary</span>
                                 </h2>
 
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[13px] font-bold text-charcoal">Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
-                                        <span className="text-[13px] font-bold text-charcoal">₹{(paymentBreakdown?.mrpTotal ?? cart.reduce((s, i) => s + (i.mrp || i.price) * i.quantity, 0)).toLocaleString()}</span>
+                                        <span className="text-[13px] font-bold text-[#3B312C]">Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
+                                        <span className="text-[13px] font-bold text-[#3B312C]">₹{(paymentBreakdown?.mrpTotal ?? cart.reduce((s, i) => s + (i.mrp || i.price) * i.quantity, 0)).toLocaleString()}</span>
                                     </div>
 
                                     {(discount > 0 || (paymentBreakdown?.discountAmount ?? 0) > 0) && (
@@ -425,23 +425,23 @@ export default function CartPage() {
                                     <div className="h-px bg-neutral-50 my-1" />
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[13px] font-bold text-charcoal">Subtotal After Discount</span>
-                                        <span className="text-[13px] font-bold text-charcoal">₹{(paymentBreakdown?.subtotal ?? total ?? 0).toLocaleString()}</span>
+                                        <span className="text-[13px] font-bold text-[#3B312C]">Subtotal After Discount</span>
+                                        <span className="text-[13px] font-bold text-[#3B312C]">₹{(paymentBreakdown?.subtotal ?? total ?? 0).toLocaleString()}</span>
                                     </div>
 
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-[13px] font-bold text-charcoal">Convenience Fee</span>
+                                            <span className="text-[13px] font-bold text-[#3B312C]">Convenience Fee</span>
                                             <HelpCircle className="w-3.5 h-3.5 text-neutral-300 cursor-help" />
                                         </div>
-                                        <span className="text-[13px] font-bold text-charcoal">
+                                        <span className="text-[13px] font-bold text-[#3B312C]">
                                             {breakdownLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : `₹${paymentBreakdown?.platformFee ?? 0}`}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[13px] font-bold text-charcoal">Shipping</span>
+                                            <span className="text-[13px] font-bold text-[#3B312C]">Shipping</span>
                                             <Truck className="w-4 h-4 text-emerald-500" />
                                         </div>
                                         <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Free</span>
@@ -450,10 +450,10 @@ export default function CartPage() {
                                     <div className="pt-4 border-t border-neutral-100">
                                         <div className="flex justify-between items-end">
                                             <div>
-                                                <p className="text-sm font-bold text-charcoal mb-1">Total Amount</p>
+                                                <p className="text-sm font-bold text-[#3B312C] mb-1">Total Amount</p>
                                                 <p className="text-[10px] font-medium text-neutral-400">Inclusive of all taxes</p>
                                             </div>
-                                            <p className="text-4xl font-serif font-bold text-blush tracking-tight">
+                                            <p className="text-4xl font-serif font-bold text-[#C8B273] tracking-tight">
                                                 ₹{breakdownLoading ? "..." : (finalAmount || total).toLocaleString()}
                                             </p>
                                         </div>
@@ -492,16 +492,16 @@ export default function CartPage() {
                                             onClick={() => setIsCOD(false)}
                                             className={cn(
                                                 "relative flex items-center gap-4 p-5 rounded-3xl transition-all border-2 text-left",
-                                                !isCOD ? "bg-white border-blush shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                                !isCOD ? "bg-white border-[#C8B273] shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
                                             )}
                                         >
-                                            <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", !isCOD ? "bg-blush border-blush" : "border-neutral-300")}>
+                                            <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", !isCOD ? "bg-[#C8B273] border-[#C8B273]" : "border-neutral-300")}>
                                                 {!isCOD && <div className="w-2 h-2 rounded-full bg-white" />}
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-0.5">
-                                                    <CreditCard className={cn("w-4 h-4", !isCOD ? "text-blush" : "text-neutral-400")} />
-                                                    <span className={cn("text-[13px] font-bold", !isCOD ? "text-charcoal" : "text-neutral-500")}>Pay Online</span>
+                                                    <CreditCard className={cn("w-4 h-4", !isCOD ? "text-[#C8B273]" : "text-neutral-400")} />
+                                                    <span className={cn("text-[13px] font-bold", !isCOD ? "text-[#3B312C]" : "text-neutral-500")}>Pay Online</span>
                                                     {!isCOD && <span className="text-[9px] font-black uppercase text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded ml-auto">Recommended</span>}
                                                 </div>
                                                 <p className="text-[10px] font-medium text-neutral-400">UPI, Cards, Net Banking</p>
@@ -513,16 +513,16 @@ export default function CartPage() {
                                             onClick={() => setIsCOD(true)}
                                             className={cn(
                                                 "relative flex items-center gap-4 p-5 rounded-3xl transition-all border-2 text-left",
-                                                isCOD ? "bg-white border-blush shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                                isCOD ? "bg-white border-[#C8B273] shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
                                             )}
                                         >
-                                            <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", isCOD ? "bg-blush border-blush" : "border-neutral-300")}>
+                                            <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", isCOD ? "bg-[#C8B273] border-[#C8B273]" : "border-neutral-300")}>
                                                 {isCOD && <div className="w-2 h-2 rounded-full bg-white" />}
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-0.5">
-                                                    <Box className={cn("w-4 h-4", isCOD ? "text-blush" : "text-neutral-400")} />
-                                                    <span className={cn("text-[13px] font-bold", isCOD ? "text-charcoal" : "text-neutral-500")}>Cash on Delivery</span>
+                                                    <Box className={cn("w-4 h-4", isCOD ? "text-[#C8B273]" : "text-neutral-400")} />
+                                                    <span className={cn("text-[13px] font-bold", isCOD ? "text-[#3B312C]" : "text-neutral-500")}>Cash on Delivery</span>
                                                 </div>
                                                 <p className="text-[10px] font-medium text-neutral-400">Pay when you receive</p>
                                             </div>
@@ -535,7 +535,7 @@ export default function CartPage() {
                                 <div className="mb-8">
                                     <div className="flex items-center justify-between mb-4">
                                         <p className="text-[11px] font-black text-neutral-400 uppercase tracking-widest ml-1">Delivery Address</p>
-                                        {addresses.length > 0 && <Link href="/profile?tab=addresses" className="text-[9px] font-black text-blush uppercase tracking-widest hover:underline">Manage Addresses</Link>}
+                                        {addresses.length > 0 && <Link href="/profile?tab=addresses" className="text-[9px] font-black text-[#C8B273] uppercase tracking-widest hover:underline">Manage Addresses</Link>}
                                     </div>
 
                                     {!hasCompleteAddress ? (
@@ -546,25 +546,25 @@ export default function CartPage() {
                                             <p className="text-xs font-bold text-neutral-400 mb-4">No delivery address added</p>
                                             <Link
                                                 href="/profile?tab=addresses"
-                                                className="inline-flex items-center gap-2 bg-blush/10 text-blush px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blush hover:text-white transition-all shadow-sm shadow-blush/10"
+                                                className="inline-flex items-center gap-2 bg-[#C8B273]/10 text-[#C8B273] px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#C8B273] hover:text-white transition-all shadow-sm shadow-[#C8B273]/10"
                                             >
                                                 <Plus className="w-3 h-3" /> Add Address
                                             </Link>
                                         </div>
                                     ) : (
                                         <div className="bg-neutral-50 rounded-[32px] p-5 flex items-start gap-4">
-                                            <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-blush shadow-sm shrink-0">
+                                            <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-[#C8B273] shadow-sm shrink-0">
                                                 <MapPin className="w-5 h-5" />
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-[13px] font-bold text-charcoal truncate">
+                                                <p className="text-[13px] font-bold text-[#3B312C] truncate">
                                                     {getDeliveryProfile()?.name}
                                                 </p>
                                                 <p className="text-[11px] font-medium text-neutral-500 leading-relaxed line-clamp-1">
                                                     {getDeliveryProfile()?.addressLine1}, {getDeliveryProfile()?.city}
                                                 </p>
                                             </div>
-                                            <Link href="/profile?tab=addresses" className="p-2 text-neutral-300 hover:text-blush ml-auto">
+                                            <Link href="/profile?tab=addresses" className="p-2 text-neutral-300 hover:text-[#C8B273] ml-auto">
                                                 <ChevronRight className="w-4 h-4" />
                                             </Link>
                                         </div>
@@ -697,10 +697,10 @@ export default function CartPage() {
                                     }}
                                     disabled={isCheckingOut || total < MIN_ORDER_VALUE}
                                     className={cn(
-                                        "w-full py-5 rounded-[28px] font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-xl shadow-blush/20",
+                                        "w-full py-5 rounded-[28px] font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-xl shadow-[#C8B273]/20",
                                         isCheckingOut || total < MIN_ORDER_VALUE
                                             ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
-                                            : (!hasCompleteAddress ? "bg-blush text-white hover:bg-[#f48c82]" : "bg-blush text-white hover:bg-[#f48c82]")
+                                            : (!hasCompleteAddress ? "bg-[#3B312C] text-white hover:bg-black" : "bg-[#C8B273] text-white hover:bg-[#B89B5E]")
                                     )}
                                 >
                                     {isCheckingOut ? (

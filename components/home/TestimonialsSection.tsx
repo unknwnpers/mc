@@ -20,7 +20,7 @@ const testimonials = [
   {
     name: "Ananya Krishnan",
     location: "Thrissur, Kerala",
-    avatar: "#E4C765",
+    avatar: "#C8B273",
     initial: "A",
     rating: 5,
     text: "Finally found baby clothes that are truly gentle on sensitive skin. My newborn has never had a reaction — these are the only clothes I trust. The organic cotton is pure luxury for little ones.",
@@ -29,7 +29,7 @@ const testimonials = [
   {
     name: "Divya Nair",
     location: "Trivandrum, Kerala",
-    avatar: "#C9A844",
+    avatar: "#B89B5E",
     initial: "D",
     rating: 5,
     text: "The kids' wear collection is adorable and incredibly well-made. My daughter asks to wear her Miks & Chiks dresses every single day. The quality has held up amazingly — even after 50+ washes!",
@@ -54,9 +54,9 @@ export default function TestimonialsSection() {
   const prev = () => setActive((p) => (p - 1 + testimonials.length) % testimonials.length);
 
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
       {/* Background glow */}
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#E4C765]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -69,29 +69,29 @@ export default function TestimonialsSection() {
             transition={{ duration: 0.5, ease }}
             className="max-w-[520px]"
           >
-            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765] mb-4">
+            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#C8B273] mb-4">
               Customer Love
             </p>
 
-            <h2 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.08] text-[#1E1E1E] tracking-tight">
+            <h2 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.08] text-[#3B312C] tracking-tight">
               Loved by Moms<br />
-              Across Every <span className="italic text-[#E4C765]">Tiny Moment</span>
+              Across Every <span className="italic text-[#C8B273]">Tiny Moment</span>
             </h2>
 
-            <p className="text-[15px] md:text-[18px] leading-[1.9] text-[#5C5C5C] mt-6 md:mt-8 max-w-[480px]">
+            <p className="text-[15px] md:text-[18px] leading-[1.9] text-[#6E625B] mt-6 md:mt-8 max-w-[480px]">
               Thousands of mothers trust us with their most precious moments. 
               Hear their stories of comfort, joy, and genuine love for what we create.
             </p>
 
             {/* Stats Row */}
-            <div className="flex flex-wrap gap-6 md:gap-8 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[rgba(228,199,101,0.08)]">
+            <div className="flex flex-wrap gap-6 md:gap-8 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[rgba(200, 178, 115,0.08)]">
               {[
                 { number: "10K+", label: "Happy Moms" },
                 { number: "4.8★", label: "Average Rating" },
                 { number: "50K+", label: "Orders Delivered" },
               ].map((stat, i) => (
                 <div key={i}>
-                  <p className="text-[28px] md:text-[32px] font-extrabold text-[#1E1E1E] leading-none">
+                  <p className="text-[28px] md:text-[32px] font-extrabold text-[#3B312C] leading-none">
                     {stat.number}
                   </p>
                   <p className="text-[14px] text-[#6B6B6B] mt-1 font-medium">{stat.label}</p>
@@ -103,17 +103,17 @@ export default function TestimonialsSection() {
             <div className="flex items-center gap-4 mt-10">
               <Link
                 href="/products"
-                className="group inline-flex items-center gap-2.5 h-[54px] px-8 rounded-xl bg-[#E4C765] text-white text-[15px] font-semibold hover:bg-[#C9A844] active:scale-[0.97] shadow-[0_8px_24px_rgba(228,199,101,0.25)] hover:shadow-[0_14px_36px_rgba(228,199,101,0.30)] hover:-translate-y-0.5 transition-all duration-300"
+                className="group inline-flex items-center gap-2.5 h-[54px] px-8 rounded-xl bg-[#C8B273] text-white text-[15px] font-semibold hover:bg-[#B89B5E] active:scale-[0.97] shadow-[0_8px_24px_rgba(200, 178, 115,0.25)] hover:shadow-[0_14px_36px_rgba(200, 178, 115,0.30)] hover:-translate-y-0.5 transition-all duration-300"
               >
                 Read More Stories
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               {/* Desktop nav arrows */}
               <div className="hidden lg:flex gap-2">
-                <button onClick={prev} className="w-11 h-11 rounded-full border border-[rgba(228,199,101,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300 active:scale-95">
+                <button onClick={prev} className="w-11 h-11 rounded-full border border-[rgba(200, 178, 115,0.12)] bg-white flex items-center justify-center text-[#6E625B] hover:bg-[#C8B273] hover:text-white hover:border-[#C8B273] transition-all duration-300 active:scale-95">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <button onClick={next} className="w-11 h-11 rounded-full border border-[rgba(228,199,101,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300 active:scale-95">
+                <button onClick={next} className="w-11 h-11 rounded-full border border-[rgba(200, 178, 115,0.12)] bg-white flex items-center justify-center text-[#6E625B] hover:bg-[#C8B273] hover:text-white hover:border-[#C8B273] transition-all duration-300 active:scale-95">
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -141,7 +141,7 @@ export default function TestimonialsSection() {
               className="absolute top-4 left-4 right-0 bottom-0 rounded-[32px] -z-10"
               style={{
                 background: 'rgba(255,255,255,0.6)',
-                border: '1px solid rgba(228,199,101,0.05)',
+                border: '1px solid rgba(200, 178, 115,0.05)',
                 boxShadow: '0 12px 30px rgba(0,0,0,0.03)',
                 transform: 'rotate(2deg) translateY(8px)',
               }}
@@ -150,7 +150,7 @@ export default function TestimonialsSection() {
               className="absolute top-8 left-8 right-0 bottom-0 rounded-[32px] -z-20"
               style={{
                 background: 'rgba(255,255,255,0.35)',
-                border: '1px solid rgba(228,199,101,0.03)',
+                border: '1px solid rgba(200, 178, 115,0.03)',
                 boxShadow: '0 8px 20px rgba(0,0,0,0.02)',
                 transform: 'rotate(4deg) translateY(16px)',
               }}
@@ -163,7 +163,7 @@ export default function TestimonialsSection() {
                   key={i}
                   onClick={() => setActive(i)}
                   className={`h-2 rounded-full transition-all duration-300 ${
-                    i === active ? 'w-8 bg-[#E4C765]' : 'w-2 bg-[#E4C765]/20 hover:bg-[#E4C765]/40'
+                    i === active ? 'w-8 bg-[#C8B273]' : 'w-2 bg-[#C8B273]/20 hover:bg-[#C8B273]/40'
                   }`}
                 />
               ))}
@@ -194,12 +194,12 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
       className="rounded-[32px] p-5 md:p-8 border relative overflow-hidden"
       style={{
         background: 'rgba(255,255,255,0.92)',
-        borderColor: 'rgba(228,199,101,0.08)',
+        borderColor: 'rgba(200, 178, 115,0.08)',
         boxShadow: '0 18px 45px rgba(0,0,0,0.05)',
       }}
     >
       {/* Decorative quote */}
-      <div className="absolute top-6 right-7 text-[#E4C765]/[0.06]">
+      <div className="absolute top-6 right-7 text-[#C8B273]/[0.06]">
         <Quote className="w-16 h-16" />
       </div>
 
@@ -208,13 +208,13 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
         {Array.from({ length: t.rating }).map((_, i) => (
           <Star key={i} className="w-[18px] h-[18px] text-[#F4B740] fill-current" />
         ))}
-        <span className="text-[14px] font-semibold text-[#1E1E1E] ml-1.5">
+        <span className="text-[14px] font-semibold text-[#3B312C] ml-1.5">
           {t.rating}.0
         </span>
       </div>
 
       {/* Testimonial text */}
-      <p className="text-[15px] leading-7 md:text-[16px] md:leading-[1.9] text-[#5C5C5C] mt-4 italic relative z-10">
+      <p className="text-[15px] leading-7 md:text-[16px] md:leading-[1.9] text-[#6E625B] mt-4 italic relative z-10">
         &ldquo;{t.text}&rdquo;
       </p>
 
@@ -222,8 +222,8 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
       {t.product && (
         <div className="mt-5">
           <span
-            className="inline-flex items-center text-[13px] font-semibold text-[#E4C765] px-4 py-1.5 rounded-full"
-            style={{ background: 'rgba(228,199,101,0.10)' }}
+            className="inline-flex items-center text-[13px] font-semibold text-[#C8B273] px-4 py-1.5 rounded-full"
+            style={{ background: 'rgba(200, 178, 115,0.10)' }}
           >
             Purchased: {t.product}
           </span>
@@ -231,15 +231,15 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
       )}
 
       {/* Author */}
-      <div className="flex items-center gap-3.5 mt-6 pt-6 border-t border-[rgba(228,199,101,0.06)]">
+      <div className="flex items-center gap-3.5 mt-6 pt-6 border-t border-[rgba(200, 178, 115,0.06)]">
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 border-2"
-          style={{ background: t.avatar, borderColor: 'rgba(228,199,101,0.18)' }}
+          style={{ background: t.avatar, borderColor: 'rgba(200, 178, 115,0.18)' }}
         >
           <span className="text-white text-[20px] font-bold">{t.initial}</span>
         </div>
         <div>
-          <p className="text-[18px] font-bold text-[#1E1E1E]">{t.name}</p>
+          <p className="text-[18px] font-bold text-[#3B312C]">{t.name}</p>
           <p className="text-[14px] text-[#8A8A8A]">{t.location}</p>
         </div>
       </div>

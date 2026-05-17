@@ -27,41 +27,41 @@ const config: Config = {
       colors: {
         // ── Brand Primary ──
         brand: {
-          DEFAULT: '#E4C765',
-          dark: '#C9A844',
-          light: '#F1DE9D',
-          muted: '#F8EDCD',
-          50: '#FDF9EF',
-          100: '#FBF3DF',
+          DEFAULT: '#C8B273',
+          dark: '#B89B5E',
+          light: '#E8DDB8',
+          muted: '#F4ECD8',
+          50: '#FDFCF9',
+          100: '#F9F5EC',
         },
         // ── Background Surfaces ──
         warm: {
-          bg: '#FFF9F6',
-          card: '#F8F1EC',
-          cream: '#FFF7ED',
+          bg: '#F8F4EE',
+          card: '#FFFCF9',
+          cream: '#F4ECE4',
         },
         // ── Text Ink ──
         ink: {
-          DEFAULT: '#1E1E1E',
-          muted: '#5C5C5C',
-          light: '#8A8A8A',
-          faint: '#B5B5B5',
+          DEFAULT: '#3B312C',
+          muted: '#6E625B',
+          light: '#B8A89A',
+          faint: '#D8C8B8',
         },
         // ── Functional ──
         success: '#5FA36A',
         // ── Backward Compatibility ──
         blush: {
-          DEFAULT: '#E4C765',
-          light: '#FBF3DF',
-          dark: '#C9A844',
+          DEFAULT: '#D8B7AE',
+          light: '#F4E8E4',
+          dark: '#C8A096',
         },
         cream: {
-          DEFAULT: '#FFF9F6',
-          dark: '#F8F1EC',
+          DEFAULT: '#F8F4EE',
+          dark: '#F0E7DD',
         },
         charcoal: {
-          DEFAULT: '#1E1E1E',
-          light: '#5C5C5C',
+          DEFAULT: '#3B312C',
+          light: '#6E625B',
         },
         gold: {
           DEFAULT: '#D4AF37',
@@ -108,16 +108,16 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       borderColor: {
-        brand: 'rgba(228, 199, 101, 0.12)',
+        brand: 'rgba(200, 178, 115, 0.12)',
       },
       boxShadow: {
         'soft': '0 10px 30px rgba(0,0,0,0.04)',
         'soft-lg': '0 20px 50px rgba(0,0,0,0.06)',
-        'soft-hover': '0 20px 50px rgba(228, 199, 101, 0.15)',
+        'soft-hover': '0 20px 50px rgba(200, 178, 115, 0.15)',
         // Legacy aliases
         'premium': '0 10px 30px rgba(0,0,0,0.04)',
         'premium-lg': '0 20px 50px rgba(0,0,0,0.06)',
-        'premium-hover': '0 20px 50px rgba(228, 199, 101, 0.15)',
+        'premium-hover': '0 20px 50px rgba(200, 178, 115, 0.15)',
       },
       keyframes: {
         'fade-up': {

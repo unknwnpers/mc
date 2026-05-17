@@ -63,14 +63,14 @@ export default function TrustStrip() {
             background: 'rgba(255,255,255,0.92)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderColor: 'rgba(228,199,101,0.08)',
+            borderColor: 'rgba(200,178,115,0.08)',
             boxShadow: '0 20px 50px rgba(0,0,0,0.05)',
           }}
         >
           {/* Section Header */}
           <motion.h2
             variants={itemVariants}
-            className="font-serif font-semibold text-[24px] md:text-[32px] text-[#1E1E1E] text-center mb-8 md:mb-10"
+            className="font-serif font-semibold text-[24px] md:text-[32px] text-[#3B312C] text-center mb-8 md:mb-10"
           >
             Loved by Thousands of Moms
           </motion.h2>
@@ -81,18 +81,18 @@ export default function TrustStrip() {
               <motion.div
                 key={idx}
                 variants={itemVariants}
-                className="flex flex-col items-center text-center group cursor-default p-4 md:p-6 rounded-2xl hover:bg-[rgba(228,199,101,0.03)] hover:-translate-y-1 transition-all duration-200 md:duration-300 ease-out"
+                className="flex flex-col items-center text-center group cursor-default p-4 md:p-6 rounded-2xl hover:bg-[rgba(200,178,115,0.03)] hover:-translate-y-1 transition-all duration-200 md:duration-300 ease-out"
               >
                 <div
-                  className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:shadow-[0_8px_24px_rgba(228,199,101,0.15)] group-hover:scale-105 transition-all duration-200 md:duration-300"
-                  style={{ background: 'rgba(228,199,101,0.10)' }}
+                  className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:shadow-[0_8px_24px_rgba(200,178,115,0.15)] group-hover:scale-105 transition-all duration-200 md:duration-300"
+                  style={{ background: '#FFF9EC' }}
                 >
-                  <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-[#E4C765]" strokeWidth={1.8} />
+                  <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-[#C8B273]" strokeWidth={1.8} />
                 </div>
-                <h3 className="text-sm md:text-base font-bold text-[#1E1E1E] mb-1.5 leading-tight">
+                <h3 className="text-sm md:text-base font-bold text-[#3B312C] mb-1.5 leading-tight">
                   {feature.title}
                 </h3>
-                <p className="text-[13px] md:text-[14px] leading-[1.6] md:leading-[1.7] text-[#6B6B6B] max-w-[220px]">
+                <p className="text-[13px] md:text-[14px] leading-[1.6] md:leading-[1.7] text-[#6E625B] max-w-[220px]">
                   {feature.desc}
                 </p>
               </motion.div>
