@@ -40,9 +40,9 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
       style={{ background: 'linear-gradient(180deg, #FFF9F6 0%, #FDF5F1 100%)' }}
     >
       {/* ── Background decoration ── */}
-      <motion.div style={{ y: bgDecorY }} className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full bg-[#E9897E]/[0.03] blur-[100px] pointer-events-none hidden md:block" />
+      <motion.div style={{ y: bgDecorY }} className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full bg-[#E4C765]/[0.03] blur-[100px] pointer-events-none hidden md:block" />
       <motion.div style={{ y: bgDecorY }} className="absolute bottom-[-150px] left-[-80px] w-[400px] h-[400px] rounded-full bg-[#FDF5F1] blur-[80px] pointer-events-none hidden md:block" />
-      <motion.div style={{ y: bgDecorY }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#E9897E]/[0.015] blur-[120px] pointer-events-none hidden md:block" />
+      <motion.div style={{ y: bgDecorY }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#E4C765]/[0.015] blur-[120px] pointer-events-none hidden md:block" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 w-full relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -63,10 +63,10 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15, ease }}
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6 mx-auto lg:ml-0"
-              style={{ background: 'rgba(233,137,126,0.10)' }}
+              style={{ background: 'rgba(228,199,101,0.10)' }}
             >
-              <Heart className="w-3.5 h-3.5 text-[#E9897E] fill-current" />
-              <span className="text-[12px] font-semibold tracking-[0.08em] text-[#E9897E] uppercase">
+              <Heart className="w-3.5 h-3.5 text-[#E4C765] fill-current" />
+              <span className="text-[12px] font-semibold tracking-[0.08em] text-[#E4C765] uppercase">
                 Welcome to Miks & Chiks
               </span>
             </motion.div>
@@ -82,7 +82,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               <span
                 className="block mt-1"
                 style={{
-                  background: 'linear-gradient(90deg, #E9897E, #C86B5F)',
+                  background: 'linear-gradient(90deg, #E4C765, #C9A844)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -121,14 +121,14 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
             >
               <Link
                 href={content.buttonLink || "/products"}
-                className="group inline-flex items-center justify-center gap-2.5 bg-[#E9897E] text-white font-semibold text-[15px] h-[48px] md:h-[56px] w-full sm:w-auto px-8 rounded-xl hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] hover:shadow-[0_14px_36px_rgba(233,137,126,0.30)] hover:-translate-y-0.5 transition-all duration-200 md:duration-300"
+                className="group inline-flex items-center justify-center gap-2.5 bg-[#E4C765] text-white font-semibold text-[15px] h-[48px] md:h-[56px] w-full sm:w-auto px-8 rounded-xl hover:bg-[#C9A844] active:scale-[0.97] shadow-[0_8px_24px_rgba(228,199,101,0.25)] hover:shadow-[0_14px_36px_rgba(228,199,101,0.30)] hover:-translate-y-0.5 transition-all duration-200 md:duration-300"
               >
                 {content.buttonText || "Shop Collection"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
               <Link
                 href="/about"
-                className="inline-flex items-center justify-center bg-white text-[#1E1E1E] font-semibold text-[15px] h-[48px] md:h-[56px] w-full sm:w-auto px-8 rounded-xl border border-[rgba(233,137,126,0.12)] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] active:scale-[0.97] transition-all duration-200 md:duration-300"
+                className="inline-flex items-center justify-center bg-white text-[#1E1E1E] font-semibold text-[15px] h-[48px] md:h-[56px] w-full sm:w-auto px-8 rounded-xl border border-[rgba(228,199,101,0.12)] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] active:scale-[0.97] transition-all duration-200 md:duration-300"
               >
                 Explore Story
               </Link>
@@ -139,7 +139,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.75 }}
-              className="grid grid-cols-2 sm:flex flex-wrap justify-start gap-3 md:gap-6 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[rgba(233,137,126,0.08)]"
+              className="grid grid-cols-2 sm:flex flex-wrap justify-start gap-3 md:gap-6 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[rgba(228,199,101,0.08)]"
             >
               {[
                 { icon: Truck, text: "Free Shipping" },
@@ -148,7 +148,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
                 { icon: ShieldCheck, text: "Secure Payments" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <item.icon className="w-4 h-4 text-[#E9897E]" />
+                  <item.icon className="w-4 h-4 text-[#E4C765]" />
                   <span className="text-[14px] font-semibold text-[#1E1E1E]">{item.text}</span>
                 </div>
               ))}
@@ -193,16 +193,16 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
                 <motion.div
                   animate={{ y: [0, -6, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-[rgba(233,137,126,0.08)]"
+                  className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-[rgba(228,199,101,0.08)]"
                   style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.06)' }}
                 >
                   <div className="flex items-center gap-3">
                     {/* Tiny avatars */}
                     <div className="flex -space-x-2.5">
                       {[
-                        'bg-[#F4B5AD]',
-                        'bg-[#E9897E]',
-                        'bg-[#C86B5F]',
+                        'bg-[#F1DE9D]',
+                        'bg-[#E4C765]',
+                        'bg-[#C9A844]',
                       ].map((bg, i) => (
                         <div
                           key={i}
@@ -213,13 +213,13 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
                           </span>
                         </div>
                       ))}
-                      <div className="w-8 h-8 rounded-full border-[2.5px] border-white bg-[#FFF0EE] flex items-center justify-center">
-                        <span className="text-[#E9897E] text-[9px] font-bold">+</span>
+                      <div className="w-8 h-8 rounded-full border-[2.5px] border-white bg-[#FDF9EF] flex items-center justify-center">
+                        <span className="text-[#E4C765] text-[9px] font-bold">+</span>
                       </div>
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-[#1E1E1E] leading-tight">Trusted by</p>
-                      <p className="text-[13px] font-bold text-[#E9897E] leading-tight">10,000+ Moms</p>
+                      <p className="text-[13px] font-bold text-[#E4C765] leading-tight">10,000+ Moms</p>
                     </div>
                   </div>
                 </motion.div>
@@ -235,7 +235,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
                 <motion.div
                   animate={{ y: [0, -5, 0] }}
                   transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-[rgba(233,137,126,0.08)]"
+                  className="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-[rgba(228,199,101,0.08)]"
                   style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.06)' }}
                 >
                   <div className="flex items-center gap-1.5 mb-1.5">
@@ -249,7 +249,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               </motion.div>
 
               {/* Decorative glows behind image */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#E9897E]/[0.04] rounded-full blur-2xl -z-10" />
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#E4C765]/[0.04] rounded-full blur-2xl -z-10" />
               <div className="absolute -bottom-14 -left-14 w-48 h-48 bg-[#FDF5F1]/60 rounded-full blur-3xl -z-10" />
             </div>
           </motion.div>

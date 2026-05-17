@@ -24,7 +24,7 @@ const REELS: Reel[] = [
     id: '1',
     thumbnail: 'https://images.unsplash.com/photo-1544126592-807daa215a05?q=80&w=640&h=1136&auto=format&fit=crop',
     username: 'miksandchiks',
-    avatar: '#F4B5AD',
+    avatar: '#F1DE9D',
     likes: '2.4K',
     comments: '186',
     views: '12.3K',
@@ -35,7 +35,7 @@ const REELS: Reel[] = [
     id: '2',
     thumbnail: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=640&h=1136&auto=format&fit=crop',
     username: 'miksandchiks',
-    avatar: '#E9897E',
+    avatar: '#E4C765',
     likes: '1.8K',
     comments: '142',
     views: '8.7K',
@@ -46,7 +46,7 @@ const REELS: Reel[] = [
     id: '3',
     thumbnail: 'https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?q=80&w=640&h=1136&auto=format&fit=crop',
     username: 'miksandchiks',
-    avatar: '#C86B5F',
+    avatar: '#C9A844',
     likes: '3.1K',
     comments: '214',
     views: '15.1K',
@@ -57,7 +57,7 @@ const REELS: Reel[] = [
     id: '4',
     thumbnail: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=640&h=1136&auto=format&fit=crop',
     username: 'miksandchiks',
-    avatar: '#F4B5AD',
+    avatar: '#F1DE9D',
     likes: '2.1K',
     comments: '159',
     views: '10.4K',
@@ -68,7 +68,7 @@ const REELS: Reel[] = [
     id: '5',
     thumbnail: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=640&h=1136&auto=format&fit=crop',
     username: 'miksandchiks',
-    avatar: '#E9897E',
+    avatar: '#E4C765',
     likes: '1.6K',
     comments: '98',
     views: '9.2K',
@@ -97,7 +97,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
   return (
     <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
       {/* Background glow */}
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-[#E4C765]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
         {/* ── HEADER ── */}
@@ -109,7 +109,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
           className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 md:mb-16"
         >
           <div>
-            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E9897E] mb-3">
+            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765] mb-3">
               Our Community
             </p>
             <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#1E1E1E] mb-3 md:mb-4">
@@ -123,10 +123,10 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
           <div className="flex items-center gap-3 shrink-0">
             {/* Scroll arrows */}
             <div className="hidden md:flex gap-2">
-              <button onClick={() => scroll('left')} className="w-11 h-11 rounded-full border border-[rgba(233,137,126,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] transition-all duration-300 active:scale-95">
+              <button onClick={() => scroll('left')} className="w-11 h-11 rounded-full border border-[rgba(228,199,101,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300 active:scale-95">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button onClick={() => scroll('right')} className="w-11 h-11 rounded-full border border-[rgba(233,137,126,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] transition-all duration-300 active:scale-95">
+              <button onClick={() => scroll('right')} className="w-11 h-11 rounded-full border border-[rgba(228,199,101,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300 active:scale-95">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -134,7 +134,7 @@ const InstagramReels = memo(function InstagramReels({ socialSettings = {} }: { s
             <Link
               href={instagramUrl}
               target="_blank"
-              className="group inline-flex items-center gap-2.5 h-[50px] px-6 rounded-full bg-white border border-[rgba(233,137,126,0.12)] text-[14px] font-semibold text-[#1E1E1E] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] transition-all duration-300"
+              className="group inline-flex items-center gap-2.5 h-[50px] px-6 rounded-full bg-white border border-[rgba(228,199,101,0.12)] text-[14px] font-semibold text-[#1E1E1E] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300"
             >
               <Instagram className="w-4 h-4" />
               Follow @miksandchiks

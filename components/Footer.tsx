@@ -68,8 +68,8 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
           {/* Col 1: Brand */}
           <div className="max-w-[320px]">
             <Link href="/" className="inline-block group">
-              <span className="font-serif text-[32px] font-bold tracking-[0.03em] text-white">
-                Miks & <span className="text-[#E9897E] italic">Chiks</span>
+              <span className="font-serif text-[32px] font-bold tracking-[0.03em] text-[#AF9743]">
+                Miks & <span className="text-[#AF9743] italic">Chiks</span>
               </span>
               <span className="block text-[10px] tracking-[0.2em] text-white/40 uppercase font-medium mt-1">
                 Premium Maternity & Kids
@@ -88,7 +88,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
                   className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/[0.68] px-3 py-1.5 rounded-full border"
                   style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.08)' }}
                 >
-                  <b.icon className="w-3 h-3 text-[#E9897E]" />
+                  <b.icon className="w-3 h-3 text-[#E4C765]" />
                   {b.text}
                 </span>
               ))}
@@ -102,7 +102,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
                   href={s.href}
                   target="_blank"
                   aria-label={s.label}
-                  className="w-[44px] h-[44px] rounded-full flex items-center justify-center border text-white/60 hover:text-white hover:bg-[#E9897E] hover:border-[#E9897E] hover:-translate-y-0.5 transition-all duration-300"
+                  className="w-[44px] h-[44px] rounded-full flex items-center justify-center border text-white/60 hover:text-white hover:bg-[#E4C765] hover:border-[#E4C765] hover:-translate-y-0.5 transition-all duration-300"
                   style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)' }}
                 >
                   <s.icon className="w-[18px] h-[18px]" />
@@ -117,7 +117,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <ul className="space-y-4">
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm md:text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
+                  <Link href={link.href} className="text-sm md:text-[15px] text-white/[0.68] hover:text-[#E4C765] hover:translate-x-1 inline-block transition-all duration-300">
                     {link.label}
                   </Link>
                 </li>
@@ -131,7 +131,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <ul className="space-y-4">
               {customerCare.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm md:text-[15px] text-white/[0.68] hover:text-[#E9897E] hover:translate-x-1 inline-block transition-all duration-300">
+                  <Link href={link.href} className="text-sm md:text-[15px] text-white/[0.68] hover:text-[#E4C765] hover:translate-x-1 inline-block transition-all duration-300">
                     {link.label}
                   </Link>
                 </li>
@@ -150,9 +150,9 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
                 { icon: Clock, content: "Mon–Sat, 10AM–6PM IST" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <item.icon className="w-4 h-4 text-[#E9897E] mt-1 shrink-0" />
+                  <item.icon className="w-4 h-4 text-[#E4C765] mt-1 shrink-0" />
                   {item.href ? (
-                    <Link href={item.href} className="text-sm md:text-[15px] leading-[1.8] text-white/[0.68] hover:text-[#E9897E] transition-colors duration-300">
+                    <Link href={item.href} className="text-sm md:text-[15px] leading-[1.8] text-white/[0.68] hover:text-[#E4C765] transition-colors duration-300">
                       {item.content}
                     </Link>
                   ) : (
@@ -177,7 +177,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <Link
               href={instagramUrl}
               target="_blank"
-              className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#E9897E] mt-4 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#E4C765] mt-4 hover:text-white transition-colors"
             >
               <Instagram className="w-3.5 h-3.5" />
               @miksandchiks

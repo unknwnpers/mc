@@ -88,15 +88,15 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
   return (
     <div
       // Cache buster: ensuring the old favorite icon is fully removed
-      className="group min-w-0 w-full bg-white rounded-[28px] overflow-hidden border border-[rgba(233,137,126,0.08)] flex flex-col h-full relative transition-all duration-200 md:duration-300 ease-out hover:-translate-y-1.5"
+      className="group min-w-0 w-full bg-white rounded-[28px] overflow-hidden border border-[rgba(228,199,101,0.08)] flex flex-col h-full relative transition-all duration-200 md:duration-300 ease-out hover:-translate-y-1.5"
       style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.05)' }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 24px 56px rgba(233,137,126,0.12)'; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 24px 56px rgba(228,199,101,0.12)'; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 16px 40px rgba(0,0,0,0.05)'; }}
     >
 
       {/* ── DISCOUNT BADGE (top-left) ── */}
       {discountPercent && discountPercent > 0 && (
-        <div className="absolute top-4 left-4 z-20 bg-[#E9897E] text-white text-[12px] font-bold px-3 py-1 rounded-full shadow-[0_4px_12px_rgba(233,137,126,0.3)]">
+        <div className="absolute top-4 left-4 z-20 bg-[#E4C765] text-white text-[12px] font-bold px-3 py-1 rounded-full shadow-[0_4px_12px_rgba(228,199,101,0.3)]">
           {discountPercent}% OFF
         </div>
       )}
@@ -130,7 +130,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
           <button
             onClick={handleAddToCart}
             disabled={displayStock <= 0 || isAdding}
-            className="w-full h-[44px] bg-white/95 backdrop-blur-xl rounded-full text-[13px] font-semibold text-[#1E1E1E] hover:bg-[#E9897E] hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
+            className="w-full h-[44px] bg-white/95 backdrop-blur-xl rounded-full text-[13px] font-semibold text-[#1E1E1E] hover:bg-[#E4C765] hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
             style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
           >
             {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
@@ -142,13 +142,13 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
       {/* ── PRODUCT INFO (p-6) ── */}
       <div className="p-3 md:p-5 flex flex-col flex-1">
         {/* Category */}
-        <p className="text-[12px] font-bold tracking-[0.08em] uppercase text-[#E9897E] mb-1">
+        <p className="text-[12px] font-bold tracking-[0.08em] uppercase text-[#E4C765] mb-1">
           {product.category_slug || "Premium"}
         </p>
 
         {/* Title */}
         <Link href={`/products/${product.id}`} className="block group/title">
-          <h3 className="text-[14px] md:text-[16px] font-bold leading-5 text-[#1E1E1E] line-clamp-2 group-hover/title:text-[#E9897E] transition-colors duration-200 md:duration-300 mt-1">
+          <h3 className="text-[14px] md:text-[16px] font-bold leading-5 text-[#1E1E1E] line-clamp-2 group-hover/title:text-[#E4C765] transition-colors duration-200 md:duration-300 mt-1">
             {product.name}
           </h3>
         </Link>
@@ -180,7 +180,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
               <span className="text-[12px] md:text-sm line-through text-[#9A9A9A]">
                 ₹{displayPrice.toLocaleString('en-IN')}
               </span>
-              <span className="text-[13px] font-bold text-[#E9897E]">
+              <span className="text-[13px] font-bold text-[#E4C765]">
                 {offerData.offer?.displayText || `${discountPercent}% off`}
               </span>
             </>
@@ -202,7 +202,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
             "w-full h-10 md:h-12 rounded-xl text-[12px] md:text-sm font-semibold flex items-center justify-center gap-2.5 mt-4 transition-all duration-200 md:duration-300 active:scale-[0.97]",
             displayStock <= 0
               ? "bg-[#F0F0F0] text-[#9A9A9A] cursor-not-allowed"
-              : "bg-[#E9897E] text-white hover:bg-[#C86B5F] shadow-[0_6px_20px_rgba(233,137,126,0.25)] hover:shadow-[0_10px_28px_rgba(233,137,126,0.30)] hover:-translate-y-0.5"
+              : "bg-[#E4C765] text-white hover:bg-[#C9A844] shadow-[0_6px_20px_rgba(228,199,101,0.25)] hover:shadow-[0_10px_28px_rgba(228,199,101,0.30)] hover:-translate-y-0.5"
           )}
         >
           {isAdding ? (

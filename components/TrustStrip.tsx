@@ -63,7 +63,7 @@ export default function TrustStrip() {
             background: 'rgba(255,255,255,0.92)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderColor: 'rgba(233,137,126,0.08)',
+            borderColor: 'rgba(228,199,101,0.08)',
             boxShadow: '0 20px 50px rgba(0,0,0,0.05)',
           }}
         >
@@ -81,13 +81,13 @@ export default function TrustStrip() {
               <motion.div
                 key={idx}
                 variants={itemVariants}
-                className="flex flex-col items-center text-center group cursor-default p-4 md:p-6 rounded-2xl hover:bg-[rgba(233,137,126,0.03)] hover:-translate-y-1 transition-all duration-200 md:duration-300 ease-out"
+                className="flex flex-col items-center text-center group cursor-default p-4 md:p-6 rounded-2xl hover:bg-[rgba(228,199,101,0.03)] hover:-translate-y-1 transition-all duration-200 md:duration-300 ease-out"
               >
                 <div
-                  className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:shadow-[0_8px_24px_rgba(233,137,126,0.15)] group-hover:scale-105 transition-all duration-200 md:duration-300"
-                  style={{ background: 'rgba(233,137,126,0.10)' }}
+                  className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center mb-3 md:mb-4 group-hover:shadow-[0_8px_24px_rgba(228,199,101,0.15)] group-hover:scale-105 transition-all duration-200 md:duration-300"
+                  style={{ background: 'rgba(228,199,101,0.10)' }}
                 >
-                  <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-[#E9897E]" strokeWidth={1.8} />
+                  <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-[#E4C765]" strokeWidth={1.8} />
                 </div>
                 <h3 className="text-sm md:text-base font-bold text-[#1E1E1E] mb-1.5 leading-tight">
                   {feature.title}

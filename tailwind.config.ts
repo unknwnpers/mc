@@ -27,12 +27,12 @@ const config: Config = {
       colors: {
         // ── Brand Primary ──
         brand: {
-          DEFAULT: '#E9897E',
-          dark: '#C86B5F',
-          light: '#F4B5AD',
-          muted: '#F8D5D0',
-          50: '#FFF0EE',
-          100: '#FFE0DC',
+          DEFAULT: '#E4C765',
+          dark: '#C9A844',
+          light: '#F1DE9D',
+          muted: '#F8EDCD',
+          50: '#FDF9EF',
+          100: '#FBF3DF',
         },
         // ── Background Surfaces ──
         warm: {
@@ -51,9 +51,9 @@ const config: Config = {
         success: '#5FA36A',
         // ── Backward Compatibility ──
         blush: {
-          DEFAULT: '#E9897E',
-          light: '#FFF0EE',
-          dark: '#C86B5F',
+          DEFAULT: '#E4C765',
+          light: '#FBF3DF',
+          dark: '#C9A844',
         },
         cream: {
           DEFAULT: '#FFF9F6',
@@ -108,16 +108,16 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       borderColor: {
-        brand: 'rgba(233,137,126,0.12)',
+        brand: 'rgba(228, 199, 101, 0.12)',
       },
       boxShadow: {
         'soft': '0 10px 30px rgba(0,0,0,0.04)',
         'soft-lg': '0 20px 50px rgba(0,0,0,0.06)',
-        'soft-hover': '0 20px 50px rgba(233,137,126,0.10)',
+        'soft-hover': '0 20px 50px rgba(228, 199, 101, 0.15)',
         // Legacy aliases
         'premium': '0 10px 30px rgba(0,0,0,0.04)',
         'premium-lg': '0 20px 50px rgba(0,0,0,0.06)',
-        'premium-hover': '0 20px 50px rgba(233,137,126,0.10)',
+        'premium-hover': '0 20px 50px rgba(228, 199, 101, 0.15)',
       },
       keyframes: {
         'fade-up': {

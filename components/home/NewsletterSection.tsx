@@ -41,17 +41,17 @@ export default function NewsletterSection() {
           className="relative overflow-hidden rounded-[32px] md:rounded-[40px] px-6 md:px-16 py-12 md:py-20 border"
           style={{
             background: 'linear-gradient(135deg, #FFF9F6 0%, #FDF1EA 100%)',
-            borderColor: 'rgba(233,137,126,0.10)',
+            borderColor: 'rgba(228,199,101,0.10)',
             boxShadow: '0 30px 70px rgba(0,0,0,0.05)',
           }}
         >
           {/* ── Decorative elements ── */}
-          <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-[#E9897E]/[0.04] rounded-full blur-[80px] translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[280px] h-[280px] bg-[#E9897E]/[0.03] rounded-full blur-[70px] -translate-x-1/3 translate-y-1/3 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-[#E4C765]/[0.04] rounded-full blur-[80px] translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[280px] h-[280px] bg-[#E4C765]/[0.03] rounded-full blur-[70px] -translate-x-1/3 translate-y-1/3 pointer-events-none" />
           {/* Faint botanical circles */}
-          <div className="absolute top-10 left-10 w-24 h-24 rounded-full border border-[#E9897E]/[0.04] pointer-events-none hidden md:block" />
-          <div className="absolute bottom-14 right-14 w-16 h-16 rounded-full border border-[#E9897E]/[0.05] pointer-events-none hidden md:block" />
-          <div className="absolute top-1/2 right-20 w-10 h-10 rounded-full bg-[#E9897E]/[0.03] pointer-events-none hidden lg:block" />
+          <div className="absolute top-10 left-10 w-24 h-24 rounded-full border border-[#E4C765]/[0.04] pointer-events-none hidden md:block" />
+          <div className="absolute bottom-14 right-14 w-16 h-16 rounded-full border border-[#E4C765]/[0.05] pointer-events-none hidden md:block" />
+          <div className="absolute top-1/2 right-20 w-10 h-10 rounded-full bg-[#E4C765]/[0.03] pointer-events-none hidden lg:block" />
 
           {/* ── Desktop floating cards ── */}
           <motion.div
@@ -63,7 +63,7 @@ export default function NewsletterSection() {
               className="rounded-2xl px-4 py-3 border border-white/30"
               style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
             >
-              <p className="text-[12px] font-bold text-[#E9897E]">✨ Exclusive Launch Access</p>
+              <p className="text-[12px] font-bold text-[#E4C765]">✨ Exclusive Launch Access</p>
             </div>
           </motion.div>
           <motion.div
@@ -75,7 +75,7 @@ export default function NewsletterSection() {
               className="rounded-2xl px-4 py-3 border border-white/30"
               style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
             >
-              <p className="text-[12px] font-bold text-[#E9897E]">💌 Weekly Mom Tips</p>
+              <p className="text-[12px] font-bold text-[#E4C765]">💌 Weekly Mom Tips</p>
             </div>
           </motion.div>
           <motion.div
@@ -87,7 +87,7 @@ export default function NewsletterSection() {
               className="rounded-2xl px-4 py-3 border border-white/30"
               style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
             >
-              <p className="text-[12px] font-bold text-[#E9897E]">🎁 Members Only Offers</p>
+              <p className="text-[12px] font-bold text-[#E4C765]">🎁 Members Only Offers</p>
             </div>
           </motion.div>
 
@@ -95,8 +95,8 @@ export default function NewsletterSection() {
           <div className="relative z-20 text-center max-w-[760px] mx-auto">
             {/* Label */}
             <div className="inline-flex items-center gap-2 mb-5">
-              <Mail className="w-4 h-4 text-[#E9897E]" />
-              <span className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E9897E]">
+              <Mail className="w-4 h-4 text-[#E4C765]" />
+              <span className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765]">
                 Join Our Community
               </span>
             </div>
@@ -104,7 +104,7 @@ export default function NewsletterSection() {
             {/* Heading */}
             <h2 className="font-serif font-bold text-[32px] md:text-[46px] lg:text-[56px] leading-[1.08] text-[#1E1E1E] tracking-tight max-w-[680px] mx-auto">
               Get Exclusive Offers,{' '}
-              <span className="italic text-[#E9897E]">Mom Tips</span>
+              <span className="italic text-[#E4C765]">Mom Tips</span>
               {' '}& Early Access
             </h2>
 
@@ -120,9 +120,9 @@ export default function NewsletterSection() {
                 <div key={i} className="flex items-center gap-2">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(233,137,126,0.10)' }}
+                    style={{ background: 'rgba(228,199,101,0.10)' }}
                   >
-                    <b.icon className="w-3.5 h-3.5 text-[#E9897E]" />
+                    <b.icon className="w-3.5 h-3.5 text-[#E4C765]" />
                   </div>
                   <span className="text-[14px] md:text-[15px] font-semibold text-[#5C5C5C]">
                     {b.text}
@@ -157,16 +157,16 @@ export default function NewsletterSection() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
                       required
-                      className="flex-1 h-12 md:h-14 rounded-full px-7 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E9897E]/30 focus:shadow-[0_0_0_4px_rgba(233,137,126,0.08)] transition-all duration-300"
+                      className="flex-1 h-12 md:h-14 rounded-full px-7 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E4C765]/30 focus:shadow-[0_0_0_4px_rgba(228,199,101,0.08)] transition-all duration-300"
                       style={{
                         background: 'rgba(255,255,255,0.92)',
-                        borderColor: 'rgba(233,137,126,0.12)',
+                        borderColor: 'rgba(228,199,101,0.12)',
                       }}
                     />
                     <button
                       type="submit"
                       disabled={loading}
-                      className="group h-12 md:h-14 px-8 rounded-full bg-[#E9897E] text-white text-[15px] font-semibold inline-flex items-center gap-2.5 hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] hover:shadow-[0_14px_36px_rgba(233,137,126,0.30)] hover:-translate-y-0.5 transition-all duration-300 shrink-0"
+                      className="group h-12 md:h-14 px-8 rounded-full bg-[#E4C765] text-white text-[15px] font-semibold inline-flex items-center gap-2.5 hover:bg-[#C9A844] active:scale-[0.97] shadow-[0_8px_24px_rgba(228,199,101,0.25)] hover:shadow-[0_14px_36px_rgba(228,199,101,0.30)] hover:-translate-y-0.5 transition-all duration-300 shrink-0"
                     >
                       {loading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -186,16 +186,16 @@ export default function NewsletterSection() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address"
                       required
-                      className="w-full h-12 rounded-full px-6 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E9897E]/30 focus:shadow-[0_0_0_4px_rgba(233,137,126,0.08)] transition-all"
+                      className="w-full h-12 rounded-full px-6 text-[16px] font-medium text-[#1E1E1E] placeholder:text-[#9A9A9A] border focus:outline-none focus:border-[#E4C765]/30 focus:shadow-[0_0_0_4px_rgba(228,199,101,0.08)] transition-all"
                       style={{
                         background: 'rgba(255,255,255,0.92)',
-                        borderColor: 'rgba(233,137,126,0.12)',
+                        borderColor: 'rgba(228,199,101,0.12)',
                       }}
                     />
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-12 rounded-full bg-[#E9897E] text-white text-[15px] font-semibold flex items-center justify-center gap-2.5 hover:bg-[#C86B5F] active:scale-[0.97] shadow-[0_8px_24px_rgba(233,137,126,0.25)] transition-all"
+                      className="w-full h-12 rounded-full bg-[#E4C765] text-white text-[15px] font-semibold flex items-center justify-center gap-2.5 hover:bg-[#C9A844] active:scale-[0.97] shadow-[0_8px_24px_rgba(228,199,101,0.25)] transition-all"
                     >
                       {loading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -221,7 +221,7 @@ export default function NewsletterSection() {
                 className="flex items-center justify-center gap-3 mt-6"
               >
                 <div className="flex -space-x-2">
-                  {['#F4B5AD', '#E9897E', '#C86B5F'].map((bg, i) => (
+                  {['#F1DE9D', '#E4C765', '#C9A844'].map((bg, i) => (
                     <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center" style={{ background: bg }}>
                       <span className="text-white text-[9px] font-bold">{['P', 'A', 'D'][i]}</span>
                     </div>

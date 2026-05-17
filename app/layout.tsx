@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Inter, Cormorant_Garamond } from 'next/font/google';
 import { CartProvider } from '@/context/cart-context';
 import { AuthProvider } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/sonner';
@@ -17,10 +17,10 @@ const inter = Inter({
   preload: true,
 });
 
-const playfair = Playfair_Display({
+const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-playfair',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-playfair', // keep variable name to prevent breaking changes in tailwind
   display: 'swap',
   preload: true,
 });
@@ -73,7 +73,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="overflow-x-hidden" suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className={`${inter.variable} ${playfair.variable} font-sans w-full max-w-full overflow-x-hidden`} suppressHydrationWarning>
+      <body className={`${inter.variable} ${cormorant.variable} font-sans w-full max-w-full overflow-x-hidden`} suppressHydrationWarning>
         <RootInit />
         <Suspense fallback={null}>
           <GoogleAnalytics />

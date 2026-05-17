@@ -72,7 +72,7 @@
   }
 
   ::selection {
-    @apply bg-[#E9897E]/20 text-[#1E1E1E];
+    @apply bg-[#E4C765]/20 text-[#1E1E1E];
   }
 
   /* Typography hierarchy */
@@ -102,7 +102,7 @@
 
   /* Premium card base */
   .card-premium {
-    @apply bg-white rounded-[24px] border border-[rgba(233, 137, 126, 0.12)] shadow-soft;
+    @apply bg-white rounded-[24px] border border-[rgba(228,199,101,0.12)] shadow-soft;
   }
 
   .card-premium-hover {
@@ -184,8 +184,8 @@
   /* Premium focus ring */
   .focus-brand:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 4px rgba(233, 137, 126, 0.12);
-    border-color: rgba(233, 137, 126, 0.3);
+    box-shadow: 0 0 0 4px rgba(228,199,101,0.12);
+    border-color: rgba(228,199,101,0.3);
   }
 
   /* Premium skeleton shimmer */

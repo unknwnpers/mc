@@ -34,7 +34,7 @@ export default function BestSellers({ products }: BestSellersProps) {
   return (
     <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#FFF9F6' }}>
       {/* Subtle background glow */}
-      <div className="absolute left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#E9897E]/[0.02] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#E4C765]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 relative">
         {/* ── HEADER ── */}
@@ -46,7 +46,7 @@ export default function BestSellers({ products }: BestSellersProps) {
           className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-8 md:mb-12"
         >
           <div>
-            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E9897E] mb-3">
+            <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#E4C765] mb-3">
               Most Loved Collections
             </p>
             <h2 className="font-serif font-bold text-[30px] md:text-[48px] leading-[1.1] text-[#1E1E1E] mb-2 md:mb-3">
@@ -62,13 +62,13 @@ export default function BestSellers({ products }: BestSellersProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => scroll('left')}
-                className="w-11 h-11 rounded-full border border-[rgba(233,137,126,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] transition-all duration-300 active:scale-95"
+                className="w-11 h-11 rounded-full border border-[rgba(228,199,101,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300 active:scale-95"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => scroll('right')}
-                className="w-11 h-11 rounded-full border border-[rgba(233,137,126,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] transition-all duration-300 active:scale-95"
+                className="w-11 h-11 rounded-full border border-[rgba(228,199,101,0.12)] bg-white flex items-center justify-center text-[#5C5C5C] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300 active:scale-95"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -76,7 +76,7 @@ export default function BestSellers({ products }: BestSellersProps) {
             {/* View All */}
             <Link
               href="/products"
-              className="group inline-flex items-center gap-2.5 h-[48px] px-6 rounded-full bg-white border border-[rgba(233,137,126,0.12)] text-[14px] font-semibold text-[#1E1E1E] hover:bg-[#E9897E] hover:text-white hover:border-[#E9897E] transition-all duration-300"
+              className="group inline-flex items-center gap-2.5 h-[48px] px-6 rounded-full bg-white border border-[rgba(228,199,101,0.12)] text-[14px] font-semibold text-[#1E1E1E] hover:bg-[#E4C765] hover:text-white hover:border-[#E4C765] transition-all duration-300"
             >
               View All
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
