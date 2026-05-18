@@ -109,7 +109,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               transition={{ duration: 0.5, delay: 0.5, ease }}
               className="text-[15px] md:text-[18px] leading-[2] text-[#6E625B] mt-8 max-w-[480px] mx-auto lg:ml-0"
             >
-              {content.description || "Thoughtfully designed maternity & kids wear crafted with the softest fabrics, bringing comfort, elegance and joy to every moment of motherhood."}
+              {content.description || "Premium maternity & newborn wear — custom-stitched to your measurements, crafted with the softest fabrics for comfort, elegance and joy through every stage of motherhood."}
             </motion.p>
 
             {/* CTA Buttons */}
@@ -127,10 +127,10 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
               <Link
-                href="/about"
+                href="/contact?type=custom-order"
                 className="inline-flex items-center justify-center bg-transparent text-[#C8B273] font-semibold text-[15px] h-[52px] md:h-[60px] w-full sm:w-auto px-10 rounded-xl border border-[#C8B273] hover:bg-[rgba(200,178,115,0.1)] active:scale-[0.97] transition-all duration-300 ease-out"
               >
-                Explore Story
+                Book Custom Stitching
               </Link>
             </motion.div>
 

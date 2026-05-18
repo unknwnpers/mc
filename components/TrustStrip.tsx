@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Heart, Sparkles, Smile, ShieldCheck } from 'lucide-react';
+import { Star, Heart, Scissors, Smile, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ease = [0.22, 1, 0.36, 1];
@@ -12,9 +12,9 @@ const features = [
     desc: "Curated fabrics with meticulous craftsmanship for lasting softness.",
   },
   {
-    icon: Sparkles,
-    title: "Thoughtful Designs",
-    desc: "Every piece is designed with intention, blending style and function.",
+    icon: Scissors,
+    title: "Custom Stitching",
+    desc: "Made-to-measure maternity wear stitched to your exact fit.",
   },
   {
     icon: Heart,

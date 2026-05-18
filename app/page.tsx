@@ -13,6 +13,7 @@ import type { Product, Category, CuratedCollection } from '@/lib/types';
 // ── Dynamic imports for below-fold heavy sections (code-split) ──
 const TrendingSection = nextDynamic(() => import('@/components/home/TrendingSection'));
 const WhyChooseUs = nextDynamic(() => import('@/components/home/WhyChooseUs'));
+const CustomStitching = nextDynamic(() => import('@/components/home/CustomStitching'));
 const InstagramReels = nextDynamic(() => import('@/components/InstagramReels'));
 const TestimonialsSection = nextDynamic(() => import('@/components/home/TestimonialsSection'));
 const NewsletterSection = nextDynamic(() => import('@/components/home/NewsletterSection'));
@@ -237,10 +238,15 @@ export default async function Home() {
       {/* 2. Trust Features — overlaps hero */}
       <TrustStrip />
 
-      {/* 3. Best Sellers — primary conversion */}
+      {/* 3. Custom Stitching — brand differentiator */}
+      <Suspense fallback={<SectionSkeleton />}>
+        <CustomStitching />
+      </Suspense>
+
+      {/* 4. Best Sellers — primary conversion */}
       <BestSellers products={featuredProducts} />
 
-      {/* 4. Shop by Category */}
+      {/* 5. Shop by Category */}
       <ShopByCategory collections={curatedCollections} categories={categories} />
 
       {/* 5. Trending — dynamically imported */}

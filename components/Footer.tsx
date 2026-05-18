@@ -145,6 +145,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
               {[
                 { icon: Mail, content: "hello@miksandchiks.com", href: "mailto:miksandchiks@gmail.com" },
                 { icon: Phone, content: "+91 9633 374 657", href: "tel:+919633374657" },
+                { icon: Phone, content: "WhatsApp: +91 9633 374 657", href: "https://wa.me/919633374657" },
                 { icon: MapPin, content: "Kakkara House, nettoor PO, Cochin, Kerala-682040, India" },
                 { icon: Clock, content: "Mon–Sun, 10AM–10PM IST" },
               ].map((item, i) => (
@@ -200,9 +201,14 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
 
         {/* ═══ BOTTOM BAR ═══ */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8">
-          <p className="text-[14px] text-[#B8A89A]">
-            © {new Date().getFullYear()} Miks & Chiks. All rights reserved. Made with ❤️ in Kerala.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-[14px] text-[#B8A89A]">
+              © {new Date().getFullYear()} Miks &amp; Chiks. All rights reserved. Made with ❤️ in Kerala.
+            </p>
+            <p className="text-[13px] text-[#C8A89A]/70">
+              Kerala-Based Brand · GST Registered · hello@miksandchiks.com
+            </p>
+          </div>
           <div className="flex items-center gap-6">
             {[
               { label: "Privacy Policy", href: "/privacy" },

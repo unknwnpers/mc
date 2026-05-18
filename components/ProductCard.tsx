@@ -143,6 +143,13 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
           {product.category_slug || "Premium"}
         </p>
 
+        {/* Optional product badge / tag */}
+        {(product as any).badge && (
+          <span className="inline-flex items-center text-[11px] font-semibold text-[#6E625B] px-2.5 py-0.5 rounded-full border border-[rgba(200,178,115,0.20)] mb-1.5" style={{ background: '#FFF9EC' }}>
+            {(product as any).badge}
+          </span>
+        )}
+
         {/* Title */}
         <Link href={`/products/${product.id}`} className="block group/title">
           <h3 className="text-[14px] md:text-[16px] font-bold leading-5 text-[#3B312C] line-clamp-2 group-hover/title:text-[#C8B273] transition-colors duration-200 md:duration-300 mt-1">
