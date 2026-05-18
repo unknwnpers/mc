@@ -173,7 +173,7 @@ export default function CartPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--mc-bg-base)' }}>
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 animate-spin text-[#C8B273] mx-auto" />
                     <p className="mt-4 text-neutral-600 font-sans font-medium">Loading your selection...</p>
@@ -183,7 +183,7 @@ export default function CartPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#FCF9F7]">
+        <div className="min-h-screen" style={{ background: 'var(--mc-bg-base)' }}>
             <Navbar />
 
             <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-32 md:py-40">
@@ -200,7 +200,7 @@ export default function CartPage() {
                                     toast.success("Cart cleared");
                                 }
                             }}
-                            className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-[#F3E8E5] hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all shadow-sm"
+                            className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 px-6 py-3 rounded-2xl border transition-all shadow-sm hover:text-red-500 hover:border-red-100" style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)', color: 'var(--mc-text-muted)' }}
                         >
                             <Trash2 className="w-3.5 h-3.5" />
                             Clear All
@@ -209,7 +209,7 @@ export default function CartPage() {
                 </div>
 
                 {cart.length === 0 ? (
-                    <div className="text-center py-24 md:py-32 bg-white rounded-[40px] border border-dashed border-[#F3E8E5] shadow-sm">
+                    <div className="text-center py-24 md:py-32 rounded-[40px] border border-dashed shadow-sm" style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)' }}>
                         <div className="w-20 md:w-24 h-20 md:h-24 bg-[#F8F4EE] rounded-[32px] flex items-center justify-center mx-auto mb-8 text-[#C8B273]/20">
                             <ShoppingCart className="w-10 md:w-12 h-10 md:h-12" />
                         </div>
@@ -234,11 +234,11 @@ export default function CartPage() {
                                 return (
                                     <div
                                         key={`${item.id}-${item.sku}`}
-                                        className="bg-white rounded-[32px] border border-[#F3E8E5] p-5 md:p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                                        className="rounded-[32px] p-5 md:p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden" style={{ background: 'var(--mc-bg-card)', border: '1px solid var(--mc-border)' }}
                                     >
                                         <div className="flex gap-5 md:items-start">
                                             {/* Product Image */}
-                                            <div className="w-24 md:w-32 h-24 md:h-32 bg-[#F8F4EE] rounded-[24px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
+                                            <div className="w-24 md:w-32 h-24 md:h-32 rounded-[24px] overflow-hidden shrink-0 relative" style={{ background: 'var(--mc-bg-section)', border: '1px solid var(--mc-border)' }}>
                                                 <img
                                                     src={item.image}
                                                     alt={item.name}
@@ -285,7 +285,7 @@ export default function CartPage() {
                                                 </div>
 
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center bg-neutral-50 rounded-xl border border-neutral-100/50">
+                                                    <div className="flex items-center rounded-xl" style={{ background: 'var(--mc-bg-section)', border: '1px solid var(--mc-border)' }}>
                                                         <button
                                                             onClick={() =>
                                                                 updateQuantity(
@@ -322,7 +322,7 @@ export default function CartPage() {
 
                             {/* Address Selection Container */}
                             {user && cart.length > 0 && (
-                                <div className="bg-white rounded-[40px] border border-[#F3E8E5] p-8 md:p-10 shadow-sm mt-8">
+                                <div className="rounded-[40px] p-8 md:p-10 shadow-sm mt-8" style={{ background: 'var(--mc-bg-card)', border: '1px solid var(--mc-border)' }}>
                                     <div className="flex items-center justify-between mb-8">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
@@ -404,7 +404,7 @@ export default function CartPage() {
 
                         {/* ORDER SUMMARY */}
                         <div className="space-y-6 lg:sticky lg:top-40">
-                            <div className="bg-white p-8 rounded-[40px] border border-[#F3E8E5] shadow-xl shadow-[#3B312C]/5 relative overflow-hidden">
+                            <div className="p-8 rounded-[40px] shadow-xl relative overflow-hidden" style={{ background: 'var(--mc-bg-card)', border: '1px solid var(--mc-border)' }}>
                                 <h2 className="text-2xl font-serif font-bold text-[#3B312C] mb-8">
                                     Order <span className="text-[#C8B273] italic">Summary</span>
                                 </h2>
@@ -422,7 +422,7 @@ export default function CartPage() {
                                         </div>
                                     )}
 
-                                    <div className="h-px bg-neutral-50 my-1" />
+                                    <div className="h-px my-1" style={{ background: 'var(--mc-border)' }} />
 
                                     <div className="flex justify-between items-center">
                                         <span className="text-[13px] font-bold text-[#3B312C]">Subtotal After Discount</span>
@@ -447,7 +447,7 @@ export default function CartPage() {
                                         <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Free</span>
                                     </div>
 
-                                    <div className="pt-4 border-t border-neutral-100">
+                                    <div className="pt-4" style={{ borderTop: '1px solid var(--mc-border)' }}>
                                         <div className="flex justify-between items-end">
                                             <div>
                                                 <p className="text-sm font-bold text-[#3B312C] mb-1">Total Amount</p>
@@ -513,7 +513,7 @@ export default function CartPage() {
                                             onClick={() => setIsCOD(true)}
                                             className={cn(
                                                 "relative flex items-center gap-4 p-5 rounded-3xl transition-all border-2 text-left",
-                                                isCOD ? "bg-white border-[#C8B273] shadow-md" : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
+                                                isCOD ? "border-[#C8B273] shadow-md" : "border-transparent hover:border-neutral-200"
                                             )}
                                         >
                                             <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", isCOD ? "bg-[#C8B273] border-[#C8B273]" : "border-neutral-300")}>
@@ -539,8 +539,8 @@ export default function CartPage() {
                                     </div>
 
                                     {!hasCompleteAddress ? (
-                                        <div className="bg-neutral-50 rounded-[32px] p-6 text-center border border-dashed border-neutral-200">
-                                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                        <div className="rounded-[32px] p-6 text-center border border-dashed" style={{ background: 'var(--mc-bg-section)', borderColor: 'var(--mc-border)' }}>
+                                            <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm" style={{ background: 'var(--mc-bg-card)' }}>
                                                 <MapPin className="w-5 h-5 text-neutral-300" />
                                             </div>
                                             <p className="text-xs font-bold text-neutral-400 mb-4">No delivery address added</p>
@@ -552,8 +552,8 @@ export default function CartPage() {
                                             </Link>
                                         </div>
                                     ) : (
-                                        <div className="bg-neutral-50 rounded-[32px] p-5 flex items-start gap-4">
-                                            <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-[#C8B273] shadow-sm shrink-0">
+                                        <div className="rounded-[32px] p-5 flex items-start gap-4" style={{ background: 'var(--mc-bg-section)' }}>
+                                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[#C8B273] shadow-sm shrink-0" style={{ background: 'var(--mc-bg-card)' }}>
                                                 <MapPin className="w-5 h-5" />
                                             </div>
                                             <div className="min-w-0">
@@ -699,9 +699,10 @@ export default function CartPage() {
                                     className={cn(
                                         "w-full py-5 rounded-[28px] font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-xl shadow-[#C8B273]/20",
                                         isCheckingOut || total < MIN_ORDER_VALUE
-                                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
+                                            ? "cursor-not-allowed shadow-none"
                                             : (!hasCompleteAddress ? "bg-[#3B312C] text-white hover:bg-black" : "bg-[#C8B273] text-white hover:bg-[#B89B5E]")
                                     )}
+                                    style={(isCheckingOut || total < MIN_ORDER_VALUE) ? { background: 'var(--mc-bg-section)', color: 'var(--mc-text-muted)' } : undefined}
                                 >
                                     {isCheckingOut ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -725,7 +726,7 @@ export default function CartPage() {
                                         <Shield className="w-3.5 h-3.5 text-emerald-500" /> Your data is protected and safe with us.
                                     </p>
 
-                                    <div className="flex items-center justify-around py-4 border-t border-neutral-50">
+                                    <div className="flex items-center justify-around py-4" style={{ borderTop: '1px solid var(--mc-border)' }}>
                                         <div className="text-center group">
                                             <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1 group-hover:scale-110 transition-transform" />
                                             <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Secure Payment</p>
