@@ -68,17 +68,17 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FCF9F7] selection:bg-blush/20">
+    <div className="min-h-screen bg-[#FCF9F7] selection:bg-[#C8B273]/20">
       <Navbar />
 
       <main className="max-w-[1440px] mx-auto px-6 md:px-10 py-32 md:py-40">
 
         {/* HEADER SECTION */}
         <div className="relative text-center mb-24 md:mb-32">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 w-24 h-24 bg-blush/5 rounded-full blur-3xl" />
-          <p className="text-[13px] font-black text-blush uppercase tracking-[0.3em] mb-4 relative z-10">Connect With Us</p>
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-charcoal mb-8 tracking-tighter relative z-10">
-            Get in <span className="text-blush italic">Touch</span>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 w-24 h-24 bg-[#C8B273]/5 rounded-full blur-3xl" />
+          <p className="text-[13px] font-black text-[#C8B273] uppercase tracking-[0.3em] mb-4 relative z-10">Connect With Us</p>
+          <h1 className="text-5xl md:text-7xl font-serif font-bold text-[#3B312C] mb-8 tracking-tighter relative z-10">
+            Get in <span className="text-[#C8B273] italic">Touch</span>
           </h1>
           <p className="text-lg md:text-xl text-neutral-500 max-w-3xl mx-auto leading-relaxed font-sans font-medium">
             Have questions or need assistance? We'd love to hear from you.
@@ -92,11 +92,11 @@ export default function ContactPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-[40px] p-10 border border-[#F3E8E5] shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
-                <Zap className="w-32 h-32 text-charcoal" />
+                <Zap className="w-32 h-32 text-[#3B312C]" />
               </div>
 
-              <h2 className="text-2xl font-serif font-bold text-charcoal mb-10 border-b border-neutral-50 pb-6">
-                Our <span className="text-blush italic">Details</span>
+              <h2 className="text-2xl font-serif font-bold text-[#3B312C] mb-10 border-b border-neutral-50 pb-6">
+                Our <span className="text-[#C8B273] italic">Details</span>
               </h2>
 
               <div className="space-y-8">
@@ -111,11 +111,11 @@ export default function ContactPage() {
                     <div className="min-w-0">
                       <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">{detail.label}</p>
                       {detail.link ? (
-                        <a href={detail.link} className="text-lg font-serif font-bold text-charcoal hover:text-blush transition-colors truncate block">
+                        <a href={detail.link} className="text-lg font-serif font-bold text-[#3B312C] hover:text-[#C8B273] transition-colors truncate block">
                           {detail.content}
                         </a>
                       ) : (
-                        <p className="text-lg font-serif font-bold text-charcoal leading-snug whitespace-pre-line">
+                        <p className="text-lg font-serif font-bold text-[#3B312C] leading-snug whitespace-pre-line">
                           {detail.content}
                         </p>
                       )}
@@ -126,10 +126,10 @@ export default function ContactPage() {
 
               <div className="mt-12 p-8 bg-neutral-50 rounded-[32px] border border-neutral-100/50">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-blush shadow-sm">
+                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#C8B273] shadow-sm">
                     <MessageSquare className="w-4 h-4" />
                   </div>
-                  <h4 className="font-bold text-charcoal text-sm">Quick Help</h4>
+                  <h4 className="font-bold text-[#3B312C] text-sm">Quick Help</h4>
                 </div>
                 <p className="text-[13px] text-neutral-500 leading-relaxed font-medium">
                   Response time usually within 2-4 business hours during boutique hours.
@@ -138,14 +138,14 @@ export default function ContactPage() {
             </div>
 
             {/* Support Widget */}
-            <div className="bg-charcoal p-8 rounded-[40px] shadow-2xl shadow-charcoal/10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blush/10 rounded-full blur-3xl -mr-10 -mt-10" />
-              <p className="text-[10px] font-black text-blush uppercase tracking-widest mb-2 relative z-10">Emergency?</p>
+            <div className="bg-[#3B312C] p-8 rounded-[40px] shadow-2xl shadow-[#3B312C]/10 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#C8B273]/10 rounded-full blur-3xl -mr-10 -mt-10" />
+              <p className="text-[10px] font-black text-[#C8B273] uppercase tracking-widest mb-2 relative z-10">Emergency?</p>
               <h3 className="text-white font-serif font-bold text-xl mb-4 relative z-10">Immediate Support</h3>
               <p className="text-neutral-400 text-sm leading-relaxed mb-6 relative z-10">
                 For urgent inquiries regarding ongoing orders, please contact our concierge phone directly.
               </p>
-              <a href="tel:+919633572427" className="inline-flex items-center gap-2 text-white font-black uppercase tracking-widest text-[11px] group-hover:text-blush transition-colors relative z-10">
+              <a href="tel:+919633572427" className="inline-flex items-center gap-2 text-white font-black uppercase tracking-widest text-[11px] group-hover:text-[#C8B273] transition-colors relative z-10">
                 Call Now <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
@@ -154,12 +154,12 @@ export default function ContactPage() {
           {/* RIGHT COLUMN: CONTACT FORM */}
           <div className="bg-white rounded-[60px] p-10 md:p-16 border border-[#F3E8E5] shadow-sm relative">
             <div className="absolute top-0 right-0 p-12 opacity-[0.01] pointer-events-none">
-              <Send className="w-40 h-40 text-charcoal" />
+              <Send className="w-40 h-40 text-[#3B312C]" />
             </div>
 
             <div className="mb-12">
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-charcoal tracking-tight mb-4">
-                Send a <span className="text-blush italic">Message</span>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#3B312C] tracking-tight mb-4">
+                Send a <span className="text-[#C8B273] italic">Message</span>
               </h2>
               <p className="text-neutral-500 text-sm md:text-base font-medium">
                 We'll get back to you as soon as possible. Your details are safe with us.
@@ -179,7 +179,7 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full bg-neutral-50 border-none rounded-2xl px-6 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20 transition-all placeholder:text-neutral-300"
+                    className="w-full bg-neutral-50 border-none rounded-2xl px-6 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20 transition-all placeholder:text-neutral-300"
                     placeholder="Enter your name"
                   />
                 </div>
@@ -195,7 +195,7 @@ export default function ContactPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full bg-neutral-50 border-none rounded-2xl px-6 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20 transition-all placeholder:text-neutral-300"
+                    className="w-full bg-neutral-50 border-none rounded-2xl px-6 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20 transition-all placeholder:text-neutral-300"
                     placeholder="name@email.com"
                   />
                 </div>
@@ -214,7 +214,7 @@ export default function ContactPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     required
-                    className="w-full bg-neutral-50 border-none rounded-2xl pl-16 pr-6 py-4 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20 transition-all placeholder:text-neutral-300"
+                    className="w-full bg-neutral-50 border-none rounded-2xl pl-16 pr-6 py-4 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20 transition-all placeholder:text-neutral-300"
                     placeholder="98765 43210"
                   />
                 </div>
@@ -231,7 +231,7 @@ export default function ContactPage() {
                   onChange={handleChange}
                   required
                   rows={6}
-                  className="w-full bg-neutral-50 border-none rounded-2xl px-6 py-5 text-sm font-bold text-charcoal focus:ring-2 focus:ring-blush/20 transition-all resize-none leading-relaxed placeholder:text-neutral-300"
+                  className="w-full bg-neutral-50 border-none rounded-2xl px-6 py-5 text-sm font-bold text-[#3B312C] focus:ring-2 focus:ring-[#C8B273]/20 transition-all resize-none leading-relaxed placeholder:text-neutral-300"
                   placeholder="How can we help you?"
                 />
               </div>
@@ -239,7 +239,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-4 bg-charcoal text-white px-10 py-6 rounded-[28px] hover:bg-black transition-all duration-300 font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-charcoal/20 transform hover:-translate-y-1 active:scale-95 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-4 bg-[#3B312C] text-white px-10 py-6 rounded-[28px] hover:bg-black transition-all duration-300 font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-[#3B312C]/20 transform hover:-translate-y-1 active:scale-95 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent" />

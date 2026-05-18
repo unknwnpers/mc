@@ -47,7 +47,7 @@ export default function UsersManagementPage() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [blocking, setBlocking] = useState(false);
-  
+
   // Advanced filters
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -156,8 +156,8 @@ export default function UsersManagementPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          userId: selectedUser.id, 
+        body: JSON.stringify({
+          userId: selectedUser.id,
           blocked: !selectedUser.blocked, // Toggle block status
         }),
       });
@@ -166,8 +166,8 @@ export default function UsersManagementPage() {
 
       if (res.ok && data.success) {
         toast.success(
-          selectedUser.blocked 
-            ? `User ${selectedUser.email} unblocked` 
+          selectedUser.blocked
+            ? `User ${selectedUser.email} unblocked`
             : `User ${selectedUser.email} blocked`
         );
         setBlockDialogOpen(false);
@@ -214,16 +214,16 @@ export default function UsersManagementPage() {
   // Filter, sort, and paginate users
   const filteredUsers = useMemo(() => {
     let result = users.filter((u) => {
-      const matchesSearch = 
+      const matchesSearch =
         u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.name.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesRole = roleFilter === "all" || u.role === roleFilter;
-      const matchesStatus = 
-        statusFilter === "all" || 
+      const matchesStatus =
+        statusFilter === "all" ||
         (statusFilter === "active" && !u.blocked) ||
         (statusFilter === "blocked" && u.blocked);
-      
+
       return matchesSearch && matchesRole && matchesStatus;
     });
 
@@ -272,12 +272,12 @@ export default function UsersManagementPage() {
       u.blocked ? "Blocked" : "Active",
       u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A"
     ]);
-    
+
     const csvContent = [
       headers.join(","),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
     ].join("\n");
-    
+
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -314,7 +314,7 @@ export default function UsersManagementPage() {
   async function executeBulkAction(action: string) {
     if (selectedUsers.size === 0) return;
     setBulkActionLoading(true);
-    
+
     try {
       const token = await user?.getIdToken();
       if (!token) return;
@@ -574,7 +574,7 @@ export default function UsersManagementPage() {
                   />
                 </TableHead>
                 <TableHead>
-                  <button 
+                  <button
                     onClick={() => {
                       if (sortBy === "email") setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                       else { setSortBy("email"); setSortOrder("asc"); }
@@ -585,7 +585,7 @@ export default function UsersManagementPage() {
                   </button>
                 </TableHead>
                 <TableHead>
-                  <button 
+                  <button
                     onClick={() => {
                       if (sortBy === "name") setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                       else { setSortBy("name"); setSortOrder("asc"); }
@@ -597,7 +597,7 @@ export default function UsersManagementPage() {
                 </TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>
-                  <button 
+                  <button
                     onClick={() => {
                       if (sortBy === "joined") setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                       else { setSortBy("joined"); setSortOrder("desc"); }
@@ -622,7 +622,7 @@ export default function UsersManagementPage() {
                     />
                   </TableCell>
                   <TableCell className="font-medium">
-                    <Link 
+                    <Link
                       href={`/admin/users/${user.id}`}
                       className="hover:text-blue-600 transition-colors"
                     >
@@ -654,7 +654,7 @@ export default function UsersManagementPage() {
                           <Eye className="w-4 h-4" />
                         </Button>
                       </Link>
-                      
+
                       {/* Role Selector - Only if can manage */}
                       {canManageUser(user.role) ? (
                         <Select
@@ -748,7 +748,7 @@ export default function UsersManagementPage() {
                 >
                   Previous
                 </Button>
-                
+
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum = i + 1;
@@ -757,7 +757,7 @@ export default function UsersManagementPage() {
                       if (currentPage > totalPages - 2) pageNum = totalPages - 4 + i;
                     }
                     if (pageNum > totalPages) return null;
-                    
+
                     return (
                       <Button
                         key={pageNum}
@@ -771,7 +771,7 @@ export default function UsersManagementPage() {
                     );
                   })}
                 </div>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -814,8 +814,8 @@ export default function UsersManagementPage() {
               className="bg-red-600 hover:bg-red-700"
               disabled={blocking}
             >
-              {blocking 
-                ? (selectedUser?.blocked ? "Unblocking..." : "Blocking...") 
+              {blocking
+                ? (selectedUser?.blocked ? "Unblocking..." : "Blocking...")
                 : (selectedUser?.blocked ? "Unblock User" : "Block User")}
             </AlertDialogAction>
           </AlertDialogFooter>

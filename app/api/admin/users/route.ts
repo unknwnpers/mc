@@ -19,20 +19,28 @@ export async function GET(req: Request) {
     );
     const offset = (page - 1) * limit;
 
-    // Get total count
-    const countSnapshot = await adminDb.collection("users").count().get();
-    const totalCount = countSnapshot.data().count;
+    // Fetch all users without orderBy so docs without created_at are included
+    // (admins created manually often don't have this field)
+    const snap = await adminDb.collection("users").get();
+    const totalCount = snap.size;
 
-    const snap = await adminDb.collection("users").orderBy("created_at", "desc").limit(limit).offset(offset).get();
-    const users = snap.docs.map(doc => {
-      const data = doc.data();
-      return { 
-        id: doc.id,
-        ...data,
-        // Convert Firestore Timestamp to Date for proper serialization
-        createdAt: data.created_at?.toDate?.() || data.created_at || null,
-      };
-    });
+    // Sort in-memory by created_at descending (nulls last), then paginate
+    const allUsers = snap.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.created_at?.toDate?.() || data.created_at || null,
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
+    const users = allUsers.slice(offset, offset + limit);
 
     return NextResponse.json({ 
       success: true, 
