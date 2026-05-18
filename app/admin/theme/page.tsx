@@ -109,6 +109,30 @@ const PRESETS = [
       charcoal: "#3B2F2A",
     },
   },
+  {
+    id: "warm-espresso",
+    name: "Warm Espresso",
+    desc: "Premium night mode — deep warm surfaces with restrained gold, soft on the eyes for long sessions.",
+    dot: "#C7A96B",
+    theme: {
+      gold: "#C7A96B",
+      goldDark: "#D4B87B",
+      goldLight: "#8E7A5A",
+      goldSubtle: "#312A27",
+      bgBase: "#1F1B19",
+      bgCard: "#2A2421",
+      bgSection: "#241F1D",
+      bgHero: "#1F1B19",
+      textHeading: "#F2ECE5",
+      textBody: "#B7AAA0",
+      textMuted: "#8E8278",
+      textSubtle: "#6B6260",
+      borderDefault: "#3A3331",
+      borderGold: "rgba(199,169,107,0.15)",
+      blush: "#8A6A62",
+      charcoal: "#F2ECE5",
+    },
+  },
 ];
 
 async function getToken() {
