@@ -39,7 +39,7 @@ const navLinks = [
 
 const announcementItems = [
   { icon: Truck, text: 'Free Shipping' },
-  { icon: RefreshCw, text: 'Easy 10-Day Replacement' },
+  { icon: RefreshCw, text: 'Easy Replacement' },
   { icon: Banknote, text: 'COD Available' },
   { icon: ShieldCheck, text: '100% Secure Payments' },
 ];

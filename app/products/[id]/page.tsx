@@ -703,7 +703,7 @@ export default function ProductDetailsPage() {
                 )}
               </div>
 
-              {/* Shipping & Returns Accordion */}
+              {/* Shipping & Replacement Accordion */}
               <div className="border border-neutral-200 rounded-2xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('shipping')}
@@ -711,7 +711,7 @@ export default function ProductDetailsPage() {
                 >
                   <span className="text-sm font-bold text-neutral-700 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#C8B273]" />
-                    Shipping & Returns
+                    Shipping & Replacement
                   </span>
                   {openSections.includes('shipping') ? (
                     <Minus className="w-4 h-4 text-neutral-400" />
@@ -725,14 +725,14 @@ export default function ProductDetailsPage() {
                       <Truck className="w-4 h-4 text-[#C8B273] mt-0.5" />
                       <div>
                         <p className="text-sm font-bold text-neutral-700">Delivery</p>
-                        <p className="text-sm text-neutral-500">Free shipping on orders over ₹1000. Delivery in 3-5 business days.</p>
+                        <p className="text-sm text-neutral-500">Free shipping on orders over ₹1000. Delivery in 10 business days.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <RefreshCw className="w-4 h-4 text-[#C8B273] mt-0.5" />
                       <div>
-                        <p className="text-sm font-bold text-neutral-700">Returns</p>
-                        <p className="text-sm text-neutral-500">Easy 10-day replacement. Product must be unworn with tags attached.</p>
+                        <p className="text-sm font-bold text-neutral-700">Replacement</p>
+                        <p className="text-sm text-neutral-500">Easy 48 hours replacement. Product must be unworn with tags attached.</p>
                       </div>
                     </div>
                   </div>
@@ -866,10 +866,10 @@ export default function ProductDetailsPage() {
                     {/* Stock Status — shows max units customer can purchase */}
                     {selectedSize && (
                       <span className={`text-xs font-medium ${isOutOfStock
-                          ? 'text-red-500'
-                          : isLowStock
-                            ? 'text-amber-600'
-                            : 'text-green-600'
+                        ? 'text-red-500'
+                        : isLowStock
+                          ? 'text-amber-600'
+                          : 'text-green-600'
                         }`}>
                         {isOutOfStock
                           ? 'Out of Stock'
