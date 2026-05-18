@@ -144,7 +144,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               {[
                 { icon: Truck, text: "Free Shipping" },
                 { icon: Banknote, text: "COD Available" },
-                { icon: RefreshCw, text: "Easy Returns" },
+                { icon: RefreshCw, text: "Easy Replacement" },
                 { icon: ShieldCheck, text: "Secure Payments" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
                   style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.04)' }}
                 >
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    {[1,2,3,4,5].map(i => (
+                    {[1, 2, 3, 4, 5].map(i => (
                       <Star key={i} className="w-3.5 h-3.5 text-[#C8B273] fill-current" />
                     ))}
                   </div>

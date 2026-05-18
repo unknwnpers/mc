@@ -26,7 +26,7 @@ const customerCare = [
 
 const trustBadges = [
   { icon: ShieldCheck, text: "Secure Payments" },
-  { icon: RefreshCw, text: "Easy Returns" },
+  { icon: RefreshCw, text: "Easy Replacement" },
   { icon: Banknote, text: "COD Available" },
   { icon: Star, text: "Premium Quality" },
 ];
@@ -146,7 +146,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
                 { icon: Mail, content: "hello@miksandchiks.com", href: "mailto:miksandchiks@gmail.com" },
                 { icon: Phone, content: "+91 9633 374 657", href: "tel:+919633374657" },
                 { icon: MapPin, content: "Kakkara House, nettoor PO, Cochin, Kerala-682040, India" },
-                { icon: Clock, content: "Mon–Sat, 10AM–6PM IST" },
+                { icon: Clock, content: "Mon–Sat, 10AM–10PM IST" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <item.icon className="w-4 h-4 text-[#C8B273] mt-1 shrink-0" />

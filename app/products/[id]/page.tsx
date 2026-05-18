@@ -62,8 +62,8 @@ export default function ProductDetailsPage() {
 
   // Toggle accordion section
   const toggleSection = (section: string) => {
-    setOpenSections(prev => 
-      prev.includes(section) 
+    setOpenSections(prev =>
+      prev.includes(section)
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
@@ -72,19 +72,19 @@ export default function ProductDetailsPage() {
   useEffect(() => {
     fetchProduct();
     fetchReviews();
-    
+
     // Track product view and setup stats polling
     if (id) {
       // Small delay to ensure page is fully loaded
       const viewTimeout = setTimeout(() => {
         trackProductView();
       }, 500);
-      
+
       fetchProductStats();
-      
+
       // Poll stats every 15 seconds for more real-time feel
       const statsInterval = setInterval(fetchProductStats, 15000);
-      
+
       return () => {
         clearTimeout(viewTimeout);
         clearInterval(statsInterval);
@@ -116,13 +116,13 @@ export default function ProductDetailsPage() {
         sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
         localStorage.setItem('product_view_session_id', sessionId);
       }
-      
+
       const response = await fetch(`/api/products/${id}/view`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
       });
-      
+
       if (!response.ok) {
         console.warn('Product view tracking failed:', response.status);
       }
@@ -137,7 +137,7 @@ export default function ProductDetailsPage() {
     try {
       const response = await fetch(`/api/products/${id}/stats`);
       const result = await response.json();
-      
+
       if (result.success && result.stats) {
         setStats({
           viewers: result.stats.viewers || 0,
@@ -160,7 +160,7 @@ export default function ProductDetailsPage() {
   // Auto-select size if only one variant available
   useEffect(() => {
     if (product) {
-      const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
+      const variants = (product as any).variants as Array<{ sku: string; options: Record<string, string>; price: number; stock: number }> | undefined;
       if (variants && variants.length === 1 && variants[0].stock > 0) {
         // Only one size in stock → auto-select
         setSelectedSize(variants[0].sku);
@@ -170,18 +170,18 @@ export default function ProductDetailsPage() {
 
   useEffect(() => {
     const checkFav = async () => {
-        if (!user || !id) return;
-        try {
-            const response = await fetch(`/api/user/favorites/check?productId=${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${await user.getIdToken()}`
-                }
-            });
-            const data = await response.json();
-            setIsFav(data.isFavorite);
-        } catch (err) {
-            console.error("Error checking fav:", err);
-        }
+      if (!user || !id) return;
+      try {
+        const response = await fetch(`/api/user/favorites/check?productId=${id}`, {
+          headers: {
+            'Authorization': `Bearer ${await user.getIdToken()}`
+          }
+        });
+        const data = await response.json();
+        setIsFav(data.isFavorite);
+      } catch (err) {
+        console.error("Error checking fav:", err);
+      }
     };
     checkFav();
   }, [user, id]);
@@ -211,7 +211,7 @@ export default function ProductDetailsPage() {
       setReviewsLoading(true);
       const response = await fetch(`/api/reviews/product?productId=${id}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setReviews(data.reviews || []);
         setAverageRating(data.averageRating || 0);
@@ -225,10 +225,10 @@ export default function ProductDetailsPage() {
 
   const fetchOfferForVariant = async () => {
     if (!product) return;
-    
+
     try {
-      const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
-      
+      const variants = (product as any).variants as Array<{ sku: string; options: Record<string, string>; price: number; stock: number }> | undefined;
+
       // Get price from selected variant, or first variant, or 0
       let price = 0;
       if (selectedSize && variants) {
@@ -237,9 +237,9 @@ export default function ProductDetailsPage() {
       } else if (variants && variants.length > 0) {
         price = variants[0].price;
       }
-      
+
       if (price === 0) return;
-      
+
       const response = await fetch('/api/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -249,7 +249,7 @@ export default function ProductDetailsPage() {
           productId: product.id
         })
       });
-      
+
       const data = await response.json();
       if (data.success) {
         setOfferData(data);
@@ -261,64 +261,64 @@ export default function ProductDetailsPage() {
 
   const toggleFavorite = async () => {
     if (!user) {
-        toast.info("Please login to use favorites");
-        return;
+      toast.info("Please login to use favorites");
+      return;
     }
 
     if (!product) {
-        toast.error("Product not available");
-        return;
+      toast.error("Product not available");
+      return;
     }
 
     try {
-        const token = await user.getIdToken();
-        const response = await fetch('/api/user/favorites/toggle', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ productId: id })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            setIsFav(result.isFavorite);
-            toast.success(result.isFavorite ? "Added to favorites" : "Removed from favorites");
-        } else {
-            throw new Error(result.error);
-        }
+      const token = await user.getIdToken();
+      const response = await fetch('/api/user/favorites/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId: id })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsFav(result.isFavorite);
+        toast.success(result.isFavorite ? "Added to favorites" : "Removed from favorites");
+      } else {
+        throw new Error(result.error);
+      }
     } catch (err) {
-        console.error("Favorite error:", err);
-        toast.error("Failed to update favorites");
+      console.error("Favorite error:", err);
+      toast.error("Failed to update favorites");
     }
   };
 
   const handleShare = async () => {
     try {
-        await navigator.share({
-            title: product?.name,
-            text: "Check out this beautiful item from Miks & Chiks!",
-            url: window.location.href,
-        });
+      await navigator.share({
+        title: product?.name,
+        text: "Check out this beautiful item from Miks & Chiks!",
+        url: window.location.href,
+      });
     } catch (err) {
-        console.log("Share cancelled or failed");
+      console.log("Share cancelled or failed");
     }
   };
 
   const fetchRelated = async (categorySlug: string, currentProductId: string) => {
     try {
-        const response = await fetch(`/api/products?category=${categorySlug}&limit=10`);
-        const result = await response.json();
-        
-        if (result.success && Array.isArray(result.products)) {
-            const all = result.products as Product[];
-            const filtered = all.filter((p: Product) => p.id !== currentProductId).slice(0, 4);
-            setRelatedProducts(filtered);
-        }
+      const response = await fetch(`/api/products?category=${categorySlug}&limit=10`);
+      const result = await response.json();
+
+      if (result.success && Array.isArray(result.products)) {
+        const all = result.products as Product[];
+        const filtered = all.filter((p: Product) => p.id !== currentProductId).slice(0, 4);
+        setRelatedProducts(filtered);
+      }
     } catch (err) {
-        console.error("Error fetching related:", err);
+      console.error("Error fetching related:", err);
     }
   };
 
@@ -334,7 +334,7 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
+    const variants = (product as any).variants as Array<{ sku: string; options: Record<string, string>; price: number; stock: number }> | undefined;
     const hasSizeOption = variants && variants.length > 0;
 
     if (hasSizeOption && !selectedSize) {
@@ -409,32 +409,32 @@ export default function ProductDetailsPage() {
 
   if (!product) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center px-4">
-            <h1 className="text-4xl font-bold mb-4 text-neutral-900">Product not found</h1>
-            <p className="text-neutral-500 mb-8">The product you are looking for doesn't exist or has been removed.</p>
-            <Link href="/" className="inline-block bg-rose-400 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-500 transition-all shadow-lg shadow-rose-100">
-              Back to Shop
-            </Link>
-        </div>
+      <div className="text-center px-4">
+        <h1 className="text-4xl font-bold mb-4 text-neutral-900">Product not found</h1>
+        <p className="text-neutral-500 mb-8">The product you are looking for doesn't exist or has been removed.</p>
+        <Link href="/" className="inline-block bg-rose-400 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-500 transition-all shadow-lg shadow-rose-100">
+          Back to Shop
+        </Link>
+      </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
+
       <main className="max-w-7xl mx-auto px-6 md:px-10 py-12">
         {/* BACK BUTTON */}
         <Link href="/products" className="inline-flex items-center gap-2 text-neutral-400 hover:text-[#C8B273] font-bold text-xs uppercase tracking-[0.2em] mb-12 transition-colors group">
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Collection
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Back to Collection
         </Link>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-24">
           {/* IMAGE SECTION */}
           <div className="space-y-3">
             {/* Main Image - Reduced height with better hover effect */}
-            <div 
+            <div
               className="relative aspect-[4/5] max-h-[500px] rounded-3xl overflow-hidden bg-neutral-100 shadow-xl shadow-rose-100/10 group cursor-zoom-in"
               onClick={() => setShowLightbox(true)}
             >
@@ -580,11 +580,11 @@ export default function ProductDetailsPage() {
                 const variants = (product as any).variants as any[] | undefined;
                 const v = variants?.find((v: any) => v.sku === selectedSize);
                 const basePrice = v?.price ?? variants?.[0]?.price ?? 0;
-                
+
                 // Use offer data if available, otherwise show base price
                 const displayPrice = offerData?.discountedPrice ?? basePrice;
                 const hasDiscount = offerData?.hasOffer && offerData.savings > 0;
-                
+
                 return (
                   <>
                     <span className="text-3xl md:text-4xl font-serif font-bold text-[#C8B273] tracking-tight whitespace-nowrap">
@@ -732,7 +732,7 @@ export default function ProductDetailsPage() {
                       <RefreshCw className="w-4 h-4 text-[#C8B273] mt-0.5" />
                       <div>
                         <p className="text-sm font-bold text-neutral-700">Returns</p>
-                        <p className="text-sm text-neutral-500">Easy 7-day returns. Product must be unworn with tags attached.</p>
+                        <p className="text-sm text-neutral-500">Easy 10-day replacement. Product must be unworn with tags attached.</p>
                       </div>
                     </div>
                   </div>
@@ -742,78 +742,78 @@ export default function ProductDetailsPage() {
 
             {/* SIZE SELECTION — canonical variants[] */}
             {(() => {
-                const variants = (product as any).variants as Array<{sku:string;options:Record<string,string>;price:number;stock:number}> | undefined;
-                if (!variants || variants.length === 0) return (
-                  <p className="text-sm text-neutral-400 mb-6 italic">No sizes available</p>
-                );
-                const selectedVariant = variants.find(v => v.sku === selectedSize);
-                return (
-                    <div className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">Select Size</p>
-                            <div className="flex items-center gap-3">
-                                <button 
-                                    onClick={() => toast.info("Size guide coming soon!")}
-                                    className="text-xs font-bold text-[#C8B273] hover:text-[#C8B273]/80 flex items-center gap-1 transition-colors"
-                                >
-                                    <Ruler className="w-3 h-3" />
-                                    Size Guide
-                                </button>
-                                {selectedVariant && (() => {
-                                    // Use real-time availableStock from stats API as source of truth
-                                    const realStock = availableStock[selectedVariant.sku] ?? selectedVariant.stock;
-                                    const reserve = Math.ceil(0.2 * realStock);
-                                    const sellable = Math.max(0, realStock - reserve);
-                                    const allowedQty = Math.min(2, Math.floor(sellable / 3));
-                                    const isOOS = allowedQty <= 0;
-                                    const isLow = !isOOS && sellable <= 3;
-                                    return (
-                                        <span className={cn(
-                                            "text-xs font-bold",
-                                            isOOS ? "text-red-500" : isLow ? "text-orange-500" : "text-green-600"
-                                        )}>
-                                            {isOOS ? "Out of Stock" : isLow ? `Only ${sellable} left` : "In Stock"}
-                                        </span>
-                                    );
-                                })()}
-                            </div>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                            {variants.map(v => {
-                                // Use real-time stock for each variant button
-                                const realStock = availableStock[v.sku] ?? v.stock;
-                                const reserve = Math.ceil(0.2 * realStock);
-                                const sellable = Math.max(0, realStock - reserve);
-                                const allowedQty = Math.min(2, Math.floor(sellable / 3));
-                                const isOOS = allowedQty <= 0;
-                                const isLowStock = !isOOS && sellable <= 3;
-                                return (
-                                <button key={v.sku}
-                                    onClick={() => !isOOS && setSelectedSize(v.sku)}
-                                    disabled={isOOS}
-                                    className={cn(
-                                        "relative px-6 py-3 rounded-2xl border text-xs font-bold transition-all duration-300",
-                                        isOOS ? "opacity-40 cursor-not-allowed bg-neutral-100 border-neutral-200 line-through" : "active:scale-95",
-                                        selectedSize === v.sku
-                                            ? "bg-[#3B312C] border-[#3B312C] text-white shadow-xl shadow-[#3B312C]/20"
-                                            : (!isOOS && "bg-white border-[#F3E8E5] text-[#3B312C] hover:border-[#C8B273] hover:text-[#C8B273]"),
-                                        isLowStock && selectedSize !== v.sku && "border-orange-200 text-orange-600"
-                                    )}>
-                                    {v.options?.Size || v.sku}
-                                    {isOOS && <span className="block text-[9px] font-normal mt-0.5">Out of Stock</span>}
-                                    {isLowStock && !isOOS && <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" title="Low stock" />}
-                                </button>
-                                );
-                            })}
-                        </div>
-                        {/* SKU Display */}
-                        {selectedVariant && (
-                            <p className="mt-3 text-xs text-neutral-400 font-mono">
-                                SKU: <span className="text-neutral-600">{selectedVariant.sku}</span>
-                            </p>
-                        )}
+              const variants = (product as any).variants as Array<{ sku: string; options: Record<string, string>; price: number; stock: number }> | undefined;
+              if (!variants || variants.length === 0) return (
+                <p className="text-sm text-neutral-400 mb-6 italic">No sizes available</p>
+              );
+              const selectedVariant = variants.find(v => v.sku === selectedSize);
+              return (
+                <div className="mb-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-400">Select Size</p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toast.info("Size guide coming soon!")}
+                        className="text-xs font-bold text-[#C8B273] hover:text-[#C8B273]/80 flex items-center gap-1 transition-colors"
+                      >
+                        <Ruler className="w-3 h-3" />
+                        Size Guide
+                      </button>
+                      {selectedVariant && (() => {
+                        // Use real-time availableStock from stats API as source of truth
+                        const realStock = availableStock[selectedVariant.sku] ?? selectedVariant.stock;
+                        const reserve = Math.ceil(0.2 * realStock);
+                        const sellable = Math.max(0, realStock - reserve);
+                        const allowedQty = Math.min(2, Math.floor(sellable / 3));
+                        const isOOS = allowedQty <= 0;
+                        const isLow = !isOOS && sellable <= 3;
+                        return (
+                          <span className={cn(
+                            "text-xs font-bold",
+                            isOOS ? "text-red-500" : isLow ? "text-orange-500" : "text-green-600"
+                          )}>
+                            {isOOS ? "Out of Stock" : isLow ? `Only ${sellable} left` : "In Stock"}
+                          </span>
+                        );
+                      })()}
                     </div>
-                );
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {variants.map(v => {
+                      // Use real-time stock for each variant button
+                      const realStock = availableStock[v.sku] ?? v.stock;
+                      const reserve = Math.ceil(0.2 * realStock);
+                      const sellable = Math.max(0, realStock - reserve);
+                      const allowedQty = Math.min(2, Math.floor(sellable / 3));
+                      const isOOS = allowedQty <= 0;
+                      const isLowStock = !isOOS && sellable <= 3;
+                      return (
+                        <button key={v.sku}
+                          onClick={() => !isOOS && setSelectedSize(v.sku)}
+                          disabled={isOOS}
+                          className={cn(
+                            "relative px-6 py-3 rounded-2xl border text-xs font-bold transition-all duration-300",
+                            isOOS ? "opacity-40 cursor-not-allowed bg-neutral-100 border-neutral-200 line-through" : "active:scale-95",
+                            selectedSize === v.sku
+                              ? "bg-[#3B312C] border-[#3B312C] text-white shadow-xl shadow-[#3B312C]/20"
+                              : (!isOOS && "bg-white border-[#F3E8E5] text-[#3B312C] hover:border-[#C8B273] hover:text-[#C8B273]"),
+                            isLowStock && selectedSize !== v.sku && "border-orange-200 text-orange-600"
+                          )}>
+                          {v.options?.Size || v.sku}
+                          {isOOS && <span className="block text-[9px] font-normal mt-0.5">Out of Stock</span>}
+                          {isLowStock && !isOOS && <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" title="Low stock" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* SKU Display */}
+                  {selectedVariant && (
+                    <p className="mt-3 text-xs text-neutral-400 font-mono">
+                      SKU: <span className="text-neutral-600">{selectedVariant.sku}</span>
+                    </p>
+                  )}
+                </div>
+              );
             })()}
 
             <div className="mt-auto space-y-6">
@@ -822,7 +822,7 @@ export default function ProductDetailsPage() {
                 const variants = (product as any).variants;
                 const hasVariants = variants && variants.length > 0;
                 const selectedVariant = hasVariants ? variants.find((v: any) => v.sku === selectedSize) : null;
-                
+
                 // Use real-time availableStock from stats API as source of truth
                 const realStock = selectedVariant ? (availableStock[selectedVariant.sku] ?? selectedVariant.stock) : 0;
                 // Backend Purchase Logic:
@@ -834,12 +834,12 @@ export default function ProductDetailsPage() {
                 const max_per_customer = Math.min(10, sellable_stock);
 
                 const maxQty = max_per_customer;
-                
+
                 const isOutOfStock = maxQty <= 0;
                 const isLowStock = maxQty > 0 && maxQty <= 3;
-                
+
                 const currentQty = Math.min(quantity, Math.max(1, maxQty));
-                
+
                 return (
                   <div className="flex items-center gap-4 flex-wrap">
                     <span className="text-sm font-bold text-neutral-500 uppercase tracking-wider">Quantity</span>
@@ -862,20 +862,19 @@ export default function ProductDetailsPage() {
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    
+
                     {/* Stock Status — shows max units customer can purchase */}
                     {selectedSize && (
-                      <span className={`text-xs font-medium ${
-                        isOutOfStock 
-                          ? 'text-red-500' 
-                          : isLowStock 
-                            ? 'text-amber-600' 
+                      <span className={`text-xs font-medium ${isOutOfStock
+                          ? 'text-red-500'
+                          : isLowStock
+                            ? 'text-amber-600'
                             : 'text-green-600'
-                      }`}>
-                        {isOutOfStock 
-                          ? 'Out of Stock' 
-                          : isLowStock 
-                            ? `Only ${maxQty} left!` 
+                        }`}>
+                        {isOutOfStock
+                          ? 'Out of Stock'
+                          : isLowStock
+                            ? `Only ${maxQty} left!`
                             : `${maxQty} available`
                         }
                       </span>
@@ -895,10 +894,10 @@ export default function ProductDetailsPage() {
                   const sellable_stock = Math.max(0, raw_total_stock - reserve);
                   // Max per customer = sellable stock, capped at 10
                   const max_per_customer = Math.min(10, sellable_stock);
-                  
+
                   const isOutOfStock = selectedSize && max_per_customer <= 0;
                   const currentQty = Math.min(quantity, Math.max(1, max_per_customer));
-                  
+
                   return (
                     <>
                       <button
@@ -907,7 +906,7 @@ export default function ProductDetailsPage() {
                         className={cn(
                           "flex-1 px-8 py-5 rounded-2xl transition-all shadow-xl font-bold text-lg active:scale-95 flex items-center justify-center gap-3 group relative overflow-hidden",
                           needsSizeSelection
-                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none" 
+                            ? "bg-neutral-100 text-neutral-400 cursor-not-allowed shadow-none"
                             : isOutOfStock
                               ? "bg-red-50 text-red-400 cursor-not-allowed shadow-none border-2 border-red-100"
                               : isAddingToCart
@@ -928,18 +927,18 @@ export default function ProductDetailsPage() {
                           {isAddingToCart ? "Adding..." : needsSizeSelection ? "Select Size First" : isOutOfStock ? "Out of Stock" : !user ? "Login to Add to Cart" : `Add ${currentQty} to Cart`}
                         </span>
                       </button>
-                      <button 
+                      <button
                         onClick={toggleFavorite}
                         className={cn(
                           "p-5 rounded-2xl border-2 transition-all duration-300 active:scale-90 shadow-sm",
-                          isFav 
-                            ? "bg-[#C8B273] border-[#C8B273] text-white shadow-[#C8B273]/30" 
+                          isFav
+                            ? "bg-[#C8B273] border-[#C8B273] text-white shadow-[#C8B273]/30"
                             : "bg-white border-neutral-200 text-neutral-400 hover:text-[#C8B273] hover:border-[#C8B273]"
                         )}
                       >
                         <Heart className={cn("w-6 h-6", isFav && "fill-current")} />
                       </button>
-                      <button 
+                      <button
                         onClick={handleShare}
                         className="p-5 border-2 border-neutral-200 rounded-2xl hover:bg-neutral-50 hover:border-neutral-300 transition-all text-neutral-400 hover:text-[#3B312C] active:scale-90 shadow-sm"
                       >
@@ -957,7 +956,7 @@ export default function ProductDetailsPage() {
                   <p className="text-sm font-bold text-blue-800">Delivery Estimate</p>
                 </div>
                 <p className="text-sm text-blue-600 pl-8">
-                  Usually ships within 1-2 business days. 
+                  Usually ships within 1-2 business days.
                   <span className="font-medium">Delivery in 3-5 days</span> for metro cities.
                 </p>
               </div>
@@ -1038,12 +1037,12 @@ export default function ProductDetailsPage() {
             {/* Review Form */}
             {showReviewForm && user && (
               <div className="mb-12">
-                <ReviewForm 
-                  productId={id} 
+                <ReviewForm
+                  productId={id}
                   onSuccess={() => {
                     setShowReviewForm(false);
                     fetchReviews();
-                  }} 
+                  }}
                 />
               </div>
             )}
@@ -1056,9 +1055,9 @@ export default function ProductDetailsPage() {
                 ))}
               </div>
             ) : (
-              <ReviewsDisplay 
-                reviews={reviews} 
-                averageRating={averageRating} 
+              <ReviewsDisplay
+                reviews={reviews}
+                averageRating={averageRating}
                 productId={id}
                 canModerate={profile?.role === 'admin' || profile?.role === 'superadmin'}
                 onReviewDeleted={fetchReviews}
@@ -1081,7 +1080,7 @@ export default function ProductDetailsPage() {
 
       {/* LIGHTBOX MODAL */}
       {showLightbox && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
           onClick={() => setShowLightbox(false)}
         >
@@ -1091,7 +1090,7 @@ export default function ProductDetailsPage() {
           >
             <X className="w-8 h-8" />
           </button>
-          
+
           <div className="relative max-w-5xl max-h-[90vh] w-full flex items-center justify-center">
             <img
               src={(product as any).images?.[selectedImageIndex] || '/placeholder.svg'}
@@ -1099,7 +1098,7 @@ export default function ProductDetailsPage() {
               className="max-w-full max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
-            
+
             {/* Lightbox Navigation */}
             {((product as any).images?.length || 0) > 1 && (
               <>

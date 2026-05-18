@@ -29,7 +29,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: "Hassle-Free Shopping",
-    desc: "Easy returns, COD available, and secure checkout every time.",
+    desc: "Easy Replacement, COD available, and secure checkout every time.",
   },
 ];
 

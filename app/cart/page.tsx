@@ -35,7 +35,7 @@ export default function CartPage() {
 
     // Pre-warm App Check token so it's ready when checkout is clicked
     useEffect(() => {
-        ensureAppCheckReady().catch(() => {});
+        ensureAppCheckReady().catch(() => { });
     }, []);
 
     const total = cart.reduce(
@@ -48,10 +48,10 @@ export default function CartPage() {
         // Check if a saved address is selected
         if (selectedAddressId && addresses.length > 0) {
             const selectedAddr = addresses.find(a => a.id === selectedAddressId);
-            if (selectedAddr && 
-                selectedAddr.addressLine1 && 
-                selectedAddr.city && 
-                selectedAddr.pincode && 
+            if (selectedAddr &&
+                selectedAddr.addressLine1 &&
+                selectedAddr.city &&
+                selectedAddr.pincode &&
                 selectedAddr.phone) {
                 return true;
             }
@@ -89,24 +89,24 @@ export default function CartPage() {
                 setPaymentBreakdown(null);
                 return;
             }
-            
+
             setBreakdownLoading(true);
             try {
                 const token = await user.getIdToken();
-        const res = await fetch("/api/cart/calculate", {
+                const res = await fetch("/api/cart/calculate", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        subtotal:        total,
-                        mrpTotal:        total, // same as subtotal; per-item discount already applied
-                        couponDiscount:  discount,
+                        subtotal: total,
+                        mrpTotal: total, // same as subtotal; per-item discount already applied
+                        couponDiscount: discount,
                         isCOD,
                     }),
                 });
-                
+
                 const data = await res.json();
                 if (data.success) {
                     setPaymentBreakdown(data.data);
@@ -130,7 +130,7 @@ export default function CartPage() {
         script.src = "https://checkout.razorpay.com/v1/checkout.js";
         script.async = true;
         document.body.appendChild(script);
-        
+
         return () => {
             // Cleanup NOT recommended here because checkout should persist
         };
@@ -193,7 +193,7 @@ export default function CartPage() {
                         <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#3B312C] tracking-tight">Your <span className="text-[#C8B273] italic">Cart</span></h1>
                     </div>
                     {cart.length > 0 && (
-                        <button 
+                        <button
                             onClick={() => {
                                 if (confirm("Are you sure you want to remove all items from your cart?")) {
                                     clearCart();
@@ -232,91 +232,91 @@ export default function CartPage() {
                                 const discountPercentage = hasDiscount ? Math.round(((itemMrp - item.price) / itemMrp) * 100) : 0;
 
                                 return (
-                                <div
-                                    key={`${item.id}-${item.sku}`}
-                                    className="bg-white rounded-[32px] border border-[#F3E8E5] p-5 md:p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
-                                >
-                                    <div className="flex gap-5 md:items-start">
-                                        {/* Product Image */}
-                                        <div className="w-24 md:w-32 h-24 md:h-32 bg-[#F8F4EE] rounded-[24px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
-                                            <img
-                                                src={item.image}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                            />
-                                        </div>
-
-                                        {/* Product Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <h3 className="text-sm md:text-lg font-serif font-bold text-[#3B312C] truncate leading-tight mb-1">
-                                                        {item.name}
-                                                    </h3>
-                                                    <p className="text-[10px] md:text-[11px] font-medium text-neutral-400 mb-3">
-                                                        Size: {item.selectedSize} {item.sku.includes('-') && `| Color: ${item.sku.split('-')[1]}`}
-                                                    </p>
-
-                                                    <div className="flex items-center gap-3 mb-4">
-                                                        <span className="text-lg md:text-xl font-serif font-bold text-[#C8B273]">
-                                                            ₹{item.price.toLocaleString()}
-                                                        </span>
-                                                        {hasDiscount && (
-                                                            <span className="text-[11px] md:text-[13px] text-neutral-300 line-through font-medium">
-                                                                ₹{itemMrp.toLocaleString()}
-                                                            </span>
-                                                        )}
-                                                        {hasDiscount && (
-                                                            <span className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
-                                                                {discountPercentage}% OFF
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        removeFromCart(item.id, item.sku);
-                                                        toast.error(`${item.name} removed`);
-                                                    }}
-                                                    className="p-2 text-neutral-300 hover:text-red-500 transition-all active:scale-90"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                    <div
+                                        key={`${item.id}-${item.sku}`}
+                                        className="bg-white rounded-[32px] border border-[#F3E8E5] p-5 md:p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                                    >
+                                        <div className="flex gap-5 md:items-start">
+                                            {/* Product Image */}
+                                            <div className="w-24 md:w-32 h-24 md:h-32 bg-[#F8F4EE] rounded-[24px] overflow-hidden shrink-0 border border-[#F3E8E5] relative">
+                                                <img
+                                                    src={item.image}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
                                             </div>
 
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex items-center bg-neutral-50 rounded-xl border border-neutral-100/50">
-                                                    <button
-                                                        onClick={() =>
-                                                            updateQuantity(
-                                                                item.id,
-                                                                Math.max(1, item.quantity - 1),
-                                                                item.sku
-                                                            )
-                                                        }
-                                                        disabled={item.quantity <= 1}
-                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-[#C8B273] transition-all disabled:opacity-30"
-                                                    >
-                                                        <Minus className="w-3.5 h-3.5" />
-                                                    </button>
+                                            {/* Product Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-sm md:text-lg font-serif font-bold text-[#3B312C] truncate leading-tight mb-1">
+                                                            {item.name}
+                                                        </h3>
+                                                        <p className="text-[10px] md:text-[11px] font-medium text-neutral-400 mb-3">
+                                                            Size: {item.selectedSize} {item.sku.includes('-') && `| Color: ${item.sku.split('-')[1]}`}
+                                                        </p>
 
-                                                    <span className="w-6 text-center text-[13px] font-bold text-[#3B312C]">
-                                                        {item.quantity}
-                                                    </span>
-
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <span className="text-lg md:text-xl font-serif font-bold text-[#C8B273]">
+                                                                ₹{item.price.toLocaleString()}
+                                                            </span>
+                                                            {hasDiscount && (
+                                                                <span className="text-[11px] md:text-[13px] text-neutral-300 line-through font-medium">
+                                                                    ₹{itemMrp.toLocaleString()}
+                                                                </span>
+                                                            )}
+                                                            {hasDiscount && (
+                                                                <span className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
+                                                                    {discountPercentage}% OFF
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                     <button
-                                                        onClick={() =>
-                                                            updateQuantity(item.id, item.quantity + 1, item.sku)
-                                                        }
-                                                        className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-[#C8B273] transition-all"
+                                                        onClick={() => {
+                                                            removeFromCart(item.id, item.sku);
+                                                            toast.error(`${item.name} removed`);
+                                                        }}
+                                                        className="p-2 text-neutral-300 hover:text-red-500 transition-all active:scale-90"
                                                     >
-                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center bg-neutral-50 rounded-xl border border-neutral-100/50">
+                                                        <button
+                                                            onClick={() =>
+                                                                updateQuantity(
+                                                                    item.id,
+                                                                    Math.max(1, item.quantity - 1),
+                                                                    item.sku
+                                                                )
+                                                            }
+                                                            disabled={item.quantity <= 1}
+                                                            className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-[#C8B273] transition-all disabled:opacity-30"
+                                                        >
+                                                            <Minus className="w-3.5 h-3.5" />
+                                                        </button>
+
+                                                        <span className="w-6 text-center text-[13px] font-bold text-[#3B312C]">
+                                                            {item.quantity}
+                                                        </span>
+
+                                                        <button
+                                                            onClick={() =>
+                                                                updateQuantity(item.id, item.quantity + 1, item.sku)
+                                                            }
+                                                            className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-[#C8B273] transition-all"
+                                                        >
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
                                 );
                             })}
 
@@ -340,11 +340,11 @@ export default function CartPage() {
                                     ) : addresses.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {addresses.map((addr) => (
-                                                <label 
+                                                <label
                                                     key={addr.id}
                                                     className={cn(
                                                         "relative p-6 rounded-[32px] cursor-pointer transition-all border-2 flex flex-col justify-between min-h-[160px]",
-                                                        selectedAddressId === addr.id 
+                                                        selectedAddressId === addr.id
                                                             ? "bg-[#F8F4EE]/10 border-[#C8B273] shadow-lg shadow-[#C8B273]/5"
                                                             : "bg-neutral-50/50 border-transparent hover:border-neutral-200"
                                                     )}
@@ -369,16 +369,16 @@ export default function CartPage() {
                                                             {addr.addressLine1}, {addr.city}, {addr.state} - {addr.pincode}
                                                         </p>
                                                     </div>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="address" 
+                                                    <input
+                                                        type="radio"
+                                                        name="address"
                                                         checked={selectedAddressId === addr.id}
                                                         onChange={() => setSelectedAddressId(addr.id)}
                                                         className="hidden"
                                                     />
                                                 </label>
                                             ))}
-                                            <Link 
+                                            <Link
                                                 href="/profile?tab=addresses"
                                                 className="flex flex-col items-center justify-center p-6 bg-neutral-50/50 border-2 border-dashed border-neutral-200 rounded-[32px] text-neutral-400 hover:border-[#C8B273] hover:text-[#C8B273] transition-all group min-h-[160px]"
                                             >
@@ -390,7 +390,7 @@ export default function CartPage() {
                                         <div className="p-12 text-center bg-neutral-50/50 rounded-[32px] border-2 border-dashed border-neutral-200">
                                             <MapPin className="w-10 h-10 text-neutral-300 mx-auto mb-4" />
                                             <p className="text-sm font-medium text-neutral-500 mb-6">No saved addresses found</p>
-                                            <Link 
+                                            <Link
                                                 href="/profile?tab=addresses"
                                                 className="inline-flex items-center gap-2 px-8 py-3 bg-[#C8B273] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
                                             >
@@ -677,7 +677,7 @@ export default function CartPage() {
                                                         method: "POST",
                                                         headers: { "Content-Type": "application/json" },
                                                         body: JSON.stringify({
-                                                            reservationId:   data.reservationId,
+                                                            reservationId: data.reservationId,
                                                             razorpayOrderId: data.orderId,
                                                         }),
                                                     });
@@ -732,7 +732,7 @@ export default function CartPage() {
                                         </div>
                                         <div className="text-center group">
                                             <RefreshCw className="w-5 h-5 text-indigo-400 mx-auto mb-1 group-hover:rotate-180 transition-all duration-700" />
-                                            <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Easy Returns</p>
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Easy Replacement</p>
                                         </div>
                                         <div className="text-center group">
                                             <Headphones className="w-5 h-5 text-rose-400 mx-auto mb-1 group-hover:scale-110 transition-transform" />
