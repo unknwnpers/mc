@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
+import { getAuth } from "firebase-admin/auth";
+import { getApps } from "firebase-admin/app";
 
 const THEME_DOC = adminDb.collection("settings").doc("theme");
 
@@ -7,7 +9,9 @@ async function verifySuperAdmin(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return null;
   try {
-    const decoded = await adminAuth.verifyIdToken(token);
+    const app = getApps()[0];
+    if (!app) return null;
+    const decoded = await getAuth(app).verifyIdToken(token);
     const snap = await adminDb.collection("users").doc(decoded.uid).get();
     if (snap.data()?.role !== "superadmin") return null;
     return decoded;
