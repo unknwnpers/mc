@@ -374,7 +374,7 @@ function ProductsContent() {
   }, [selectedCategory, search, collectionId, categories]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ background: 'var(--mc-bg-base)' }}>
       <Navbar />
 
       <main className="pt-32 pb-24">

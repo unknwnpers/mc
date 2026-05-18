@@ -385,7 +385,7 @@ export default function ProductDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen" style={{ background: 'var(--mc-bg-base)' }}>
         <Navbar />
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
@@ -408,7 +408,7 @@ export default function ProductDetailsPage() {
   }
 
   if (!product) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--mc-bg-base)' }}>
       <div className="text-center px-4">
         <h1 className="text-4xl font-bold mb-4 text-neutral-900">Product not found</h1>
         <p className="text-neutral-500 mb-8">The product you are looking for doesn't exist or has been removed.</p>
@@ -420,7 +420,7 @@ export default function ProductDetailsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ background: 'var(--mc-bg-base)' }}>
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 md:px-10 py-12">

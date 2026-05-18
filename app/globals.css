@@ -382,3 +382,70 @@
   color: var(--mc-text-heading);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   SHOP / PRODUCT PAGES — FULL NEUTRAL + WHITE CLASS OVERRIDE SYSTEM
+   Covers bg-white, bg-neutral-*, text-neutral-*, border-neutral-*
+   so Shop, Collections, and Product Detail pages respond to theme.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Page-level bg-white wrapper ── */
+.min-h-screen.bg-white { background-color: var(--mc-bg-base) !important; }
+
+/* ── bg-white on cards / panels / dropdowns ── */
+[class*="bg-white"]:not(.min-h-screen):not([class*="bg-white/"]) {
+  background-color: var(--mc-bg-card) !important;
+}
+
+/* ── Neutral surface backgrounds ── */
+[class*="bg-neutral-50"]  { background-color: var(--mc-bg-section) !important; }
+[class*="bg-neutral-100"] { background-color: var(--mc-bg-section) !important; }
+[class*="bg-neutral-200"] { background-color: var(--mc-border)     !important; }
+
+[class*="hover:bg-neutral-50"]:hover  { background-color: var(--mc-bg-section) !important; }
+[class*="hover:bg-neutral-100"]:hover { background-color: var(--mc-bg-section) !important; }
+
+/* ── Neutral text ── */
+[class*="text-neutral-900"] { color: var(--mc-text-heading) !important; }
+[class*="text-neutral-800"] { color: var(--mc-text-heading) !important; }
+[class*="text-neutral-700"] { color: var(--mc-text-heading) !important; }
+[class*="text-neutral-600"] { color: var(--mc-text-body)    !important; }
+[class*="text-neutral-500"] { color: var(--mc-text-body)    !important; }
+[class*="text-neutral-400"] { color: var(--mc-text-muted)   !important; }
+[class*="text-neutral-300"] { color: var(--mc-text-subtle)  !important; }
+
+[class*="hover:text-neutral-500"]:hover { color: var(--mc-text-body)   !important; }
+[class*="hover:text-neutral-400"]:hover { color: var(--mc-text-muted)  !important; }
+
+/* ── Gray-* text (reviews section) ── */
+[class*="text-gray-900"] { color: var(--mc-text-heading) !important; }
+[class*="text-gray-800"] { color: var(--mc-text-heading) !important; }
+[class*="text-gray-700"] { color: var(--mc-text-body)    !important; }
+[class*="text-gray-600"] { color: var(--mc-text-body)    !important; }
+[class*="text-gray-500"] { color: var(--mc-text-muted)   !important; }
+[class*="text-gray-400"] { color: var(--mc-text-muted)   !important; }
+
+/* ── Neutral borders ── */
+[class*="border-neutral-50"]  { border-color: var(--mc-border) !important; }
+[class*="border-neutral-100"] { border-color: var(--mc-border) !important; }
+[class*="border-neutral-200"] { border-color: var(--mc-border) !important; }
+[class*="border-neutral-300"] { border-color: var(--mc-border) !important; }
+
+[class*="divide-neutral-100"] > * + * { border-color: var(--mc-border) !important; }
+[class*="divide-neutral-200"] > * + * { border-color: var(--mc-border) !important; }
+
+/* ── Section dividers ── */
+[class*="border-t"][class*="border-neutral-200"] { border-color: var(--mc-border)  !important; }
+[class*="border-t"][class*="border-neutral-100"] { border-color: var(--mc-border)  !important; }
+
+/* ── Sticky mobile bar ── */
+[class*="border-t"][class*="border-neutral-100"] {
+  background-color: var(--mc-bg-card) !important;
+  border-color:     var(--mc-border)  !important;
+}
+
+/* ¯ Wishlist button inactive bg ── */
+[class*="bg-white/90"] { background-color: color-mix(in srgb, var(--mc-bg-card) 90%, transparent) !important; }
+
+/* ── Promise / highlight section gradient ── */
+[class*="from-[#F8F4EE]"] { --tw-gradient-from: var(--mc-bg-section) !important; }
+[class*="to-[#FCF9F7]"]   { --tw-gradient-to:   var(--mc-bg-base)    !important; }
