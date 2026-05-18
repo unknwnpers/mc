@@ -64,73 +64,94 @@ const PRESETS = [
   {
     id: "champagne",
     name: "Classic Champagne Gold",
-    desc: "The original brand palette — warm ivory backgrounds with champagne gold accents.",
+    desc: "Pale airy ivory with true champagne gold — light, clean, and timelessly elegant.",
     dot: "#C8B273",
     theme: {
-      gold: "#C8B273",
-      goldDark: "#B89B5E",
-      goldLight: "#E8DDB8",
-      goldSubtle: "#FFF9EC",
-      bgBase: "#F8F4EE",
-      bgCard: "#FFFCF9",
-      bgSection: "#FFFCF8",
-      bgHero: "#F8F4EE",
-      textHeading: "#3B312C",
-      textBody: "#6E625B",
-      textMuted: "#B8A89A",
-      textSubtle: "#9A9A9A",
-      borderDefault: "#F0E7DD",
-      borderGold: "rgba(200,178,115,0.12)",
-      blush: "#E8A598",
-      charcoal: "#3B312C",
+      // Pale champagne gold — the signature accent
+      gold:          "#C8B273",
+      goldDark:      "#B89B5E",
+      goldLight:     "#EAE0C4",
+      goldSubtle:    "#FDFAF0",
+
+      // Very light airy ivory backgrounds
+      bgBase:        "#FAF7F1",
+      bgCard:        "#FEFDFB",
+      bgSection:     "#F8F4EE",
+      bgHero:        "#FAF7F1",
+
+      // Clean warm-dark typography
+      textHeading:   "#2C2316",
+      textBody:      "#6B6058",
+      textMuted:     "#B5A596",
+      textSubtle:    "#9E9286",
+
+      // Very light delicate borders
+      borderDefault: "#EDE5D6",
+      borderGold:    "rgba(200,178,115,0.10)",
+      blush:         "#EAA89A",
+      charcoal:      "#2C2316",
     },
   },
   {
     id: "warm-luxury",
     name: "Warm Luxury",
-    desc: "Premium soft-warm palette — eye-friendly for day & night, calm and luxurious.",
-    dot: "#C7A96B",
+    desc: "Rich earthy warmth — deeper ivory, richer gold, a more enveloping luxury boutique feel.",
+    dot: "#BF9B5A",
     theme: {
-      gold: "#C7A96B",
-      goldDark: "#B8974A",
-      goldLight: "#DFD0B0",
-      goldSubtle: "#F8F4EC",
-      bgBase: "#F6F1EA",
-      bgCard: "#FFFDFC",
-      bgSection: "#F8F3EC",
-      bgHero: "#F6F1EA",
-      textHeading: "#3B2F2A",
-      textBody: "#7E7068",
-      textMuted: "#B7AAA0",
-      textSubtle: "#9E9387",
-      borderDefault: "#E8DED2",
-      borderGold: "rgba(199,169,107,0.12)",
-      blush: "#E8A598",
-      charcoal: "#3B2F2A",
+      // Richer, deeper earthy gold
+      gold:          "#BF9B5A",
+      goldDark:      "#A8864A",
+      goldLight:     "#D8C49A",
+      goldSubtle:    "#F5EDE0",
+
+      // Distinctly warmer, richer backgrounds vs Champagne
+      bgBase:        "#F2EAE0",
+      bgCard:        "#FAF5EE",
+      bgSection:     "#EEE5D8",
+      bgHero:        "#F2EAE0",
+
+      // Deeper, richer heading contrast
+      textHeading:   "#2E2018",
+      textBody:      "#7A6A5E",
+      textMuted:     "#B0A090",
+      textSubtle:    "#9A8E82",
+
+      // Warmer, more visible borders
+      borderDefault: "#DDD0C0",
+      borderGold:    "rgba(191,155,90,0.14)",
+      blush:         "#D49A8A",
+      charcoal:      "#2E2018",
     },
   },
   {
     id: "warm-espresso",
     name: "Warm Espresso",
-    desc: "Premium night mode — deep warm surfaces with restrained gold, soft on the eyes for long sessions.",
+    desc: "Deep espresso dark mode — layered warm-dark surfaces with restrained gold, luxurious for night browsing.",
     dot: "#C7A96B",
     theme: {
-      gold: "#C7A96B",
-      goldDark: "#D4B87B",
-      goldLight: "#8E7A5A",
-      goldSubtle: "#312A27",
-      bgBase: "#1F1B19",
-      bgCard: "#2A2421",
-      bgSection: "#241F1D",
-      bgHero: "#1F1B19",
-      textHeading: "#F2ECE5",
-      textBody: "#B7AAA0",
-      textMuted: "#8E8278",
-      textSubtle: "#6B6260",
-      borderDefault: "#3A3331",
-      borderGold: "rgba(199,169,107,0.15)",
-      blush: "#8A6A62",
-      charcoal: "#F2ECE5",
+      // Gold glows warmly on dark — slightly brighter for legibility
+      gold:          "#C7A96B",
+      goldDark:      "#D4B87B",
+      goldLight:     "#7A6644",
+      goldSubtle:    "#2E2520",
+
+      // Layered espresso-toned dark surfaces
+      bgBase:        "#1A1714",
+      bgCard:        "#262118",
+      bgSection:     "#201C18",
+      bgHero:        "#1A1714",
+
+      // Warm cream typography — never harsh white
+      textHeading:   "#F0EAE2",
+      textBody:      "#B2A69C",
+      textMuted:     "#887E76",
+      textSubtle:    "#64605C",
+
+      // Subtle dark warm borders
+      borderDefault: "#363028",
+      borderGold:    "rgba(199,169,107,0.18)",
+      blush:         "#7A5A54",
+      charcoal:      "#F0EAE2",
     },
   },
 ];

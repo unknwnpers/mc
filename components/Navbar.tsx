@@ -111,7 +111,7 @@ export default function Navbar() {
             "transition-all duration-500 overflow-hidden border-b border-[rgba(200,178,115,0.06)]",
             isScrolled ? "h-0 opacity-0" : "h-[36px] opacity-100"
           )}
-          style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(12px)' }}
+          style={{ background: 'var(--mc-bg-card)', backdropFilter: 'blur(12px)' }}
         >
           {/* Desktop: centered row */}
           <div className="hidden md:flex max-w-[1320px] mx-auto px-6 h-full items-center justify-center gap-10">
@@ -143,7 +143,7 @@ export default function Navbar() {
           )}
           style={{
             height: '78px',
-            background: 'rgba(255,255,255,0.82)',
+            background: 'var(--mc-bg-card)',
             backdropFilter: 'saturate(180%) blur(20px)',
             WebkitBackdropFilter: 'saturate(180%) blur(20px)',
           }}
@@ -188,7 +188,7 @@ export default function Navbar() {
                           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                           className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50"
                         >
-                          <div className="bg-white rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-[rgba(200,178,115,0.08)] py-3 px-2 min-w-[210px]">
+                          <div className="rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-[rgba(200,178,115,0.08)] py-3 px-2 min-w-[210px]" style={{ background: 'var(--mc-bg-card)' }}>
                             {link.dropdown.map((item) => (
                               <Link
                                 key={item.href}
@@ -259,7 +259,7 @@ export default function Navbar() {
                         transition={{ duration: 0.2 }}
                         className="absolute top-full right-0 pt-3 z-50"
                       >
-                        <div className="bg-white rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-[rgba(200,178,115,0.08)] p-4 min-w-[220px]">
+                        <div className="rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-[rgba(200,178,115,0.08)] p-4 min-w-[220px]" style={{ background: 'var(--mc-bg-card)' }}>
                           <div className="mb-3 pb-3 border-b border-[rgba(200,178,115,0.08)]">
                             <p className="text-[11px] font-medium text-[#B8A89A] mb-0.5">Signed in as</p>
                             <p className="font-semibold text-[#3B312C] truncate text-sm">{user.email || user.phoneNumber}</p>
@@ -323,7 +323,7 @@ export default function Navbar() {
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 28, stiffness: 300 }}
                 className="fixed top-0 right-0 bottom-0 w-[85%] max-w-[380px] z-50 lg:hidden overflow-y-auto"
-                style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)' }}
+                style={{ background: 'var(--mc-bg-card)', backdropFilter: 'blur(24px)' }}
               >
                 <div className="p-6 pt-20 space-y-6">
                   <nav className="space-y-1">

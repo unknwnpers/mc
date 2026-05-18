@@ -283,3 +283,76 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPLETE THEME OVERRIDE SYSTEM
+   Remaps every hardcoded Tailwind arbitrary-value color class to
+   the active CSS variable so ALL frontend components respond to
+   theme changes without per-file edits.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Page / Section Backgrounds ── */
+[class*="bg-[#F8F4EE]"] { background-color: var(--mc-bg-base)    !important; }
+[class*="bg-[#FFF9F6]"] { background-color: var(--mc-bg-base)    !important; }
+[class*="bg-[#FDF5F1]"] { background-color: var(--mc-bg-base)    !important; }
+[class*="bg-[#FDF8F4]"] { background-color: var(--mc-bg-base)    !important; }
+[class*="bg-[#FFFCF9]"] { background-color: var(--mc-bg-card)    !important; }
+[class*="bg-[#FDFCF9]"] { background-color: var(--mc-bg-card)    !important; }
+[class*="bg-[#FFFCF8]"] { background-color: var(--mc-bg-section) !important; }
+[class*="bg-[#F4EDE8]"] { background-color: var(--mc-bg-section) !important; }
+[class*="bg-[#F8F1EC]"] { background-color: var(--mc-bg-section) !important; }
+
+/* ── Gold Subtle Backgrounds ── */
+[class*="bg-[#FFF9EC]"] { background-color: var(--mc-gold-subtle) !important; }
+[class*="bg-[#FFF9EF]"] { background-color: var(--mc-gold-subtle) !important; }
+
+/* ── Border Colors ── */
+[class*="border-[#F0E7DD]"] { border-color: var(--mc-border) !important; }
+[class*="border-[#F0E9E0]"] { border-color: var(--mc-border) !important; }
+[class*="border-[#E8DED2]"] { border-color: var(--mc-border) !important; }
+
+/* ── Heading / Dark Text ── */
+[class*="text-[#3B312C]"] { color: var(--mc-text-heading) !important; }
+[class*="text-[#2A2420]"] { color: var(--mc-text-heading) !important; }
+
+/* ── Body Text ── */
+[class*="text-[#6E625B]"] { color: var(--mc-text-body) !important; }
+[class*="text-[#6B6B6B]"] { color: var(--mc-text-body) !important; }
+[class*="text-[#5C5248]"] { color: var(--mc-text-body) !important; }
+
+/* ── Muted Text ── */
+[class*="text-[#B8A89A]"] { color: var(--mc-text-muted) !important; }
+[class*="text-[#9E9387]"] { color: var(--mc-text-muted) !important; }
+
+/* ── Subtle Text ── */
+[class*="text-[#9A9A9A]"] { color: var(--mc-text-subtle) !important; }
+[class*="text-[#A0A0A0]"] { color: var(--mc-text-subtle) !important; }
+
+/* ── Gold Accent Text ── */
+[class*="text-[#C8B273]"] { color: var(--mc-gold) !important; }
+[class*="text-[#C7A96B]"] { color: var(--mc-gold) !important; }
+[class*="text-[#B89B5E]"] { color: var(--mc-gold-dark) !important; }
+
+/* ── Gold Accent Background ── */
+[class*="bg-[#C8B273]"] { background-color: var(--mc-gold) !important; }
+[class*="bg-[#C7A96B]"] { background-color: var(--mc-gold) !important; }
+[class*="bg-[#B89B5E]"] { background-color: var(--mc-gold-dark) !important; }
+
+/* ── Gold Border ── */
+[class*="border-[#C8B273]"] { border-color: var(--mc-gold) !important; }
+[class*="border-[#C7A96B]"] { border-color: var(--mc-gold) !important; }
+
+/* ── Hover: Gold text ── */
+[class*="hover:text-[#C8B273]"]:hover { color: var(--mc-gold) !important; }
+[class*="hover:text-[#C7A96B]"]:hover { color: var(--mc-gold) !important; }
+
+/* ── Hover: Gold bg ── */
+[class*="hover:bg-[#C8B273]"]:hover   { background-color: var(--mc-gold)      !important; }
+[class*="hover:bg-[#B89B5E]"]:hover   { background-color: var(--mc-gold-dark)  !important; }
+[class*="hover:bg-[#FDFCF9]"]:hover   { background-color: var(--mc-bg-card)    !important; }
+[class*="hover:bg-[#F8F4EE]"]:hover   { background-color: var(--mc-bg-base)    !important; }
+
+/* ── Navbar / Dropdown Surfaces (inline style overrides via class) ── */
+.navbar-surface    { background: rgba(var(--mc-bg-nav-rgb, 255,255,255), 0.88) !important; }
+.dropdown-surface  { background: var(--mc-bg-card) !important; color: var(--mc-text-body) !important; }
+

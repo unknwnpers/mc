@@ -145,7 +145,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
 
         {/* Optional product badge / tag */}
         {(product as any).badge && (
-          <span className="inline-flex items-center text-[11px] font-semibold text-[#6E625B] px-2.5 py-0.5 rounded-full border border-[rgba(200,178,115,0.20)] mb-1.5" style={{ background: '#FFF9EC' }}>
+          <span className="inline-flex items-center text-[11px] font-semibold text-[#6E625B] px-2.5 py-0.5 rounded-full border border-[rgba(200,178,115,0.20)] mb-1.5" style={{ background: 'var(--mc-gold-subtle)' }}>
             {(product as any).badge}
           </span>
         )}
