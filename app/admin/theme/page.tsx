@@ -59,6 +59,58 @@ const GROUPS = [
   },
 ];
 
+// ── Named theme presets ──
+const PRESETS = [
+  {
+    id: "champagne",
+    name: "Classic Champagne Gold",
+    desc: "The original brand palette — warm ivory backgrounds with champagne gold accents.",
+    dot: "#C8B273",
+    theme: {
+      gold: "#C8B273",
+      goldDark: "#B89B5E",
+      goldLight: "#E8DDB8",
+      goldSubtle: "#FFF9EC",
+      bgBase: "#F8F4EE",
+      bgCard: "#FFFCF9",
+      bgSection: "#FFFCF8",
+      bgHero: "#F8F4EE",
+      textHeading: "#3B312C",
+      textBody: "#6E625B",
+      textMuted: "#B8A89A",
+      textSubtle: "#9A9A9A",
+      borderDefault: "#F0E7DD",
+      borderGold: "rgba(200,178,115,0.12)",
+      blush: "#E8A598",
+      charcoal: "#3B312C",
+    },
+  },
+  {
+    id: "warm-luxury",
+    name: "Warm Luxury",
+    desc: "Premium soft-warm palette — eye-friendly for day & night, calm and luxurious.",
+    dot: "#C7A96B",
+    theme: {
+      gold: "#C7A96B",
+      goldDark: "#B8974A",
+      goldLight: "#DFD0B0",
+      goldSubtle: "#F8F4EC",
+      bgBase: "#F6F1EA",
+      bgCard: "#FFFDFC",
+      bgSection: "#F8F3EC",
+      bgHero: "#F6F1EA",
+      textHeading: "#3B2F2A",
+      textBody: "#7E7068",
+      textMuted: "#B7AAA0",
+      textSubtle: "#9E9387",
+      borderDefault: "#E8DED2",
+      borderGold: "rgba(199,169,107,0.12)",
+      blush: "#E8A598",
+      charcoal: "#3B2F2A",
+    },
+  },
+];
+
 async function getToken() {
   return auth.currentUser?.getIdToken();
 }
@@ -214,6 +266,38 @@ export default function ThemePage() {
       <div className={`grid gap-6 ${preview ? "lg:grid-cols-2" : "grid-cols-1 max-w-3xl"}`}>
         {/* ── COLOR CONTROLS ── */}
         <div className="space-y-6">
+
+          {/* Preset Selector */}
+          <div className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.06]">
+              <h2 className="text-white font-black text-sm">Theme Presets</h2>
+              <p className="text-white/30 text-xs mt-0.5">Select a preset to load its colors — then customise and save.</p>
+            </div>
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {PRESETS.map(preset => {
+                const isActive = Object.entries(preset.theme).every(([k, v]) => theme[k] === v);
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => { setTheme({ ...theme, ...preset.theme }); toast.info(`"${preset.name}" loaded — click Save to apply`); }}
+                    className={`text-left p-4 rounded-xl border transition-all ${
+                      isActive
+                        ? "border-amber-500/40 bg-amber-500/10"
+                        : "border-white/10 bg-white/[0.03] hover:bg-white/[0.07]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0" style={{ background: preset.dot }} />
+                      <span className={`text-sm font-bold ${isActive ? "text-amber-400" : "text-white"}`}>{preset.name}</span>
+                      {isActive && <span className="text-[10px] font-bold text-amber-400 ml-auto">ACTIVE</span>}
+                    </div>
+                    <p className="text-white/30 text-xs leading-relaxed pl-8">{preset.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {GROUPS.map(group => (
             <div key={group.label} className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-white/[0.06]">
