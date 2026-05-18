@@ -318,71 +318,135 @@ export default function ThemePage() {
               <h2 className="text-white font-black text-sm">Theme Presets</h2>
               <p className="text-white/30 text-xs mt-0.5">Select a preset to load its colors — then customise and save.</p>
             </div>
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 grid grid-cols-1 gap-3">
               {PRESETS.map(preset => {
                 const isActive = Object.entries(preset.theme).every(([k, v]) => theme[k] === v);
+                const previewKeys = ['bgBase', 'bgCard', 'gold', 'textHeading', 'borderDefault'];
                 return (
                   <button
                     key={preset.id}
                     onClick={() => { setTheme({ ...theme, ...preset.theme }); toast.info(`"${preset.name}" loaded — click Save to apply`); }}
-                    className={`text-left p-4 rounded-xl border transition-all ${
-                      isActive
-                        ? "border-amber-500/40 bg-amber-500/10"
-                        : "border-white/10 bg-white/[0.03] hover:bg-white/[0.07]"
-                    }`}
+                    className={`text-left p-4 rounded-xl border transition-all ${isActive ? 'border-amber-500/40 bg-amber-500/10' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07]'}`}
                   >
-                    <div className="flex items-center gap-3 mb-1.5">
-                      <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0" style={{ background: preset.dot }} />
-                      <span className={`text-sm font-bold ${isActive ? "text-amber-400" : "text-white"}`}>{preset.name}</span>
-                      {isActive && <span className="text-[10px] font-bold text-amber-400 ml-auto">ACTIVE</span>}
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* Mini palette strip */}
+                      <div className="flex rounded-lg overflow-hidden border border-white/10 shrink-0">
+                        {previewKeys.map(k => (
+                          <div key={k} className="w-6 h-6" style={{ background: (preset.theme as any)[k] || '#ccc' }} />
+                        ))}
+                      </div>
+                      <span className={`text-sm font-bold ${isActive ? 'text-amber-400' : 'text-white'}`}>{preset.name}</span>
+                      {isActive && <span className="text-[10px] font-bold text-amber-400 ml-auto px-2 py-0.5 rounded-full bg-amber-500/10">ACTIVE</span>}
                     </div>
-                    <p className="text-white/30 text-xs leading-relaxed pl-8">{preset.desc}</p>
+                    <p className="text-white/30 text-xs leading-relaxed">{preset.desc}</p>
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* ── PALETTE BALANCE MOSAIC ── */}
+          <div className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+              <div>
+                <h2 className="text-white font-black text-sm">Palette Balance</h2>
+                <p className="text-white/30 text-xs mt-0.5">Visual overview of all 16 active color tokens</p>
+              </div>
+            </div>
+            <div className="p-4">
+              {/* Full mosaic strip */}
+              <div className="flex rounded-xl overflow-hidden mb-3 h-12 border border-white/10">
+                {Object.entries(theme)
+                  .filter(([k]) => !['updatedAt','updatedBy','borderGold'].includes(k))
+                  .map(([key, val]) => (
+                    <div
+                      key={key}
+                      title={`${key}: ${val}`}
+                      className="flex-1 transition-all hover:flex-[2] cursor-default"
+                      style={{ background: val?.startsWith('rgba') ? val : val }}
+                    />
+                  ))}
+              </div>
+              {/* Token chips row */}
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(theme)
+                  .filter(([k]) => !['updatedAt','updatedBy'].includes(k))
+                  .map(([key, val]) => (
+                    <div key={key} className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 py-1">
+                      <div className="w-3 h-3 rounded-sm border border-white/20 shrink-0" style={{ background: val?.startsWith('rgba') ? val : val }} />
+                      <span className="text-[10px] text-white/40 font-mono">{key}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+
           {GROUPS.map(group => (
             <div key={group.label} className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.06]">
+              {/* Group header with mini palette strip */}
+              <div className="px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
                 <h2 className="text-white font-black text-sm">{group.label}</h2>
+                <div className="flex rounded-md overflow-hidden border border-white/10">
+                  {group.keys.map(k => (
+                    <div key={k} className="w-5 h-5" style={{ background: theme[k]?.startsWith('rgba') ? theme[k] : theme[k] || '#888' }} />
+                  ))}
+                </div>
               </div>
-              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="divide-y divide-white/[0.04]">
                 {group.keys.map((key, i) => (
-                  <div key={key} className="flex items-center gap-3">
-                    {/* Color swatch picker */}
-                    <label className="relative cursor-pointer shrink-0">
+                  <div key={key} className="flex items-center gap-4 px-4 py-3.5 hover:bg-white/[0.02] transition-colors">
+
+                    {/* Large clickable swatch */}
+                    <label className="relative cursor-pointer shrink-0 group/swatch">
                       <div
-                        className="w-10 h-10 rounded-xl border-2 border-white/10 shadow-lg transition-transform hover:scale-105 cursor-pointer"
-                        style={{ background: theme[key] || "#ccc" }}
+                        className="w-12 h-12 rounded-2xl border-2 border-white/10 shadow-lg transition-all group-hover/swatch:scale-105 group-hover/swatch:border-white/30 cursor-pointer"
+                        style={{ background: theme[key]?.startsWith('rgba') ? theme[key] : theme[key] || '#ccc' }}
                       />
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover/swatch:opacity-100 transition-opacity bg-black/20">
+                        <span className="text-white text-[8px] font-black tracking-wider">PICK</span>
+                      </div>
                       <input
                         type="color"
-                        value={theme[key]?.startsWith("rgba") ? "#C8B273" : theme[key] || "#C8B273"}
+                        value={theme[key]?.startsWith('rgba') ? '#C8B273' : theme[key] || '#C8B273'}
                         onChange={e => setTheme(prev => ({ ...prev, [key]: e.target.value }))}
                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       />
                     </label>
+
+                    {/* Token info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-white/80 text-sm font-semibold truncate">{group.labels[i]}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <input
-                          type="text"
-                          value={theme[key] || ""}
-                          onChange={e => setTheme(prev => ({ ...prev, [key]: e.target.value }))}
-                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[12px] font-mono text-white/60 w-full focus:outline-none focus:border-white/20"
-                          spellCheck={false}
-                        />
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <p className="text-white/90 text-sm font-bold">{group.labels[i]}</p>
+                        <span className="text-[10px] font-mono text-white/20 bg-white/5 px-1.5 py-0.5 rounded">{key}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Hex input with color dot prefix */}
+                        <div className="flex items-center gap-1.5 flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 focus-within:border-white/20">
+                          <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: theme[key]?.startsWith('rgba') ? theme[key] : theme[key] || '#ccc' }} />
+                          <input
+                            type="text"
+                            value={theme[key] || ''}
+                            onChange={e => setTheme(prev => ({ ...prev, [key]: e.target.value }))}
+                            className="bg-transparent text-[12px] font-mono text-white/60 w-full focus:outline-none focus:text-white/90"
+                            spellCheck={false}
+                          />
+                        </div>
+                        {/* Reset to default */}
                         <button
                           onClick={() => setTheme(prev => ({ ...prev, [key]: (DEFAULT_THEME as any)[key] }))}
                           title="Reset to default"
-                          className="shrink-0 text-white/20 hover:text-white/60 transition-colors text-[10px]"
+                          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/20 hover:text-white/60 hover:bg-white/[0.08] hover:border-white/20 transition-all"
                         >
                           <RotateCcw className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
+
+                    {/* Change indicator */}
+                    {theme[key] !== (DEFAULT_THEME as any)[key] && (
+                      <div className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Modified from default" />
+                    )}
                   </div>
                 ))}
               </div>

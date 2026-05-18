@@ -96,13 +96,19 @@
     @apply bg-[#C8B273]/20 text-[#3B312C];
   }
 
-  /* Typography hierarchy */
+  /* Typography hierarchy — always use CSS variables so dark themes work */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-bold text-[#3B312C] tracking-tight;
+    color: var(--mc-text-heading);
+    @apply font-serif font-bold tracking-tight;
   }
   
   p {
-    @apply text-[#6E625B];
+    color: var(--mc-text-body);
+  }
+
+  /* All spans, labels, and anchors inherit body color unless overridden */
+  span, label, li {
+    color: inherit;
   }
 }
 
@@ -355,4 +361,24 @@
 /* ── Navbar / Dropdown Surfaces (inline style overrides via class) ── */
 .navbar-surface    { background: rgba(var(--mc-bg-nav-rgb, 255,255,255), 0.88) !important; }
 .dropdown-surface  { background: var(--mc-bg-card) !important; color: var(--mc-text-body) !important; }
+
+/* ── Additional text selectors found in audit ── */
+/* White text (on image overlays, gold buttons) — must stay white */
+[class*="text-white"]               { color: #ffffff !important; }
+[class*="text-white/"]              { color: inherit; } /* opacity variants — let them cascade */
+
+/* Dark overlay text on image cards stays readable */
+[class*="text-[#6B6B6B]"]  { color: var(--mc-text-body)    !important; }
+[class*="text-[#888]"]     { color: var(--mc-text-muted)   !important; }
+[class*="text-[#999]"]     { color: var(--mc-text-subtle)  !important; }
+
+/* stroke/fill on SVG icons */
+[class*="stroke-[#C8B273]"]  { stroke: var(--mc-gold)  !important; }
+[class*="fill-[#C8B273]"]    { fill:   var(--mc-gold)  !important; }
+
+/* Selection highlight uses gold */
+::selection {
+  background: var(--mc-gold-subtle);
+  color: var(--mc-text-heading);
+}
 
