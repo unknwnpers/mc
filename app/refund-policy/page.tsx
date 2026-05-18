@@ -23,7 +23,7 @@ export default function RefundPolicy() {
           <p className="text-neutral-600 leading-relaxed mb-2">
             To request cancellation, customers must email us at:{" "}
             <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">
-              miksandchiks@gmail.com
+              hello@miksandchiks.com
             </a>
           </p>
           <p className="text-neutral-600 leading-relaxed mb-2">Please include:</p>
@@ -205,7 +205,7 @@ export default function RefundPolicy() {
           <p className="text-neutral-600 leading-relaxed mb-4">
             <strong>Email:</strong>{" "}
             <a href="mailto:miksandchiks@gmail.com" className="text-blush hover:underline">
-              miksandchiks@gmail.com
+              hello@miksandchiks.com
             </a>
           </p>
           <p className="text-neutral-600 leading-relaxed">
