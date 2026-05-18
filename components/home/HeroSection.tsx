@@ -37,7 +37,7 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
     <section
       ref={ref}
       className="relative overflow-hidden w-full max-w-full flex items-center min-h-[620px] md:min-h-[800px] pt-[160px] md:pt-[180px] pb-16 md:pb-32"
-      style={{ background: '#F8F4EE' }}
+      style={{ background: 'var(--mc-bg-base)' }}
     >
       {/* ── Background decoration ── */}
       <motion.div style={{ y: bgDecorY }} className="absolute top-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full bg-[#C8B273]/[0.03] blur-[100px] pointer-events-none hidden md:block" />
@@ -63,10 +63,10 @@ export default function HeroSection({ heroImageUrl, content = {} }: HeroSectionP
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15, ease }}
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8 mx-auto lg:ml-0"
-              style={{ background: 'rgba(200, 178, 115, 0.10)' }}
+              style={{ background: 'var(--mc-bg-card)' }}
             >
-              <Heart className="w-3.5 h-3.5 text-[#C8B273] fill-current" />
-              <span className="text-[12px] font-semibold tracking-[1px] text-[#C8B273] uppercase">
+              <Heart className="w-3.5 h-3.5 text-[var(--mc-gold)] fill-current" />
+              <span className="text-[12px] font-semibold tracking-[1px] text-[var(--mc-gold)] uppercase">
                 Welcome to Miks & Chiks
               </span>
             </motion.div>

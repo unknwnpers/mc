@@ -9,6 +9,7 @@ import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WebVitalsReporter from '@/components/WebVitalsReporter';
 import RootInit from '@/components/RootInit';
 import FlashScreen from '@/components/FlashScreen';
+import ThemeProvider from '@/components/ThemeProvider';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -81,6 +82,7 @@ export default function RootLayout({
         </Suspense>
         <AuthProvider>
           <CartProvider>
+            <ThemeProvider />
             {children}
             <FlashScreen />
             <Toaster richColors closeButton position="top-center" />

@@ -117,7 +117,7 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
   const decorY2 = useTransform(scrollYProgress, [0, 1], [20, -15]);
 
   return (
-    <section ref={ref} className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
+    <section ref={ref} className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: 'var(--mc-bg-base)' }}>
       {/* Background glow */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 

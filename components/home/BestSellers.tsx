@@ -32,7 +32,7 @@ export default function BestSellers({ products }: BestSellersProps) {
   if (products.length === 0) return null;
 
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: 'var(--mc-bg-base)' }}>
       {/* Subtle background glow */}
       <div className="absolute left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 

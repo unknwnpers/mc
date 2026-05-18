@@ -42,7 +42,7 @@ export default function CustomStitching() {
   return (
     <section
       className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden"
-      style={{ background: '#FFFCF8' }}
+      style={{ background: 'var(--mc-bg-section)' }}
     >
       {/* Subtle background glows — matching existing pattern */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#C8B273]/[0.025] rounded-full blur-[120px] pointer-events-none hidden md:block" />

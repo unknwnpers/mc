@@ -4,6 +4,25 @@
 
 @layer base {
   :root {
+    /* ── Miks & Chiks theme tokens (overridden by ThemeProvider) ── */
+    --mc-gold:         #C8B273;
+    --mc-gold-dark:    #B89B5E;
+    --mc-gold-light:   #E8DDB8;
+    --mc-gold-subtle:  #FFF9EC;
+    --mc-bg-base:      #F8F4EE;
+    --mc-bg-card:      #FFFCF9;
+    --mc-bg-section:   #FFFCF8;
+    --mc-bg-hero:      #F8F4EE;
+    --mc-text-heading: #3B312C;
+    --mc-text-body:    #6E625B;
+    --mc-text-muted:   #B8A89A;
+    --mc-text-subtle:  #9A9A9A;
+    --mc-border:       #F0E7DD;
+    --mc-border-gold:  rgba(200,178,115,0.12);
+    --mc-blush:        #E8A598;
+    --mc-charcoal:     #3B312C;
+
+    /* shadcn/ui tokens */
     --background: 20 100% 99%;
     --foreground: 0 0% 12%;
     --card: 0 0% 100%;
@@ -68,7 +87,9 @@
   }
 
   body {
-    @apply bg-[#F8F4EE] text-[#6E625B] font-sans antialiased;
+    background: var(--mc-bg-base);
+    color: var(--mc-text-body);
+    @apply font-sans antialiased;
   }
 
   ::selection {
@@ -109,19 +130,19 @@
 
   /* Core UI Elements */
   .btn-primary {
-    background: #C8B273;
+    background: var(--mc-gold);
     color: #FFFFFF;
     border-radius: 14px;
     transition: all 0.3s ease;
   }
   .btn-primary:hover {
-    background: #B89B5E;
+    background: var(--mc-gold-dark);
   }
 
   .btn-secondary {
     background: transparent;
-    border: 1px solid #C8B273;
-    color: #C8B273;
+    border: 1px solid var(--mc-gold);
+    color: var(--mc-gold);
     border-radius: 14px;
     transition: all 0.3s ease;
   }
@@ -130,8 +151,8 @@
   }
 
   .trust-badge {
-    color: #C8B273;
-    background: #FFF9EC;
+    color: var(--mc-gold);
+    background: var(--mc-gold-subtle);
   }
 
   .bottom-nav {
@@ -140,10 +161,10 @@
     box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
   }
   .bottom-nav-icon {
-    color: #B8A89A;
+    color: var(--mc-text-muted);
   }
   .bottom-nav-icon.active {
-    color: #C8B273;
+    color: var(--mc-gold);
   }
 
   /* Auth page layout */

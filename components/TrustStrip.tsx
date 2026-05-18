@@ -60,10 +60,10 @@ export default function TrustStrip() {
           variants={containerVariants}
           className="rounded-[32px] px-6 md:px-10 py-6 md:py-8 border"
           style={{
-            background: 'rgba(255,255,255,0.92)',
+            background: 'var(--mc-bg-card)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            borderColor: 'rgba(200,178,115,0.08)',
+            borderColor: 'var(--mc-border-gold)',
             boxShadow: '0 20px 50px rgba(0,0,0,0.05)',
           }}
         >

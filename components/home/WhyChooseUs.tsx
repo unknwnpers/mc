@@ -52,7 +52,7 @@ interface WhyChooseUsProps {
 
 export default function WhyChooseUs({ content = {} }: WhyChooseUsProps) {
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
+    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: 'var(--mc-bg-base)' }}>
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none hidden md:block" />
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#FDF5F1]/80 rounded-full blur-[80px] pointer-events-none hidden md:block" />
