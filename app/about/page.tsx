@@ -1,10 +1,27 @@
-import { Heart, MapPin, Star, ArrowLeft, Sparkles, Box, ShieldCheck, Zap, ShoppingBag } from 'lucide-react';
+"use client";
+
+import { useEffect, useState } from 'react';
+import { Heart, MapPin, Star, Sparkles, ShieldCheck, Zap, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { cn } from '@/lib/utils';
 
+const DEFAULT_IMAGE = "/pregnant-lady.jpg";
+
 export default function AboutPage() {
+  const [storyImage, setStoryImage] = useState<string>(DEFAULT_IMAGE);
+
+  useEffect(() => {
+    fetch("/api/settings/about-page")
+      .then((r) => r.json())
+      .then((data) => {
+        const url = data?.config?.imageUrl;
+        if (url) setStoryImage(url);
+      })
+      .catch(() => {/* keep default */});
+  }, []);
+
   const values = [
     {
       icon: Heart,
@@ -43,10 +60,10 @@ export default function AboutPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-12 w-24 h-24 bg-[#C8B273]/5 rounded-full blur-3xl" />
           <p className="text-[13px] font-black text-[#C8B273] uppercase tracking-[0.3em] mb-4 relative z-10">Our Essence</p>
           <h1 className="text-5xl md:text-7xl font-serif font-bold text-[#3B312C] mb-8 tracking-tighter relative z-10">
-            About <span className="text-[#C8B273] italic">Miks & Chiks</span>
+            About <span className="text-[#C8B273] italic">Miks &amp; Chiks</span>
           </h1>
           <p className="text-lg md:text-xl text-neutral-500 max-w-3xl mx-auto leading-relaxed font-sans font-medium">
-            At Miks & Chiks, we believe that comfort is not a luxury — it's essential, especially for mothers and children.
+            At Miks &amp; Chiks, we believe that comfort is not a luxury — it&apos;s essential, especially for mothers and children.
           </p>
         </div>
 
@@ -57,12 +74,13 @@ export default function AboutPage() {
             <div className="absolute -inset-6 bg-[#F8F4EE]/40 rounded-[60px] -rotate-3 blur-2xl" />
             <div className="relative group overflow-hidden rounded-[50px] shadow-2xl shadow-[#3B312C]/5 border border-[#F3E8E5]">
               <Image
-                src="/pregnant-lady.jpg"
+                src={storyImage}
                 alt="Our Story"
                 width={700}
                 height={600}
                 className="w-full h-[500px] md:h-[650px] object-cover object-top transform group-hover:scale-105 transition-transform duration-1000"
                 priority
+                unoptimized={storyImage.startsWith("http")}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#3B312C]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             </div>
@@ -91,11 +109,11 @@ export default function AboutPage() {
 
             <div className="space-y-6 text-neutral-600 leading-relaxed text-lg font-sans">
               <p>
-                Miks & Chiks was built with a simple goal — to make it easier for mothers to find clothing that truly feels good.
+                Miks &amp; Chiks was built with a simple goal — to make it easier for mothers to find clothing that truly feels good.
               </p>
 
               <p>
-                We understand that during pregnancy and early motherhood, comfort matters more than ever. At the same time, you shouldn't have to compromise on style or quality. That's why our collection focuses on fabrics that are gentle on the skin, easy to wear, and suitable for daily use in our climate.
+                We understand that during pregnancy and early motherhood, comfort matters more than ever. At the same time, you shouldn&apos;t have to compromise on style or quality. That&apos;s why our collection focuses on fabrics that are gentle on the skin, easy to wear, and suitable for daily use in our climate.
               </p>
 
               <p>
@@ -107,7 +125,7 @@ export default function AboutPage() {
                   <Sparkles className="w-24 h-24 text-[#3B312C]" />
                 </div>
                 <p className="font-bold text-[#3B312C] relative z-10">
-                  "We are not just a store — we are a space where mothers can find reliable essentials without confusion or compromise."
+                  &quot;We are not just a store — we are a space where mothers can find reliable essentials without confusion or compromise.&quot;
                 </p>
               </div>
             </div>
@@ -160,7 +178,7 @@ export default function AboutPage() {
             </h2>
 
             <p className="text-neutral-400 text-lg md:text-xl mb-12 font-sans leading-relaxed max-w-2xl mx-auto font-medium">
-              Visit our boutique in Kochi or explore our curated collection online. We're here to help you choose what feels right.
+              Visit our boutique in Kochi or explore our curated collection online. We&apos;re here to help you choose what feels right.
             </p>
 
             <div className="flex flex-wrap justify-center gap-6">
