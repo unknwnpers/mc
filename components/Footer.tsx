@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Instagram, Facebook, Youtube, ChevronDown, Mail, Phone, MapPin, Clock, ShieldCheck, RefreshCw, Banknote, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,12 +30,6 @@ const trustBadges = [
   { icon: RefreshCw, text: "Easy Replacement" },
   { icon: Banknote, text: "COD Available" },
   { icon: Star, text: "Premium Quality" },
-];
-
-const socials = [
-  { icon: Instagram, href: "https://instagram.com/miksandchiks", label: "Instagram" },
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Youtube, href: "#", label: "YouTube" },
 ];
 
 const instaImages = [
@@ -170,7 +165,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
             <div className="grid grid-cols-2 gap-3">
               {instaImages.map((img, i) => (
                 <Link key={i} href={instagramUrl} target="_blank" className="group relative rounded-xl overflow-hidden w-[88px] h-[88px]">
-                  <img src={img} alt="Instagram" loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <Image src={img} alt={`Instagram preview ${i + 1}`} fill sizes="88px" className="object-cover group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-[#C8B273]/20 transition-colors duration-300" />
                 </Link>
               ))}

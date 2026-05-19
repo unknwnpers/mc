@@ -64,15 +64,17 @@ export default function BestSellers({ products }: BestSellersProps) {
                 onClick={() => scroll('left')}
                 className="w-11 h-11 rounded-full border flex items-center justify-center hover:bg-[var(--mc-gold)] hover:text-white hover:border-[var(--mc-gold)] transition-all duration-300 active:scale-95"
                 style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)', color: 'var(--mc-text-body)' }}
+                aria-label="Previous products"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
               </button>
               <button
                 onClick={() => scroll('right')}
                 className="w-11 h-11 rounded-full border flex items-center justify-center hover:bg-[var(--mc-gold)] hover:text-white hover:border-[var(--mc-gold)] transition-all duration-300 active:scale-95"
                 style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)', color: 'var(--mc-text-body)' }}
+                aria-label="Next products"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
             {/* View All */}

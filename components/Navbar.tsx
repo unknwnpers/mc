@@ -73,14 +73,17 @@ export default function Navbar() {
           const { url, timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < LOGO_CACHE_TTL) { setLogoUrl(url); return; }
         }
-      } catch { }
+      } catch (error) {
+        console.warn('Failed to parse cached logo:', error);
+      }
       try {
         const response = await fetch('/api/images?category=system&subcategory=logo&limit=1');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         if (data.success && data.images.length > 0) {
           const url = data.images[0].url;
           setLogoUrl(url);
-          try { sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify({ url, timestamp: Date.now() })); } catch { }
+          try { sessionStorage.setItem(LOGO_CACHE_KEY, JSON.stringify({ url, timestamp: Date.now() })); } catch (e) { console.warn('Failed to cache logo:', e); }
         }
       } catch (error) { console.error('Error fetching logo:', error); }
     }
@@ -175,9 +178,13 @@ export default function Navbar() {
                     onMouseEnter={() => handleDropdownEnter(link.label)}
                     onMouseLeave={handleDropdownLeave}
                   >
-                    <button className="flex items-center gap-1.5 text-[14px] font-semibold tracking-[0.08em] uppercase text-[#6E625B] hover:text-[#C8B273] transition-colors duration-300 py-2 cursor-pointer">
+                    <button
+                      className="flex items-center gap-1.5 text-[14px] font-semibold tracking-[0.08em] uppercase text-[#6E625B] hover:text-[#C8B273] transition-colors duration-300 py-2 cursor-pointer"
+                      aria-haspopup="true"
+                      aria-expanded={activeDropdown === link.label}
+                    >
                       {link.label}
-                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", activeDropdown === link.label && "rotate-180")} />
+                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", activeDropdown === link.label && "rotate-180")} aria-hidden="true" />
                     </button>
                     <AnimatePresence>
                       {activeDropdown === link.label && (
@@ -224,14 +231,25 @@ export default function Navbar() {
                   Admin
                 </Link>
               )}
-              <button className="p-2 text-[#B8A89A] hover:text-[#C8B273] hover:bg-[#FDFCF9] rounded-full transition-all duration-300 hover:scale-110">
-                <Search className="h-5 w-5" />
-              </button>
-              <Link href="/profile" className="p-2 text-[#B8A89A] hover:text-[#C8B273] hover:bg-[#FDFCF9] rounded-full transition-all duration-300 hover:scale-110">
-                <Heart className="h-5 w-5" />
-              </Link>
-              <Link href="/cart" className="relative p-2 text-[#B8A89A] hover:text-[#C8B273] hover:bg-[#FDFCF9] rounded-full transition-all duration-300 hover:scale-110">
-                <ShoppingBag className="h-5 w-5" />
+            <button
+              className="p-2 text-[#B8A89A] hover:text-[#C8B273] hover:bg-[#FDFCF9] rounded-full transition-all duration-300 hover:scale-110"
+              aria-label="Search products"
+            >
+              <Search className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <Link
+              href="/profile"
+              className="p-2 text-[#B8A89A] hover:text-[#C8B273] hover:bg-[#FDFCF9] rounded-full transition-all duration-300 hover:scale-110"
+              aria-label="Wishlist"
+            >
+              <Heart className="h-5 w-5" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/cart"
+              className="relative p-2 text-[#B8A89A] hover:text-[#C8B273] hover:bg-[#FDFCF9] rounded-full transition-all duration-300 hover:scale-110"
+              aria-label={`Shopping Cart, ${cart.length} items`}
+            >
+              <ShoppingBag className="h-5 w-5" aria-hidden="true" />
                 {cart.length > 0 && (
                   <motion.span
                     key={cart.length}
@@ -295,15 +313,20 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
-              <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-xl text-[#6E625B] hover:bg-[#FDFCF9] transition-colors">
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-2 rounded-xl text-[#6E625B] hover:bg-[#FDFCF9] transition-colors"
+                aria-label={isOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isOpen}
+              >
                 <AnimatePresence mode="wait">
                   {isOpen ? (
                     <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <X className="h-5 w-5" />
+                      <X className="h-5 w-5" aria-hidden="true" />
                     </motion.div>
                   ) : (
                     <motion.div key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Menu className="h-5 w-5" />
+                      <Menu className="h-5 w-5" aria-hidden="true" />
                     </motion.div>
                   )}
                 </AnimatePresence>

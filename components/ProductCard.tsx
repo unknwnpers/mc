@@ -93,7 +93,10 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
 
       {/* ── DISCOUNT BADGE (top-left) ── */}
       {discountPercent && discountPercent > 0 && (
-        <div className="absolute top-4 left-4 z-20 bg-[#C8B273] text-white text-[12px] font-bold px-3 py-1 rounded-full shadow-[0_4px_12px_rgba(200,178,115,0.3)]">
+        <div
+          className="absolute top-4 left-4 z-20 bg-[#C8B273] text-white text-[12px] font-bold px-3 py-1 rounded-full shadow-[0_4px_12px_rgba(200,178,115,0.3)]"
+          aria-label={`${discountPercent} percent discount`}
+        >
           {discountPercent}% OFF
         </div>
       )}
@@ -158,8 +161,11 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
         </Link>
 
         {/* Rating */}
-        <div className="flex items-center gap-1.5 mt-2">
-          <div className="flex items-center gap-0.5">
+        <div
+          className="flex items-center gap-1.5 mt-2"
+          aria-label={`Rating: ${reviewData.averageRating.toFixed(1)} out of 5 stars from ${reviewData.total} reviews`}
+        >
+          <div className="flex items-center gap-0.5" aria-hidden="true">
             {[1,2,3,4,5].map(i => (
               <Star
                 key={i}
@@ -170,8 +176,8 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
               />
             ))}
           </div>
-          <span className="text-[14px] text-[#6B6B6B]">{reviewData.averageRating.toFixed(1)}</span>
-          <span className="text-[12px] text-[#9A9A9A]">({reviewData.total})</span>
+          <span className="text-[14px] text-[#6B6B6B]" aria-hidden="true">{reviewData.averageRating.toFixed(1)}</span>
+          <span className="text-[12px] text-[#9A9A9A]" aria-hidden="true">({reviewData.total})</span>
         </div>
 
         {/* Price Row */}
@@ -208,12 +214,13 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
               ? "bg-[#F0F0F0] text-[#B8A89A] cursor-not-allowed border-none"
               : "shadow-[0_6px_20px_rgba(200,178,115,0.25)] hover:shadow-[0_10px_28px_rgba(200,178,115,0.30)] hover:-translate-y-0.5"
           )}
+          aria-label={isAdding ? "Adding to cart..." : displayStock <= 0 ? "Product Sold Out" : `Add ${product.name} to cart`}
         >
           {isAdding ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           ) : (
             <>
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="w-4 h-4" aria-hidden="true" />
               {displayStock <= 0 ? "Sold Out" : "Add to Cart"}
             </>
           )}

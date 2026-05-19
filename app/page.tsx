@@ -18,7 +18,6 @@ const InstagramReels = nextDynamic(() => import('@/components/InstagramReels'));
 const TestimonialsSection = nextDynamic(() => import('@/components/home/TestimonialsSection'));
 const NewsletterSection = nextDynamic(() => import('@/components/home/NewsletterSection'));
 
-export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 // ── SEO Metadata ──
