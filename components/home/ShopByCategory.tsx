@@ -105,12 +105,12 @@ function CategoryCardInline({
 export default function ShopByCategory({ collections, categories }: ShopByCategoryProps) {
   const hasCollections = collections.length > 0;
   const ref = useRef<HTMLElement>(null);
-  
-  const { scrollYProgress } = useScroll({ 
-    target: ref, 
-    offset: ["start end", "end start"] 
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
   });
-  
+
   // Parallax transforms for background and decor
   const bgTextY = useTransform(scrollYProgress, [0, 1], [-30, 30]);
   const decorY1 = useTransform(scrollYProgress, [0, 1], [-15, 20]);
@@ -122,9 +122,9 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
       {/* Parallax Background Typography */}
-      <motion.div 
+      <motion.div
         style={{ y: bgTextY }}
-        className="absolute top-[15%] left-[-2%] text-[#C8B273]/[0.02] font-serif font-black text-[120px] md:text-[220px] whitespace-nowrap pointer-events-none select-none z-0"
+        className="absolute top-[15%] left-[-2%] text-[#C7A96B]/[0.02] font-serif font-black text-[120px] md:text-[220px] whitespace-nowrap pointer-events-none select-none z-0"
       >
         Maternity & Kids
       </motion.div>
@@ -145,7 +145,7 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
           <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#C8B273] mb-4">
             Explore Collections
           </p>
-          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#3B312C]">
+          <h2 className="font-serif font-bold text-[32px] md:text-[42px] leading-[1.1] text-[#4e5259]">
             Shop by Category
           </h2>
           <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] mt-4 md:mt-6">
@@ -192,24 +192,24 @@ export default function ShopByCategory({ collections, categories }: ShopByCatego
         )}
 
         {/* ── MOBILE: Horizontal snap scroll ── */}
-        <div className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="flex md:hidden gap-4 overflow-x-auto py-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 -my-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {(hasCollections
             ? collections.slice(0, 6).map((col) => ({
-                key: col.id,
-                title: col.title,
-                count: `${col.products?.length || 0}+ Products`,
-                image: col.backgroundImage || '',
-                href: `/products?collection=${col.id}`,
-              }))
+              key: col.id,
+              title: col.title,
+              count: `${col.products?.length || 0}+ Products`,
+              image: col.backgroundImage || '',
+              href: `/products?collection=${col.id}`,
+            }))
             : fallbackCategories.map((cat, idx) => ({
-                key: String(idx),
-                title: cat.title,
-                count: cat.count,
-                image: cat.image,
-                href: cat.href,
-              }))
+              key: String(idx),
+              title: cat.title,
+              count: cat.count,
+              image: cat.image,
+              href: cat.href,
+            }))
           ).map((item) => (
-            <div key={item.key} className="min-w-[240px] md:min-w-0 h-[360px] snap-start shrink-0">
+            <div key={item.key} className="min-w-[240px] md:min-w-0 h-[360px] snap-start shrink-0 py-1">
               <CategoryCardInline
                 title={item.title} count={item.count}
                 image={item.image} href={item.href}

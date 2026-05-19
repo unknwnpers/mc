@@ -997,3 +997,46 @@ footer svg.lucide:hover {
 [style*="background: rgba(255,255,255)"] {
   background-color: var(--mc-bg-card) !important;
 }
+
+/* ── Dynamic Theme Charcoal Overrides ── */
+[class*="bg-[#3B312C]"]:not([class*="bg-[#3B312C]/"]) {
+  background-color: var(--mc-charcoal) !important;
+}
+
+[class*="hover:bg-[#3B312C]"]:hover {
+  background-color: var(--mc-charcoal) !important;
+}
+
+[class*="bg-[#3B312C]"].text-white,
+[class*="bg-[#3B312C]"] [class*="text-white"],
+button[class*="bg-[#3B312C]"],
+a[class*="bg-[#3B312C]"] {
+  color: var(--mc-bg-base) !important;
+}
+
+[class*="bg-[#3B312C]"] [class*="text-neutral-300"] {
+  color: var(--mc-bg-base) !important;
+  opacity: 0.7 !important;
+}
+
+[class*="bg-[#3B312C]"] [class*="text-neutral-400"] {
+  color: var(--mc-bg-base) !important;
+  opacity: 0.5 !important;
+}
+
+[class*="hover:bg-[#3B312C]"].hover:text-white:hover {
+  color: var(--mc-bg-base) !important;
+}
+
+/* ── Dynamic Theme Peach Badge Overrides ── */
+[class*="bg-[#FFF7ED]"] {
+  background-color: var(--mc-gold-subtle) !important;
+}
+
+[class*="text-[#B49474]"] {
+  color: var(--mc-gold-dark) !important;
+}
+
+[class*="text-[#5C4033]"] {
+  color: var(--mc-text-heading) !important;
+}

@@ -102,10 +102,10 @@ export default function BestSellers({ products }: BestSellersProps) {
         {/* ── MOBILE: horizontal snap scroll ── */}
         <div
           ref={scrollRef}
-          className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4"
+          className="flex md:hidden gap-4 overflow-x-auto py-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 -my-4"
         >
           {products.map((product) => (
-            <div key={product.id} className="min-w-[75%] sm:min-w-[48%] snap-start">
+            <div key={product.id} className="min-w-[75%] sm:min-w-[48%] snap-start py-1">
               <ProductCard product={product} />
             </div>
           ))}

@@ -75,7 +75,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
                 className="object-cover group-hover:scale-[1.04] transition-transform duration-[1.2s] ease-out"
               />
               {/* Overlay */}
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.55))' }} />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.88) 100%)' }} />
 
               {/* NEW badge */}
               <div className="absolute top-6 left-6 bg-[#C8B273] text-white text-[12px] font-bold px-4 py-1.5 rounded-full shadow-[0_4px_12px_rgba(200, 178, 115,0.3)]">
@@ -84,14 +84,14 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
 
               {/* Bottom content */}
               <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
-                <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-white/60 mb-3">
+                <p className="text-[13px] font-extrabold tracking-[0.15em] uppercase text-[#D4B87B] mb-3">
                   {campaignProduct.category_slug || "New Collection"}
                 </p>
                 <h3 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.05] text-white tracking-tight mb-3">
                   Designed for<br />
                   <span className="italic">Beautiful Beginnings</span>
                 </h3>
-                <p className="text-[17px] leading-[1.8] text-white/[0.85] max-w-[420px] mb-6 hidden md:block">
+                <p className="text-[17px] leading-[1.8] text-white/95 max-w-[420px] mb-6 hidden md:block">
                   Celebrate every milestone in premium comfort — our newest collection blends softness with timeless elegance.
                 </p>
 
@@ -123,9 +123,9 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
               ))}
             </div>
             {/* Mobile: horizontal scroll */}
-            <div className="flex md:hidden gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="flex md:hidden gap-4 overflow-x-auto py-4 scrollbar-hide snap-x snap-mandatory -mx-4 px-4 -my-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {products.slice(0, 6).map((product) => (
-                <div key={product.id} className="min-w-[72%] snap-start">
+                <div key={product.id} className="min-w-[72%] snap-start py-1">
                   <MiniProductCard product={product} />
                 </div>
               ))}
@@ -151,7 +151,7 @@ function MiniProductCard({ product }: { product: Product }) {
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 14px 35px rgba(0,0,0,0.04)'; }}
     >
       {/* Image */}
-      <div className="relative overflow-hidden aspect-[4/5] bg-[#F8F1EC]">
+      <div className="relative overflow-hidden aspect-[4/5] bg-[#F8F1EC] rounded-t-[27px]">
         <Image
           src={displayImage} alt={product.name} fill
           sizes="(max-width: 768px) 72vw, 25vw"

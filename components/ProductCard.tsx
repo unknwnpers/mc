@@ -99,7 +99,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
       )}
 
       {/* ── IMAGE (4:5 aspect) ── */}
-      <Link href={`/products/${product.id}`} className="relative overflow-hidden aspect-[4/5] block bg-[#F8F1EC]">
+      <Link href={`/products/${product.id}`} className="relative overflow-hidden aspect-[4/5] block bg-[#F8F1EC] rounded-t-[23px]">
         {imgLoading && <Skeleton className="absolute inset-0 z-10 w-full h-full rounded-none" />}
         <Image
           src={displayImage}

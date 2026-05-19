@@ -151,19 +151,19 @@ function LoginContent() {
                   </p>
                 </div>
 
-                {/* Trust Signals - High Contrast Mini Cards */}
-                <div className="trust-grid grid grid-cols-3 gap-[18px] w-full max-w-[580px]">
+                 {/* Trust Signals - High Contrast Mini Cards */}
+                <div className="trust-grid grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-[18px] w-full max-w-[580px]">
                   {[
-                    { icon: ShieldCheck, title: "Secure Shopping", desc: "Your data is protected" },
-                    { icon: User, title: "Trusted by Moms", desc: "Loved by thousands" },
-                    { icon: RefreshCw, title: "Easy Replacement", desc: "Simple 10-day Replacement" },
+                    { icon: ShieldCheck, title: 'Secure Shopping', desc: 'Your data is protected' },
+                    { icon: User, title: 'Trusted by Moms', desc: 'Loved by thousands' },
+                    { icon: RefreshCw, title: 'Easy Replacement', desc: 'Simple 48 hours Replacement' },
                   ].map((item, i) => (
-                    <div key={i} className="trust-card bg-white/72 border border-black/5 rounded-[22px] p-5 shadow-[0_4px_14px_rgba(0,0,0,0.04)] backdrop-blur-[8px] flex flex-col justify-between min-h-[120px] text-left">
-                      <div className="w-[22px] h-[22px] text-[#C8B273]">
+                    <div key={i} className="trust-card bg-white/72 border border-black/5 rounded-[18px] md:rounded-[22px] p-4 md:p-5 shadow-[0_4px_14px_rgba(0,0,0,0.04)] backdrop-blur-[8px] flex flex-col justify-start items-center gap-3 min-h-[120px] text-center">
+                      <div className="w-[22px] h-[22px] text-[#C8B273] shrink-0">
                         <item.icon className="w-full h-full" strokeWidth={1.5} />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest leading-none" style={{ color: '#3B312C' }}>{item.title}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest leading-tight" style={{ color: '#3B312C' }}>{item.title}</p>
                         <p className="text-[9px] font-bold leading-relaxed" style={{ color: '#B8A89A' }}>{item.desc}</p>
                       </div>
                     </div>
@@ -230,11 +230,6 @@ function LoginContent() {
                             </>
                           )}
                         </button>
-
-                        <div className="divider relative py-1 flex items-center justify-center">
-                          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-black/[0.06]"></div></div>
-                          <span className="relative px-4 bg-white text-[#B8A89A] font-bold text-[10px] uppercase tracking-[0.2em]">or</span>
-                        </div>
 
                         {/* Phone Button - Premium Layout */}
                         <button
