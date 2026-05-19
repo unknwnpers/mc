@@ -43,13 +43,18 @@ export async function GET() {
       borderGold:    "#2F2A28",
       blush:         "#7E5F58",
       charcoal:      "#F2ECE5",
+      bgFooter:      "#1A1513",
+      bgLightSection: "#FAF7F1",
+      textLightSectionHeading: "#3B312C",
+      textLightSectionBody: "#6E625B",
+      bgLightSectionCard: "#FFFCF9",
       updatedAt: new Date().toISOString(),
       updatedBy: "system_migration"
     };
 
     // If the database document doesn't exist or is not fully updated to the new espresso dark luxury theme,
     // we save/write it to the database so that the website automatically uses it.
-    if (!snap.exists || snap.data()?.bgBase !== "#1F1B19" || snap.data()?.textMuted !== "#B7AAA0") {
+    if (!snap.exists || snap.data()?.bgBase !== "#1F1B19" || snap.data()?.textMuted !== "#B7AAA0" || snap.data()?.bgFooter !== "#1A1513") {
       console.log("Initializing database settings/theme to the new Warm Espresso luxury dark theme...");
       await THEME_DOC.set(warmEspressoTheme);
       return NextResponse.json({ success: true, theme: warmEspressoTheme });

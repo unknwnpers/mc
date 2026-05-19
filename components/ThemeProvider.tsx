@@ -22,6 +22,11 @@ function applyTheme(theme: Record<string, string>) {
     borderGold:    "--mc-border-gold",
     blush:         "--mc-blush",
     charcoal:      "--mc-charcoal",
+    bgFooter:      "--mc-bg-footer",
+    bgLightSection: "--mc-bg-light-section",
+    textLightSectionHeading: "--mc-text-light-section-heading",
+    textLightSectionBody: "--mc-text-light-section-body",
+    bgLightSectionCard: "--mc-bg-light-section-card",
   };
   Object.entries(map).forEach(([token, cssVar]) => {
     if (theme[token]) root.style.setProperty(cssVar, theme[token]);

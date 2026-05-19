@@ -132,7 +132,7 @@
 
   /* Premium card base */
   .card-premium {
-    @apply bg-[#FFFCF9] rounded-[24px] border border-[#F0E7DD];
+    @apply bg-[#FFFCF9] rounded-[24px] border border-[#F0E7DD] overflow-hidden;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
   }
 
@@ -920,7 +920,7 @@ button[class*="bg-[#C7A96B]"],
 /* Soft Ivory sections rhythm alternators (#FAF7F1 / #F8F4EE) */
 .section-custom-stitching,
 .section-trending {
-  background-color: #FAF7F1 !important; /* Soft Ivory */
+  background-color: var(--mc-bg-light-section) !important; /* Soft Ivory */
 }
 
 /* Ensure text color and card color contrast in soft ivory sections are perfect */
@@ -942,14 +942,14 @@ button[class*="bg-[#C7A96B]"],
 .section-trending p,
 .section-trending span,
 .section-trending a:not(.btn-primary) {
-  color: #3B312C !important; /* Dark Heading */
+  color: var(--mc-text-light-section-heading) !important; /* Dark Heading */
 }
 
 .section-custom-stitching p,
 .section-custom-stitching span,
 .section-trending p,
 .section-trending span {
-  color: #6E625B !important; /* Dark Body */
+  color: var(--mc-text-light-section-body) !important; /* Dark Body */
 }
 
 /* Cards in Soft Ivory sections must remain light warm ivory */
@@ -958,14 +958,14 @@ button[class*="bg-[#C7A96B]"],
 .section-custom-stitching [style*="background: rgba(255,255,255"],
 .section-trending a[class*="bg-white"],
 .section-trending div[class*="bg-white"] {
-  background-color: #FFFCF9 !important; /* Light Card Surface */
+  background-color: var(--mc-bg-light-section-card) !important; /* Light Card Surface */
   border-color: rgba(200, 178, 115, 0.12) !important;
-  color: #3B312C !important;
+  color: var(--mc-text-light-section-heading) !important;
 }
 
-/* 5. Footer refinement: #1A1513 with lightened elements */
+/* 5. Footer refinement: var(--mc-bg-footer) with lightened elements */
 footer {
-  background-color: #1A1513 !important;
+  background-color: var(--mc-bg-footer) !important;
   border-top: 1px solid var(--mc-border-gold) !important;
 }
 

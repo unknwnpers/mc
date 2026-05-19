@@ -59,7 +59,7 @@ export default function Footer({ socialSettings = {} }: { socialSettings?: Recor
   const instagramUrl = socialSettings.instagram || "https://instagram.com/miksandchiks";
 
   return (
-    <footer className="w-full max-w-full overflow-hidden border-t border-[rgba(200,178,115,0.12)]" style={{ background: 'var(--mc-bg-base)' }}>
+    <footer className="w-full max-w-full overflow-hidden border-t border-[rgba(200,178,115,0.12)]" style={{ background: 'var(--mc-bg-footer)' }}>
       {/* ═══ MAIN FOOTER ═══ */}
       <div className="max-w-[1320px] mx-auto px-4 md:px-6 pt-20 md:pt-28 pb-12 md:pb-16">
 

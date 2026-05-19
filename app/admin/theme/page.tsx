@@ -31,6 +31,13 @@ const DEFAULT_THEME = {
   borderDefault: "#F0E7DD",
   borderGold: "rgba(200,178,115,0.12)",
 
+  // Unconnected / extra colors
+  bgFooter: "#1A1513",
+  bgLightSection: "#FAF7F1",
+  textLightSectionHeading: "#3B312C",
+  textLightSectionBody: "#6E625B",
+  bgLightSectionCard: "#FFFCF9",
+
   // Accents
   blush: "#E8A598",
   charcoal: "#3B312C",
@@ -54,8 +61,13 @@ const GROUPS = [
   },
   {
     label: "Borders & Accents",
-    keys: ["borderDefault", "blush", "charcoal"],
-    labels: ["Border Default", "Blush Accent", "Charcoal"],
+    keys: ["borderDefault", "borderGold", "blush", "charcoal"],
+    labels: ["Border Default", "Border Gold", "Blush Accent", "Charcoal"],
+  },
+  {
+    label: "Alternating Light Sections & Footer",
+    keys: ["bgFooter", "bgLightSection", "textLightSectionHeading", "textLightSectionBody", "bgLightSectionCard"],
+    labels: ["Footer Background", "Light Section BG", "Light Section Heading", "Light Section Body", "Light Section Card"],
   },
 ];
 
@@ -90,6 +102,13 @@ const PRESETS = [
       borderGold:    "rgba(200,178,115,0.10)",
       blush:         "#EAA89A",
       charcoal:      "#2C2316",
+
+      // Footer & light section colors
+      bgFooter:      "#FAF7F1",
+      bgLightSection: "#F8F4EE",
+      textLightSectionHeading: "#2C2316",
+      textLightSectionBody: "#6B6058",
+      bgLightSectionCard: "#FEFDFB",
     },
   },
   {
@@ -121,6 +140,13 @@ const PRESETS = [
       borderGold:    "rgba(191,155,90,0.14)",
       blush:         "#D49A8A",
       charcoal:      "#2E2018",
+
+      // Footer & light section colors
+      bgFooter:      "#F2EAE0",
+      bgLightSection: "#EEE5D8",
+      textLightSectionHeading: "#2E2018",
+      textLightSectionBody: "#7A6A5E",
+      bgLightSectionCard: "#FAF5EE",
     },
   },
   {
@@ -152,6 +178,13 @@ const PRESETS = [
       borderGold:    "#2F2A28",
       blush:         "#7E5F58",
       charcoal:      "#F2ECE5",
+
+      // Footer & light section colors
+      bgFooter:      "#1A1513",
+      bgLightSection: "#FAF7F1",
+      textLightSectionHeading: "#3B312C",
+      textLightSectionBody: "#6E625B",
+      bgLightSectionCard: "#FFFCF9",
     },
   },
 ];
@@ -181,6 +214,11 @@ function applyTheme(theme: Record<string, string>) {
     borderGold:    "--mc-border-gold",
     blush:         "--mc-blush",
     charcoal:      "--mc-charcoal",
+    bgFooter:      "--mc-bg-footer",
+    bgLightSection: "--mc-bg-light-section",
+    textLightSectionHeading: "--mc-text-light-section-heading",
+    textLightSectionBody: "--mc-text-light-section-body",
+    bgLightSectionCard: "--mc-bg-light-section-card",
   };
   Object.entries(map).forEach(([token, cssVar]) => {
     if (theme[token]) root.style.setProperty(cssVar, theme[token]);

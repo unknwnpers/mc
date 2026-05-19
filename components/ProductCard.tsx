@@ -88,7 +88,7 @@ const ProductCard = memo(function ProductCard({ product }: { product: Product })
   return (
     <div
       // Cache buster: ensuring the old favorite icon is fully removed
-      className="group min-w-0 w-full card-premium card-premium-hover flex flex-col h-full relative"
+      className="group min-w-0 w-full card-premium card-premium-hover flex flex-col h-full relative overflow-hidden"
     >
 
       {/* ── DISCOUNT BADGE (top-left) ── */}
