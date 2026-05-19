@@ -24,9 +24,37 @@ async function verifySuperAdmin(req: NextRequest) {
 export async function GET() {
   try {
     const snap = await THEME_DOC.get();
-    if (!snap.exists) {
-      return NextResponse.json({ success: true, theme: null });
+    
+    // Define the premium warm espresso luxury theme config
+    const warmEspressoTheme = {
+      gold:          "#C7A96B",
+      goldDark:      "#D4B87B",
+      goldLight:     "#7A6644",
+      goldSubtle:    "#3A2E2A",
+      bgBase:        "#1F1B19",
+      bgCard:        "#2A2421",
+      bgSection:     "#241F1D",
+      bgHero:        "#312A27",
+      textHeading:   "#F2ECE5",
+      textBody:      "#B7AAA0",
+      textMuted:     "#B7AAA0",
+      textSubtle:    "#8E8278",
+      borderDefault: "#3A3331",
+      borderGold:    "#2F2A28",
+      blush:         "#7E5F58",
+      charcoal:      "#F2ECE5",
+      updatedAt: new Date().toISOString(),
+      updatedBy: "system_migration"
+    };
+
+    // If the database document doesn't exist or is not fully updated to the new espresso dark luxury theme,
+    // we save/write it to the database so that the website automatically uses it.
+    if (!snap.exists || snap.data()?.bgBase !== "#1F1B19" || snap.data()?.textMuted !== "#B7AAA0") {
+      console.log("Initializing database settings/theme to the new Warm Espresso luxury dark theme...");
+      await THEME_DOC.set(warmEspressoTheme);
+      return NextResponse.json({ success: true, theme: warmEspressoTheme });
     }
+
     return NextResponse.json({ success: true, theme: snap.data() });
   } catch (error) {
     console.error("Theme GET error:", error);

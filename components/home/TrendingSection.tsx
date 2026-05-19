@@ -28,7 +28,7 @@ export default function TrendingSection({ products }: TrendingSectionProps) {
   const trendingProducts = products.slice(1, 5);
 
   return (
-    <section className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
+    <section className="section-trending py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
       {/* Background glow */}
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 

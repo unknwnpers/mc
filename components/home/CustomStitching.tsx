@@ -41,7 +41,7 @@ const itemVariants = {
 export default function CustomStitching() {
   return (
     <section
-      className="py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden"
+      className="section-custom-stitching py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden"
       style={{ background: 'var(--mc-bg-section)' }}
     >
       {/* Subtle background glows — matching existing pattern */}

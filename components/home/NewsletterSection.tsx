@@ -31,7 +31,7 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="py-10 md:py-16 lg:py-24 w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
+    <section className="section-newsletter py-10 md:py-16 lg:py-24 w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
       <div className="max-w-[1320px] mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 28 }}

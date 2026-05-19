@@ -133,25 +133,25 @@ const PRESETS = [
       gold:          "#C7A96B",
       goldDark:      "#D4B87B",
       goldLight:     "#7A6644",
-      goldSubtle:    "#2E2520",
+      goldSubtle:    "#3A2E2A",
 
       // Layered espresso-toned dark surfaces
-      bgBase:        "#1A1714",
-      bgCard:        "#262118",
-      bgSection:     "#201C18",
-      bgHero:        "#1A1714",
+      bgBase:        "#1F1B19",
+      bgCard:        "#2A2421",
+      bgSection:     "#241F1D",
+      bgHero:        "#312A27",
 
       // Warm cream typography — never harsh white
-      textHeading:   "#F0EAE2",
-      textBody:      "#B2A69C",
-      textMuted:     "#887E76",
-      textSubtle:    "#64605C",
+      textHeading:   "#F2ECE5",
+      textBody:      "#B7AAA0",
+      textMuted:     "#B7AAA0",
+      textSubtle:    "#8E8278",
 
       // Subtle dark warm borders
-      borderDefault: "#363028",
-      borderGold:    "rgba(199,169,107,0.18)",
-      blush:         "#7A5A54",
-      charcoal:      "#F0EAE2",
+      borderDefault: "#3A3331",
+      borderGold:    "#2F2A28",
+      blush:         "#7E5F58",
+      charcoal:      "#F2ECE5",
     },
   },
 ];
