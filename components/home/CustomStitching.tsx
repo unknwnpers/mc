@@ -42,7 +42,7 @@ export default function CustomStitching() {
   return (
     <section
       className="section-custom-stitching py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden"
-      style={{ background: 'var(--mc-bg-section)' }}
+      style={{ background: 'var(--mc-bg-light-section)' }}
     >
       {/* Subtle background glows — matching existing pattern */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#C8B273]/[0.025] rounded-full blur-[120px] pointer-events-none hidden md:block" />
@@ -93,7 +93,7 @@ export default function CustomStitching() {
               key={idx}
               variants={itemVariants}
               className="group flex flex-col items-center text-center p-6 md:p-8 rounded-[28px] border border-[rgba(200,178,115,0.10)] hover:border-[rgba(200,178,115,0.22)] hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(200,178,115,0.08)] transition-all duration-300 ease-out cursor-default"
-              style={{ background: 'rgba(255,255,255,0.80)' }}
+              style={{ background: 'var(--mc-bg-light-section-card)' }}
             >
               {/* Icon */}
               <div

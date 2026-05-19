@@ -1024,7 +1024,7 @@ a[class*="bg-[#3B312C]"] {
   opacity: 0.5 !important;
 }
 
-[class*="hover:bg-[#3B312C]"].hover:text-white:hover {
+[class*="hover:bg-[#3B312C]"].hover\:text-white:hover {
   color: var(--mc-bg-base) !important;
 }
 

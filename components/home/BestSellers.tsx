@@ -49,10 +49,10 @@ export default function BestSellers({ products }: BestSellersProps) {
             <p className="text-[12px] font-bold tracking-[0.12em] uppercase text-[#C8B273] mb-3">
               Most Loved Collections
             </p>
-            <h2 className="font-serif font-bold text-[30px] md:text-[48px] leading-[1.1] text-[#3B312C] mb-2 md:mb-3">
+            <h2 className="font-serif font-bold text-[30px] md:text-[48px] leading-[1.1] mb-2 md:mb-3" style={{ color: 'var(--mc-text-heading)' }}>
               Best Sellers
             </h2>
-            <p className="text-[15px] md:text-[17px] leading-[1.8] text-[#6B6B6B] max-w-[560px]">
+            <p className="text-[15px] md:text-[17px] leading-[1.8] max-w-[560px]" style={{ color: 'var(--mc-text-muted)' }}>
               Handpicked favorites loved by thousands of moms — premium quality, irresistible comfort.
             </p>
           </div>
@@ -62,13 +62,15 @@ export default function BestSellers({ products }: BestSellersProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => scroll('left')}
-                className="w-11 h-11 rounded-full border border-[rgba(200, 178, 115,0.12)] bg-white flex items-center justify-center text-[#6E625B] hover:bg-[#C8B273] hover:text-white hover:border-[#C8B273] transition-all duration-300 active:scale-95"
+                className="w-11 h-11 rounded-full border flex items-center justify-center hover:bg-[var(--mc-gold)] hover:text-white hover:border-[var(--mc-gold)] transition-all duration-300 active:scale-95"
+                style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)', color: 'var(--mc-text-body)' }}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => scroll('right')}
-                className="w-11 h-11 rounded-full border border-[rgba(200, 178, 115,0.12)] bg-white flex items-center justify-center text-[#6E625B] hover:bg-[#C8B273] hover:text-white hover:border-[#C8B273] transition-all duration-300 active:scale-95"
+                className="w-11 h-11 rounded-full border flex items-center justify-center hover:bg-[var(--mc-gold)] hover:text-white hover:border-[var(--mc-gold)] transition-all duration-300 active:scale-95"
+                style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)', color: 'var(--mc-text-body)' }}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -76,7 +78,8 @@ export default function BestSellers({ products }: BestSellersProps) {
             {/* View All */}
             <Link
               href="/products"
-              className="group inline-flex items-center gap-2.5 h-[48px] px-6 rounded-full bg-white border border-[rgba(200, 178, 115,0.12)] text-[14px] font-semibold text-[#3B312C] hover:bg-[#C8B273] hover:text-white hover:border-[#C8B273] transition-all duration-300"
+              className="group inline-flex items-center gap-2.5 h-[48px] px-6 rounded-full border text-[14px] font-semibold hover:bg-[var(--mc-gold)] hover:text-white hover:border-[var(--mc-gold)] transition-all duration-300"
+              style={{ background: 'var(--mc-bg-card)', borderColor: 'var(--mc-border)', color: 'var(--mc-text-heading)' }}
             >
               View All
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

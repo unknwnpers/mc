@@ -31,7 +31,7 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="section-newsletter py-10 md:py-16 lg:py-24 w-full max-w-full overflow-hidden" style={{ background: '#FDF7F3' }}>
+    <section className="section-newsletter py-10 md:py-16 lg:py-24 w-full max-w-full overflow-hidden" style={{ background: 'var(--mc-bg-base)' }}>
       <div className="max-w-[1320px] mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 28 }}
@@ -40,8 +40,8 @@ export default function NewsletterSection() {
           transition={{ duration: 0.6, ease }}
           className="relative overflow-hidden rounded-[32px] md:rounded-[40px] px-6 md:px-16 py-12 md:py-20 border"
           style={{
-            background: 'linear-gradient(135deg, #F8F4EE 0%, #FDF1EA 100%)',
-            borderColor: 'rgba(200, 178, 115,0.10)',
+            background: 'var(--mc-bg-card)',
+            borderColor: 'var(--mc-border)',
             boxShadow: '0 30px 70px rgba(0,0,0,0.05)',
           }}
         >
@@ -60,8 +60,8 @@ export default function NewsletterSection() {
             className="absolute top-16 left-10 z-10 hidden lg:block"
           >
             <div
-              className="rounded-2xl px-4 py-3 border border-white/30"
-              style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
+              className="rounded-2xl px-4 py-3 border"
+              style={{ background: 'var(--mc-bg-light-section-card)', borderColor: 'var(--mc-border)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
             >
               <p className="text-[12px] font-bold text-[#C8B273]">✨ Exclusive Launch Access</p>
             </div>
@@ -72,8 +72,8 @@ export default function NewsletterSection() {
             className="absolute bottom-20 right-12 z-10 hidden lg:block"
           >
             <div
-              className="rounded-2xl px-4 py-3 border border-white/30"
-              style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
+              className="rounded-2xl px-4 py-3 border"
+              style={{ background: 'var(--mc-bg-light-section-card)', borderColor: 'var(--mc-border)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
             >
               <p className="text-[12px] font-bold text-[#C8B273]">💌 Weekly Mom Tips</p>
             </div>
@@ -84,8 +84,8 @@ export default function NewsletterSection() {
             className="absolute top-24 right-16 z-10 hidden lg:block"
           >
             <div
-              className="rounded-2xl px-4 py-3 border border-white/30"
-              style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
+              className="rounded-2xl px-4 py-3 border"
+              style={{ background: 'var(--mc-bg-light-section-card)', borderColor: 'var(--mc-border)', backdropFilter: 'blur(12px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' }}
             >
               <p className="text-[12px] font-bold text-[#C8B273]">🎁 Members Only Offers</p>
             </div>
@@ -102,14 +102,14 @@ export default function NewsletterSection() {
             </div>
 
             {/* Heading */}
-            <h2 className="font-serif font-bold text-[32px] md:text-[46px] lg:text-[56px] leading-[1.08] text-[#3B312C] tracking-tight max-w-[680px] mx-auto">
+            <h2 className="font-serif font-bold text-[32px] md:text-[46px] lg:text-[56px] leading-[1.08] tracking-tight max-w-[680px] mx-auto" style={{ color: 'var(--mc-text-heading)' }}>
               Get Exclusive Offers,{' '}
               <span className="italic text-[#C8B273]">Mom Tips</span>
               {' '}& Early Access
             </h2>
 
             {/* Description */}
-            <p className="text-[15px] md:text-[18px] leading-[1.9] text-[#6E625B] mt-6 md:mt-8 max-w-[620px] mx-auto">
+            <p className="text-[15px] md:text-[18px] leading-[1.9] mt-6 md:mt-8 max-w-[620px] mx-auto" style={{ color: 'var(--mc-text-body)' }}>
               Be the first to discover new collections, unlock members-only discounts, 
               and get thoughtful parenting tips delivered to your inbox.
             </p>
@@ -120,11 +120,11 @@ export default function NewsletterSection() {
                 <div key={i} className="flex items-center gap-2">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(200, 178, 115,0.10)' }}
+                    style={{ background: 'var(--mc-bg-light-section-card)' }}
                   >
                     <b.icon className="w-3.5 h-3.5 text-[#C8B273]" />
                   </div>
-                  <span className="text-[14px] md:text-[15px] font-semibold text-[#6E625B]">
+                  <span className="text-[14px] md:text-[15px] font-semibold" style={{ color: 'var(--mc-text-body)' }}>
                     {b.text}
                   </span>
                 </div>
@@ -227,13 +227,13 @@ export default function NewsletterSection() {
                     </div>
                   ))}
                 </div>
-                <p className="text-[14px] font-medium text-[#7A7A7A]">
-                  Join <span className="font-bold text-[#6E625B]">12,000+</span> moms already subscribed
+                <p className="text-[14px] font-medium" style={{ color: 'var(--mc-text-muted)' }}>
+                  Join <span className="font-bold" style={{ color: 'var(--mc-text-body)' }}>12,000+</span> moms already subscribed
                 </p>
               </motion.div>
             )}
 
-            <p className="text-[12px] text-[#9A9A9A] mt-4">
+            <p className="text-[12px] mt-4" style={{ color: 'var(--mc-text-subtle)' }}>
               No spam, ever. Unsubscribe anytime.
             </p>
           </div>

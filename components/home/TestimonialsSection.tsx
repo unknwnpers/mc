@@ -54,7 +54,7 @@ export default function TestimonialsSection() {
   const prev = () => setActive((p) => (p - 1 + testimonials.length) % testimonials.length);
 
   return (
-    <section className="section-testimonials py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: '#F8F4EE' }}>
+    <section className="section-testimonials py-10 md:py-16 lg:py-24 relative w-full max-w-full overflow-hidden" style={{ background: 'var(--mc-bg-section)' }}>
       {/* Background glow */}
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#C8B273]/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
@@ -73,12 +73,12 @@ export default function TestimonialsSection() {
               Customer Love
             </p>
 
-            <h2 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.08] text-[#3B312C] tracking-tight">
+            <h2 className="font-serif font-bold text-[32px] md:text-[52px] leading-[1.08] tracking-tight" style={{ color: 'var(--mc-text-heading)' }}>
               Loved by Moms<br />
               Across Every <span className="italic text-[#C8B273]">Tiny Moment</span>
             </h2>
 
-            <p className="text-[15px] md:text-[18px] leading-[1.9] text-[#6E625B] mt-6 md:mt-8 max-w-[480px]">
+            <p className="text-[15px] md:text-[18px] leading-[1.9] mt-6 md:mt-8 max-w-[480px]" style={{ color: 'var(--mc-text-body)' }}>
               Thousands of mothers trust us with their most precious moments. 
               Hear their stories of comfort, joy, and genuine love for what we create.
             </p>
@@ -91,10 +91,10 @@ export default function TestimonialsSection() {
                 { number: "50K+", label: "Orders Delivered" },
               ].map((stat, i) => (
                 <div key={i}>
-                  <p className="text-[28px] md:text-[32px] font-extrabold text-[#3B312C] leading-none">
+                  <p className="text-[28px] md:text-[32px] font-extrabold leading-none" style={{ color: 'var(--mc-text-heading)' }}>
                     {stat.number}
                   </p>
-                  <p className="text-[14px] text-[#6B6B6B] mt-1 font-medium">{stat.label}</p>
+                  <p className="text-[14px] mt-1 font-medium" style={{ color: 'var(--mc-text-muted)' }}>{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -193,8 +193,8 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
     <div
       className="rounded-[32px] p-5 md:p-8 border relative overflow-hidden"
       style={{
-        background: 'rgba(255,255,255,0.92)',
-        borderColor: 'rgba(200, 178, 115,0.08)',
+        background: 'var(--mc-bg-card)',
+        borderColor: 'var(--mc-border)',
         boxShadow: '0 18px 45px rgba(0,0,0,0.05)',
       }}
     >
@@ -208,13 +208,13 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
         {Array.from({ length: t.rating }).map((_, i) => (
           <Star key={i} className="w-[18px] h-[18px] text-[#F4B740] fill-current" />
         ))}
-        <span className="text-[14px] font-semibold text-[#3B312C] ml-1.5">
+        <span className="text-[14px] font-semibold ml-1.5" style={{ color: 'var(--mc-text-heading)' }}>
           {t.rating}.0
         </span>
       </div>
 
       {/* Testimonial text */}
-      <p className="text-[15px] leading-7 md:text-[16px] md:leading-[1.9] text-[#6E625B] mt-4 italic relative z-10">
+      <p className="text-[15px] leading-7 md:text-[16px] md:leading-[1.9] mt-4 italic relative z-10" style={{ color: 'var(--mc-text-body)' }}>
         &ldquo;{t.text}&rdquo;
       </p>
 
@@ -239,8 +239,8 @@ function TestimonialCard({ testimonial: t }: { testimonial: typeof testimonials[
           <span className="text-white text-[20px] font-bold">{t.initial}</span>
         </div>
         <div>
-          <p className="text-[18px] font-bold text-[#3B312C]">{t.name}</p>
-          <p className="text-[14px] text-[#8A8A8A]">{t.location}</p>
+          <p className="text-[18px] font-bold" style={{ color: 'var(--mc-text-heading)' }}>{t.name}</p>
+          <p className="text-[14px]" style={{ color: 'var(--mc-text-muted)' }}>{t.location}</p>
         </div>
       </div>
     </div>

@@ -52,15 +52,23 @@ export async function GET() {
       updatedBy: "system_migration"
     };
 
-    // If the database document doesn't exist or is not fully updated to the new espresso dark luxury theme,
-    // we save/write it to the database so that the website automatically uses it.
-    if (!snap.exists || snap.data()?.bgBase !== "#1F1B19" || snap.data()?.textMuted !== "#B7AAA0" || snap.data()?.bgFooter !== "#1A1513") {
+    if (!snap.exists) {
       console.log("Initializing database settings/theme to the new Warm Espresso luxury dark theme...");
       await THEME_DOC.set(warmEspressoTheme);
       return NextResponse.json({ success: true, theme: warmEspressoTheme });
     }
 
-    return NextResponse.json({ success: true, theme: snap.data() });
+    const data = snap.data() || {};
+    // Ensure any new theme fields (like bgFooter, bgLightSection, etc.) exist in the document without resetting customization
+    const missingKeys = Object.keys(warmEspressoTheme).filter(key => !(key in data));
+    if (missingKeys.length > 0) {
+      const mergedTheme = { ...warmEspressoTheme, ...data };
+      console.log("Merging missing theme keys into database:", missingKeys);
+      await THEME_DOC.set(mergedTheme);
+      return NextResponse.json({ success: true, theme: mergedTheme });
+    }
+
+    return NextResponse.json({ success: true, theme: data });
   } catch (error) {
     console.error("Theme GET error:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch theme" }, { status: 500 });
