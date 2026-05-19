@@ -1040,3 +1040,42 @@ a[class*="bg-[#3B312C]"] {
 [class*="text-[#5C4033]"] {
   color: var(--mc-text-heading) !important;
 }
+
+/* ── Admin Dashboard Theme Isolation ── */
+.admin-layout {
+  --mc-gold: #C8B273;
+  --mc-gold-dark: #B89B5E;
+  --mc-gold-light: #E8DDB8;
+  --mc-gold-subtle: rgba(200, 178, 115, 0.1);
+  --mc-bg-base: #0a0a0a;
+  --mc-bg-card: #111111;
+  --mc-bg-section: #151515;
+  --mc-bg-hero: #0a0a0a;
+  --mc-text-heading: #ffffff;
+  --mc-text-body: #a3a3a3;
+  --mc-text-muted: #737373;
+  --mc-text-subtle: #525252;
+  --mc-border: rgba(255, 255, 255, 0.06);
+  --mc-border-gold: rgba(200, 178, 115, 0.08);
+  --mc-blush: #E8A598;
+  --mc-charcoal: #ffffff;
+  --mc-bg-footer: #111111;
+  --mc-bg-light-section: #151515;
+  --mc-bg-light-section-card: #111111;
+}
+
+/* Force sans-serif font for all elements inside the admin panel, except the storefront preview */
+.admin-layout :not(.storefront-preview-container):not(.storefront-preview-container *) {
+  font-family: var(--font-inter), sans-serif !important;
+}
+
+/* Reset headings in admin to not use playfair serif font, except the storefront preview */
+.admin-layout h1:not(.storefront-preview-container *),
+.admin-layout h2:not(.storefront-preview-container *),
+.admin-layout h3:not(.storefront-preview-container *),
+.admin-layout h4:not(.storefront-preview-container *),
+.admin-layout h5:not(.storefront-preview-container *),
+.admin-layout h6:not(.storefront-preview-container *) {
+  font-family: var(--font-inter), sans-serif !important;
+  color: #ffffff !important;
+}

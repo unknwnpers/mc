@@ -326,8 +326,8 @@ export default function ThemePage() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${theme.gold}20` }}>
-              <Palette className="w-5 h-5" style={{ color: theme.gold }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-500/10">
+              <Palette className="w-5 h-5 text-rose-400" />
             </div>
             <h1 className="text-2xl font-black text-white">Theme Settings</h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 uppercase tracking-widest">Superadmin</span>
@@ -360,8 +360,7 @@ export default function ThemePage() {
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: isDirty && !saving ? theme.gold : "#333", color: "#fff" }}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-black transition-all disabled:opacity-40 disabled:cursor-not-allowed text-white ${isDirty && !saving ? "bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/10" : "bg-[#333]"}`}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? "Saving…" : "Save Theme"}
@@ -537,7 +536,7 @@ export default function ThemePage() {
               <div className="px-5 py-4 border-b border-white/[0.06]">
                 <h2 className="text-white font-black text-sm">Live Storefront Preview</h2>
               </div>
-              <div className="p-5" style={{ background: theme.bgBase, fontFamily: "Georgia, serif" }}>
+              <div className="p-5 storefront-preview-container" style={{ background: theme.bgBase, fontFamily: "Georgia, serif" }}>
                 {/* Simulated hero snippet */}
                 <div className="rounded-2xl p-6 mb-4" style={{ background: theme.bgCard, border: `1px solid ${theme.borderDefault}` }}>
                   <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 mb-4" style={{ background: `${theme.gold}18` }}>
