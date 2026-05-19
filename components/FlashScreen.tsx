@@ -96,7 +96,9 @@ export default function FlashScreen() {
       }
     }
 
-    loadFlashConfig();
+    setTimeout(() => {
+      loadFlashConfig();
+    }, 1000); // Defer loading flash screen config by 1s to prioritize main content paint
   }, []);
 
   if (!isVisible || !config) return null;

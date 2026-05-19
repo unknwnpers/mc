@@ -8,6 +8,8 @@ export function initFirebaseClient() {
   if (initialized) return;
   initialized = true;
 
-  // Initialize App Check early to avoid race conditions
-  initAppCheck();
+  // Initialize App Check slightly later to avoid blocking initial hydration
+  setTimeout(() => {
+    initAppCheck();
+  }, 500);
 }

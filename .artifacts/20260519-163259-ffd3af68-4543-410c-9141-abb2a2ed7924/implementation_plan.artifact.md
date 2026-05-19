@@ -1,83 +1,48 @@
-# Audit Improvements: Accessibility, Performance, Best Practices, and SEO
+# Rendering and FCP Optimization Plan
 
-This plan outlines improvements to the Miks & Chiks project across four key areas: Accessibility (a11y), Performance, Best Practices, and SEO.
+This plan addresses the "NO_FCP" (No First Contentful Paint) error and rendering delays identified in the Lighthouse audit.
 
 ## User Review Required
 
-- **Viewport Settings**: Removing `user-scalable=false` from `app/layout.tsx`. This is generally recommended for accessibility but might slightly affect the "app-like" feel if users accidentally zoom.
-- **Dynamic Rendering**: I plan to review the usage of `force-dynamic` in `app/page.tsx`. If the data doesn't change on every request, removing it will improve performance by allowing ISR.
+- **Auth Block Removal**: I will modify `AuthProvider` to not block rendering of its children. This might cause a brief "flash" of unauthenticated content, but it's essential for FCP.
+- **FlashScreen Delay**: I will ensure `FlashScreen` doesn't block the main thread or initial paint.
 
 ## Proposed Changes
 
-### Accessibility (a11y)
+### 1. Critical Rendering (Phase 1)
 
-Improve screen reader support and keyboard navigation.
+#### [auth-context.tsx](file:///C:/Users/hitec/own/project1/mc/lib/auth-context.tsx)
+- Ensure the `AuthProvider` ALWAYS renders `children` immediately.
+- Pass the `loading` state to consumers so they can handle their own loading UI (skeletons) instead of blocking the entire app tree.
 
 #### [layout.tsx](file:///C:/Users/hitec/own/project1/mc/app/layout.tsx)
-- Remove `userScalable: false` from `viewport` to allow zooming.
+- Move `RootInit` and `AuthProvider` to wrap only the parts of the app that need them, OR ensure they are as lightweight as possible.
+- Ensure `ThemeProvider` fetches data without blocking initial paint (already doing this partially, but will review).
 
-#### [Navbar.tsx](file:///C:/Users/hitec/own/project1/mc/components/Navbar.tsx)
-- Add `aria-label` to the search button and mobile menu toggle.
-- Add `aria-haspopup="true"` and `aria-expanded` to dropdown triggers.
-- Ensure all icons use `aria-hidden="true"`.
-
-#### [BestSellers.tsx](file:///C:/Users/hitec/own/project1/mc/components/home/BestSellers.tsx)
-- Add `aria-label` to horizontal scroll buttons ("Previous products", "Next products").
-
-#### [ProductCard.tsx](file:///C:/Users/hitec/own/project1/mc/components/ProductCard.tsx)
-- Add `aria-label` to "Add to Cart" button, including its state (e.g., "Adding..." when loading).
-- Add descriptive text for star ratings and discount badges.
+#### [FlashScreen.tsx](file:///C:/Users/hitec/own/project1/mc/components/FlashScreen.tsx)
+- Ensure it doesn't render until after the initial paint.
+- Add a tiny delay or use `requestIdleCallback` if possible to avoid blocking the main thread during hydration.
 
 ---
 
-### Performance
-
-Optimize image loading and data fetching.
-
-#### [Footer.tsx](file:///C:/Users/hitec/own/project1/mc/components/Footer.tsx)
-- Replace standard `img` tags with `next/image` for Instagram preview images to enable automatic optimization and lazy loading.
+### 2. Page Specific Optimizations (Phase 2)
 
 #### [page.tsx](file:///C:/Users/hitec/own/project1/mc/app/page.tsx)
-- Evaluate and potentially remove `export const dynamic = 'force-dynamic'` to enable ISR (Incremental Static Regeneration) since `revalidate = 60` is already present.
-
-#### [ProductCard.tsx](file:///C:/Users/hitec/own/project1/mc/components/ProductCard.tsx)
-- Implement a basic caching or batching strategy for offer and review fetches to reduce the number of API calls when many cards are rendered. (Or at least add AbortControllers to prevent memory leaks/race conditions).
+- Add a `SkeletonHero` or similar placeholder in `Suspense` fallbacks if not already present. (Wait, the Hero is NOT in a Suspense, which is good for FCP).
+- Review `StructuredData` to ensure it doesn't cause any runtime errors that could halt rendering.
 
 ---
 
-### Best Practices
+### 3. Firebase Auth & Domains (Phase 3)
 
-Code cleanup and better error handling.
-
-#### [Footer.tsx](file:///C:/Users/hitec/own/project1/mc/components/Footer.tsx)
-- Remove unused `socials` constant.
-
-#### [Navbar.tsx](file:///C:/Users/hitec/own/project1/mc/components/Navbar.tsx)
-- Fix empty `catch` blocks in `fetchLogo`.
-
-#### General
-- Audit and fix other empty `catch` blocks found during implementation.
-
----
-
-### SEO
-
-Improve metadata and image descriptions.
-
-#### [Footer.tsx](file:///C:/Users/hitec/own/project1/mc/components/Footer.tsx)
-- Improve `alt` tags for Instagram images (currently generic "Instagram").
-
-#### [ProductCard.tsx](file:///C:/Users/hitec/own/project1/mc/components/ProductCard.tsx)
-- Ensure product images have descriptive `alt` tags (currently just `product.name`).
+- **Documentation**: I will provide the list of domains that MUST be in the Firebase Console's "Authorized Domains" list to ensure local and production auth works correctly.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `npm run typecheck` to ensure no regressions in TypeScript.
-- Run `npm run lint` (once fixed or manually) to check for common issues.
+- `npm run build`: Already confirmed it builds successfully.
 
 ### Manual Verification
-- **Accessibility**: Use Chrome DevTools (Lighthouse) to run an Accessibility audit.
-- **Performance**: Use Lighthouse to compare Performance scores before and after.
-- **Visual Check**: Manually verify that the Navbar dropdowns and mobile menu still work as expected.
-- **Device Test**: Check that zooming works on mobile after removing `user-scalable=false`.
+- **Lighthouse (Local)**: Run Lighthouse on a production build (`npm run start`) in Incognito mode.
+- **Visual Check**: Open the site and ensure the Hero section paints immediately without a blank screen "flash".
+- **Auth Check**: Ensure that even with non-blocking AuthProvider, protected routes (like /profile) still correctly redirect or show loading states.

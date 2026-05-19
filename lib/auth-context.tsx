@@ -90,176 +90,189 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      
-      if (u) {
-        // Sync Profile
-        const profileRef = doc(db, "users", u.uid);
-        const profileSnap = await getDoc(profileRef);
+    // Only start auth listener after initial render to avoid blocking FCP
+    const initAuth = () => {
+      const unsubscribe = onAuthStateChanged(auth, async (u) => {
+        setUser(u);
         
-        let userRole = "customer";
-        
-        if (profileSnap.exists()) {
-          const data = profileSnap.data() as UserProfile;
-          if (data.blocked) {
-            toast.error("Your account has been blocked. Contact support.");
-            const authInstance = getFirebaseAuth();
-            if (authInstance) {
-              await authInstance.signOut();
+        if (u) {
+          // Sync Profile
+          const profileRef = doc(db, "users", u.uid);
+          const profileSnap = await getDoc(profileRef);
+
+          let userRole = "customer";
+
+          if (profileSnap.exists()) {
+            const data = profileSnap.data() as UserProfile;
+            if (data.blocked) {
+              toast.error("Your account has been blocked. Contact support.");
+              const authInstance = getFirebaseAuth();
+              if (authInstance) {
+                await authInstance.signOut();
+              }
+              setUser(null);
+              setProfile(null);
+              router.push("/login");
+              return;
             }
-            setUser(null);
-            setProfile(null);
-            router.push("/login");
-            return;
-          }
 
-          // Get email/name from either user object or providerData
-          const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
-          const phoneProvider = u.providerData?.find(p => p.providerId === 'phone');
+            // Get email/name from either user object or providerData
+            const googleProvider = u.providerData?.find(p => p.providerId === 'google.com');
+            const phoneProvider = u.providerData?.find(p => p.providerId === 'phone');
 
-          // Handle missing fields gracefully for different providers
-          const userEmail = u.email || googleProvider?.email || data.email || null;
-          const userDisplayName = u.displayName || googleProvider?.displayName || data.name || "";
-          const userPhone = u.phoneNumber || phoneProvider?.phoneNumber || data.phone || "";
-          
-          // Check if we need to sync from Firebase Auth
-          const needsEmailSync = userEmail && !data.email;
-          const needsNameSync = userDisplayName && !data.name;
-          const needsPhoneSync = userPhone && !data.phone;
-          
-          const needsFieldFill   = !data.addressLine1 && userEmail; // Only require field fill for email users usually
+            // Handle missing fields gracefully for different providers
+            const userEmail = u.email || googleProvider?.email || data.email || null;
+            const userDisplayName = u.displayName || googleProvider?.displayName || data.name || "";
+            const userPhone = u.phoneNumber || phoneProvider?.phoneNumber || data.phone || "";
 
-          if (needsFieldFill || needsEmailSync || needsNameSync || needsPhoneSync) {
-            const updated: UserProfile = {
-              ...data,
-              email: userEmail || data.email || null,
-              name: userDisplayName || data.name || "User",
-              addressLine1: data.addressLine1 || "",
-              phone: (userPhone?.replace("+91", "") || data.phone || "").replace(/\D/g, ""),
-              role: data.role || "customer",
-              updated_at: new Date().toISOString(),
-            };
-            await setDoc(profileRef, updated, { merge: true });
-            setProfile(updated);
-            userRole = updated.role;
+            // Check if we need to sync from Firebase Auth
+            const needsEmailSync = userEmail && !data.email;
+            const needsNameSync = userDisplayName && !data.name;
+            const needsPhoneSync = userPhone && !data.phone;
+
+            const needsFieldFill   = !data.addressLine1 && userEmail; // Only require field fill for email users usually
+
+            if (needsFieldFill || needsEmailSync || needsNameSync || needsPhoneSync) {
+              const updated: UserProfile = {
+                ...data,
+                email: userEmail || data.email || null,
+                name: userDisplayName || data.name || "User",
+                addressLine1: data.addressLine1 || "",
+                phone: (userPhone?.replace("+91", "") || data.phone || "").replace(/\D/g, ""),
+                role: data.role || "customer",
+                updated_at: new Date().toISOString(),
+              };
+              await setDoc(profileRef, updated, { merge: true });
+              setProfile(updated);
+              userRole = updated.role;
+            } else {
+              // Ensure state reflects at least the Auth values if Firestore is thin
+              setProfile({
+                ...data,
+                email: data.email || userEmail,
+                name: data.name || userDisplayName || "User",
+                phone: data.phone || (userPhone?.replace("+91", "") || "").replace(/\D/g, ""),
+              });
+              userRole = data.role;
+            }
           } else {
-            // Ensure state reflects at least the Auth values if Firestore is thin
-            setProfile({
-              ...data,
-              email: data.email || userEmail,
-              name: data.name || userDisplayName || "User",
-              phone: data.phone || (userPhone?.replace("+91", "") || "").replace(/\D/g, ""),
-            });
-            userRole = data.role;
+            // PROFILE MISSING: Delegate to backend API for identity linking and profile creation
+            console.log("[Auth] Profile missing, triggering backend sync for UID:", u.uid);
+
+            try {
+              const token = await u.getIdToken();
+              const res = await fetch("/api/user/create", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  uid: u.uid,
+                  email: u.email,
+                  phone: u.phoneNumber,
+                  name: u.displayName,
+                  provider: u.providerData[0]?.providerId || "unknown"
+                })
+              });
+
+              if (res.ok) {
+                // Fetch the newly created/linked profile
+                const newSnap = await getDoc(profileRef);
+                if (newSnap.exists()) {
+                  const newData = newSnap.data() as UserProfile;
+                  setProfile(newData);
+                  userRole = newData.role;
+                }
+              } else {
+                throw new Error("Backend sync failed");
+              }
+            } catch (err) {
+              console.error("[Auth] Backend profile sync failed:", err);
+              toast.error("Failed to sync your profile. Please refresh.");
+            }
+          }
+          
+          // Create admin session if user is admin/superadmin
+          if (userRole === "admin" || userRole === "superadmin") {
+            await createAdminSession(u, userRole);
+
+            // Record login and check for new device/location notification
+            try {
+              const token = await u.getIdToken();
+              await fetch('/api/admin/security/login-notify', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+            } catch (error) {
+              console.error('Failed to record login:', error);
+            }
+
+            // Check password expiration status
+            const passwordLastChanged = profileSnap.exists()
+              ? (profileSnap.data() as any).passwordLastChanged
+              : null;
+            const passwordChangeRequired = profileSnap.exists()
+              ? (profileSnap.data() as any).passwordChangeRequired
+              : false;
+
+            // Default policy: 90 days
+            const maxAgeDays = 90;
+            const lastChangedDate = passwordLastChanged?.toDate?.() || null;
+
+            let isExpired = false;
+            let daysUntilExpiration: number | null = null;
+
+            if (lastChangedDate && maxAgeDays > 0) {
+              const expirationDate = new Date(lastChangedDate);
+              expirationDate.setDate(expirationDate.getDate() + maxAgeDays);
+              const now = new Date();
+              isExpired = now > expirationDate;
+              const diffTime = expirationDate.getTime() - now.getTime();
+              daysUntilExpiration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+
+            const status = {
+              isExpired,
+              daysUntilExpiration: daysUntilExpiration && daysUntilExpiration > 0 ? daysUntilExpiration : null,
+              changeRequired: passwordChangeRequired || false,
+            };
+
+            setPasswordStatus(status);
+
+            // Redirect to password change if expired or required
+            if (status.isExpired || status.changeRequired) {
+              const currentPath = window.location.pathname;
+              if (!currentPath.includes('/admin/change-password')) {
+                router.push(`/admin/change-password?expired=true&redirect=${encodeURIComponent(currentPath)}`);
+              }
+            }
           }
         } else {
-          // PROFILE MISSING: Delegate to backend API for identity linking and profile creation
-          console.log("[Auth] Profile missing, triggering backend sync for UID:", u.uid);
-          
-          try {
-            const token = await u.getIdToken();
-            const res = await fetch("/api/user/create", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                uid: u.uid,
-                email: u.email,
-                phone: u.phoneNumber,
-                name: u.displayName,
-                provider: u.providerData[0]?.providerId || "unknown"
-              })
-            });
-
-            if (res.ok) {
-              // Fetch the newly created/linked profile
-              const newSnap = await getDoc(profileRef);
-              if (newSnap.exists()) {
-                const newData = newSnap.data() as UserProfile;
-                setProfile(newData);
-                userRole = newData.role;
-              }
-            } else {
-              throw new Error("Backend sync failed");
-            }
-          } catch (err) {
-            console.error("[Auth] Backend profile sync failed:", err);
-            toast.error("Failed to sync your profile. Please refresh.");
-          }
-        }   
-        
-        // Create admin session if user is admin/superadmin
-        if (userRole === "admin" || userRole === "superadmin") {
-          await createAdminSession(u, userRole);
-          
-          // Record login and check for new device/location notification
-          try {
-            const token = await u.getIdToken();
-            await fetch('/api/admin/security/login-notify', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
-            });
-          } catch (error) {
-            console.error('Failed to record login:', error);
-          }
-          
-          // Check password expiration status
-          const passwordLastChanged = profileSnap.exists() 
-            ? (profileSnap.data() as any).passwordLastChanged 
-            : null;
-          const passwordChangeRequired = profileSnap.exists()
-            ? (profileSnap.data() as any).passwordChangeRequired
-            : false;
-          
-          // Default policy: 90 days
-          const maxAgeDays = 90;
-          const lastChangedDate = passwordLastChanged?.toDate?.() || null;
-          
-          let isExpired = false;
-          let daysUntilExpiration: number | null = null;
-          
-          if (lastChangedDate && maxAgeDays > 0) {
-            const expirationDate = new Date(lastChangedDate);
-            expirationDate.setDate(expirationDate.getDate() + maxAgeDays);
-            const now = new Date();
-            isExpired = now > expirationDate;
-            const diffTime = expirationDate.getTime() - now.getTime();
-            daysUntilExpiration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          }
-          
-          const status = {
-            isExpired,
-            daysUntilExpiration: daysUntilExpiration && daysUntilExpiration > 0 ? daysUntilExpiration : null,
-            changeRequired: passwordChangeRequired || false,
-          };
-          
-          setPasswordStatus(status);
-          
-          // Redirect to password change if expired or required
-          if (status.isExpired || status.changeRequired) {
-            const currentPath = window.location.pathname;
-            if (!currentPath.includes('/admin/change-password')) {
-              router.push(`/admin/change-password?expired=true&redirect=${encodeURIComponent(currentPath)}`);
-            }
-          }
+          setProfile(null);
+          setSessionId(null);
+          setPasswordStatus(null);
         }
-      } else {
-        setProfile(null);
-        setSessionId(null);
-        setPasswordStatus(null);
-      }
-      
-      // Only set loading to false after auth state is determined
-      // This prevents flash of logged-out state on refresh
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
+        // Only set loading to false after auth state is determined
+        // This prevents flash of logged-out state on refresh
+        setLoading(false);
+      });
+      return unsubscribe;
+    };
+
+    // Use requestIdleCallback or setTimeout to defer auth initialization
+    let unsubscribe: (() => void) | undefined;
+    const timeoutId = setTimeout(() => {
+      unsubscribe = initAuth();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   return (
